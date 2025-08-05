@@ -1,0 +1,563 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		90929E3D2E41BAFF008A2EF1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90929E272E41BAFE008A2EF1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90929E2E2E41BAFE008A2EF1;
+			remoteInfo = "pictospeak-ios";
+		};
+		90929E472E41BAFF008A2EF1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90929E272E41BAFE008A2EF1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90929E2E2E41BAFE008A2EF1;
+			remoteInfo = "pictospeak-ios";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		90929E2F2E41BAFE008A2EF1 /* pictospeak-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "pictospeak-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		90929E3C2E41BAFF008A2EF1 /* pictospeak-iosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pictospeak-iosTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		90929E462E41BAFF008A2EF1 /* pictospeak-iosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pictospeak-iosUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		90929E312E41BAFE008A2EF1 /* pictospeak-ios */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "pictospeak-ios";
+			sourceTree = "<group>";
+		};
+		90929E3F2E41BAFF008A2EF1 /* pictospeak-iosTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "pictospeak-iosTests";
+			sourceTree = "<group>";
+		};
+		90929E492E41BAFF008A2EF1 /* pictospeak-iosUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "pictospeak-iosUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		90929E2C2E41BAFE008A2EF1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90929E392E41BAFF008A2EF1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90929E432E41BAFF008A2EF1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		90929E262E41BAFE008A2EF1 = {
+			isa = PBXGroup;
+			children = (
+				90929E312E41BAFE008A2EF1 /* pictospeak-ios */,
+				90929E3F2E41BAFF008A2EF1 /* pictospeak-iosTests */,
+				90929E492E41BAFF008A2EF1 /* pictospeak-iosUITests */,
+				90929E302E41BAFE008A2EF1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		90929E302E41BAFE008A2EF1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				90929E2F2E41BAFE008A2EF1 /* pictospeak-ios.app */,
+				90929E3C2E41BAFF008A2EF1 /* pictospeak-iosTests.xctest */,
+				90929E462E41BAFF008A2EF1 /* pictospeak-iosUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		90929E2E2E41BAFE008A2EF1 /* pictospeak-ios */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90929E502E41BAFF008A2EF1 /* Build configuration list for PBXNativeTarget "pictospeak-ios" */;
+			buildPhases = (
+				90929E2B2E41BAFE008A2EF1 /* Sources */,
+				90929E2C2E41BAFE008A2EF1 /* Frameworks */,
+				90929E2D2E41BAFE008A2EF1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				90929E312E41BAFE008A2EF1 /* pictospeak-ios */,
+			);
+			name = "pictospeak-ios";
+			packageProductDependencies = (
+			);
+			productName = "pictospeak-ios";
+			productReference = 90929E2F2E41BAFE008A2EF1 /* pictospeak-ios.app */;
+			productType = "com.apple.product-type.application";
+		};
+		90929E3B2E41BAFF008A2EF1 /* pictospeak-iosTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90929E532E41BAFF008A2EF1 /* Build configuration list for PBXNativeTarget "pictospeak-iosTests" */;
+			buildPhases = (
+				90929E382E41BAFF008A2EF1 /* Sources */,
+				90929E392E41BAFF008A2EF1 /* Frameworks */,
+				90929E3A2E41BAFF008A2EF1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				90929E3E2E41BAFF008A2EF1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				90929E3F2E41BAFF008A2EF1 /* pictospeak-iosTests */,
+			);
+			name = "pictospeak-iosTests";
+			packageProductDependencies = (
+			);
+			productName = "pictospeak-iosTests";
+			productReference = 90929E3C2E41BAFF008A2EF1 /* pictospeak-iosTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		90929E452E41BAFF008A2EF1 /* pictospeak-iosUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90929E562E41BAFF008A2EF1 /* Build configuration list for PBXNativeTarget "pictospeak-iosUITests" */;
+			buildPhases = (
+				90929E422E41BAFF008A2EF1 /* Sources */,
+				90929E432E41BAFF008A2EF1 /* Frameworks */,
+				90929E442E41BAFF008A2EF1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				90929E482E41BAFF008A2EF1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				90929E492E41BAFF008A2EF1 /* pictospeak-iosUITests */,
+			);
+			name = "pictospeak-iosUITests";
+			packageProductDependencies = (
+			);
+			productName = "pictospeak-iosUITests";
+			productReference = 90929E462E41BAFF008A2EF1 /* pictospeak-iosUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		90929E272E41BAFE008A2EF1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					90929E2E2E41BAFE008A2EF1 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					90929E3B2E41BAFF008A2EF1 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 90929E2E2E41BAFE008A2EF1;
+					};
+					90929E452E41BAFF008A2EF1 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 90929E2E2E41BAFE008A2EF1;
+					};
+				};
+			};
+			buildConfigurationList = 90929E2A2E41BAFE008A2EF1 /* Build configuration list for PBXProject "pictospeak-ios" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 90929E262E41BAFE008A2EF1;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 90929E302E41BAFE008A2EF1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				90929E2E2E41BAFE008A2EF1 /* pictospeak-ios */,
+				90929E3B2E41BAFF008A2EF1 /* pictospeak-iosTests */,
+				90929E452E41BAFF008A2EF1 /* pictospeak-iosUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		90929E2D2E41BAFE008A2EF1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90929E3A2E41BAFF008A2EF1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90929E442E41BAFF008A2EF1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		90929E2B2E41BAFE008A2EF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90929E382E41BAFF008A2EF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		90929E422E41BAFF008A2EF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		90929E3E2E41BAFF008A2EF1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90929E2E2E41BAFE008A2EF1 /* pictospeak-ios */;
+			targetProxy = 90929E3D2E41BAFF008A2EF1 /* PBXContainerItemProxy */;
+		};
+		90929E482E41BAFF008A2EF1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90929E2E2E41BAFE008A2EF1 /* pictospeak-ios */;
+			targetProxy = 90929E472E41BAFF008A2EF1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		90929E4E2E41BAFF008A2EF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		90929E4F2E41BAFF008A2EF1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		90929E512E41BAFF008A2EF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chinazhangyujia.pictospeak-ios";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		90929E522E41BAFF008A2EF1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chinazhangyujia.pictospeak-ios";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		90929E542E41BAFF008A2EF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chinazhangyujia.pictospeak-iosTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/pictospeak-ios.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/pictospeak-ios";
+			};
+			name = Debug;
+		};
+		90929E552E41BAFF008A2EF1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chinazhangyujia.pictospeak-iosTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/pictospeak-ios.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/pictospeak-ios";
+			};
+			name = Release;
+		};
+		90929E572E41BAFF008A2EF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chinazhangyujia.pictospeak-iosUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "pictospeak-ios";
+			};
+			name = Debug;
+		};
+		90929E582E41BAFF008A2EF1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LWS58S3B5V;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chinazhangyujia.pictospeak-iosUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "pictospeak-ios";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		90929E2A2E41BAFE008A2EF1 /* Build configuration list for PBXProject "pictospeak-ios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90929E4E2E41BAFF008A2EF1 /* Debug */,
+				90929E4F2E41BAFF008A2EF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		90929E502E41BAFF008A2EF1 /* Build configuration list for PBXNativeTarget "pictospeak-ios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90929E512E41BAFF008A2EF1 /* Debug */,
+				90929E522E41BAFF008A2EF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		90929E532E41BAFF008A2EF1 /* Build configuration list for PBXNativeTarget "pictospeak-iosTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90929E542E41BAFF008A2EF1 /* Debug */,
+				90929E552E41BAFF008A2EF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		90929E562E41BAFF008A2EF1 /* Build configuration list for PBXNativeTarget "pictospeak-iosUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90929E572E41BAFF008A2EF1 /* Debug */,
+				90929E582E41BAFF008A2EF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 90929E272E41BAFE008A2EF1 /* Project object */;
+}
