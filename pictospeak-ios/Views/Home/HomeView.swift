@@ -68,9 +68,7 @@ struct HomeView: View {
 
     private var centralActionSection: some View {
         VStack(spacing: 16) {
-            Button(action: {
-                // Start new PicTalk action
-            }) {
+            NavigationLink(destination: CaptureView()) {
                 VStack(spacing: 12) {
                     ZStack {
                         Circle()
