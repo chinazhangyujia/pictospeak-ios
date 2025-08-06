@@ -18,6 +18,7 @@ struct CaptureView: View {
     @State private var isRecording = false
     @State private var recordingTime: TimeInterval = 0
     @State private var timer: Timer?
+    @State private var showingSpeakView = false
 
     enum CaptureMode: String, CaseIterable {
         case photo = "Photo"
@@ -46,12 +47,25 @@ struct CaptureView: View {
         .onAppear {
             cameraManager.checkPermissions()
         }
+        .onChange(of: cameraManager.selectedImage) { _, newValue in
+            if newValue != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showingSpeakView = true
+                }
+            }
+        }
         .onDisappear {
             timer?.invalidate()
         }
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoPicker(selectedImage: $cameraManager.selectedImage)
         }
+        .background(
+            NavigationLink(destination: SpeakView(selectedImage: cameraManager.selectedImage ?? UIImage()), isActive: $showingSpeakView) {
+                EmptyView()
+            }
+            .hidden()
+        )
         .alert("Camera Access Required", isPresented: $cameraManager.showingPermissionAlert) {
             Button("Settings") {
                 if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
@@ -322,7 +336,9 @@ struct PhotoPicker: UIViewControllerRepresentable {
             if provider.canLoadObject(ofClass: UIImage.self) {
                 provider.loadObject(ofClass: UIImage.self) { image, _ in
                     DispatchQueue.main.async {
+                        print("PhotoPicker: Setting selectedImage")
                         self.parent.selectedImage = image as? UIImage
+                        print("PhotoPicker: selectedImage set to \(self.parent.selectedImage != nil)")
                     }
                 }
             }
