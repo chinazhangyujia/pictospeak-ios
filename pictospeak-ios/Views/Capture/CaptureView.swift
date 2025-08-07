@@ -61,7 +61,7 @@ struct CaptureView: View {
             PhotoPicker(selectedImage: $cameraManager.selectedImage)
         }
         .background(
-            NavigationLink(destination: SpeakView(selectedImage: cameraManager.selectedImage ?? UIImage()), isActive: $showingSpeakView) {
+            NavigationLink(destination: SpeakView(selectedImage: cameraManager.selectedImage ?? UIImage(), mediaType: selectedMode == .photo ? .image : .video), isActive: $showingSpeakView) {
                 EmptyView()
             }
             .hidden()

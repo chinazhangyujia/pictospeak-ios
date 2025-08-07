@@ -11,11 +11,14 @@ import SwiftUI
 struct SpeakView: View {
     @Environment(\.dismiss) private var dismiss
     let selectedImage: UIImage
+    let mediaType: MediaType
     @State private var isRecording = false
     @State private var audioRecorder: AVAudioRecorder?
     @State private var recordingURL: URL?
     @State private var recordingTimer: Timer?
     @State private var recordingTime: TimeInterval = 0
+    @State private var showFeedbackView = false
+    @State private var recordedAudioData: Data?
 
     var body: some View {
         GeometryReader { geometry in
@@ -48,8 +51,27 @@ struct SpeakView: View {
                 recordingTimer?.invalidate()
                 recordingTimer = nil
                 recordingTime = 0
+
+                // Get recorded audio data and navigate to feedback
+                if let url = recordingURL {
+                    do {
+                        recordedAudioData = try Data(contentsOf: url)
+                        showFeedbackView = true
+                    } catch {
+                        print("Failed to read audio data: \(error)")
+                    }
+                }
             }
         }
+        .background(
+            NavigationLink(destination: FeedbackView(selectedImage: selectedImage, audioData: recordedAudioData ?? Data(), mediaType: mediaType)
+                .navigationBarHidden(true)
+                .navigationBarBackButtonHidden(true), isActive: $showFeedbackView)
+            {
+                EmptyView()
+            }
+            .hidden()
+        )
     }
 
     // MARK: - Top Section
@@ -196,5 +218,5 @@ struct SpeakView: View {
 #Preview {
     // Create a sample image for preview
     let sampleImage = UIImage(systemName: "photo") ?? UIImage()
-    SpeakView(selectedImage: sampleImage)
+    SpeakView(selectedImage: sampleImage, mediaType: .image)
 }
