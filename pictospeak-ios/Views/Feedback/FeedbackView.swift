@@ -11,6 +11,7 @@ struct FeedbackView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = FeedbackViewModel()
     @State private var selectedTab: FeedbackTab = .aiRefined
+    @Binding var showFeedbackView: Bool
 
     let selectedImage: UIImage
     let audioData: Data
@@ -170,6 +171,7 @@ struct FeedbackView: View {
     private var customHeader: some View {
         HStack {
             Button(action: {
+                showFeedbackView = false
                 dismiss()
             }) {
                 Image(systemName: "chevron.left")
@@ -373,5 +375,5 @@ struct KeyExpressionCard: View {
 #Preview {
     let sampleImage = UIImage(systemName: "photo") ?? UIImage()
     let sampleAudioData = Data()
-    FeedbackView(selectedImage: sampleImage, audioData: sampleAudioData, mediaType: .image)
+    FeedbackView(showFeedbackView: .constant(true), selectedImage: sampleImage, audioData: sampleAudioData, mediaType: .image)
 }

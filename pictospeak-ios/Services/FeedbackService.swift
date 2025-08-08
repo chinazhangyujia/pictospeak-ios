@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 
 class FeedbackService {
-    private let baseURL = "https://api.pictospeak.com" // Replace with your actual API base URL
+    private let baseURL = "http://127.0.0.1:8000" // Local FastAPI server - use 127.0.0.1 for simulator
 
     // MARK: - Singleton
 
@@ -18,16 +18,9 @@ class FeedbackService {
 
     // MARK: - Public Methods
 
-    func getFeedbackForImage(image _: UIImage, audioData _: Data) async throws -> FeedbackResponse {
-        // TODO: Implement actual API call
-        // let request = FeedbackRequest(imageData: image.jpegData(compressionQuality: 0.8),
-        //                              videoData: nil,
-        //                              audioData: audioData,
-        //                              mediaType: .image)
-        // return try await callAPI(endpoint: "/description/guidance/image", request: request)
-
-        // Mock response for now
-        return createMockFeedbackResponse()
+    func getFeedbackForImage(image: UIImage, audioData: Data) async throws -> FeedbackResponse {
+        // Call actual FastAPI endpoint
+        return try await callImageAPI(image: image, audioData: audioData)
     }
 
     func getFeedbackForVideo(videoURL _: URL, audioData _: Data) async throws -> FeedbackResponse {
@@ -44,6 +37,168 @@ class FeedbackService {
     }
 
     // MARK: - Private Methods
+
+    private func callImageAPI(image: UIImage, audioData: Data) async throws -> FeedbackResponse {
+        guard let url = URL(string: baseURL + "/description/guidance/image") else {
+            throw FeedbackError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+
+        // Create multipart form data
+        let boundary = "Boundary-\(UUID().uuidString)"
+        urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        // Add image data
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw FeedbackError.encodingError
+        }
+
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+
+        // Add audio data
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"audio.wav\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
+        body.append(audioData)
+        body.append("\r\n".data(using: .utf8)!)
+
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        urlRequest.httpBody = body
+
+        print("🌐 Making request to FastAPI endpoint: \(url)")
+        print("📦 Request body size: \(body.count) bytes")
+
+        do {
+            let (bytes, response) = try await URLSession.shared.bytes(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw FeedbackError.serverError
+            }
+
+            print("📡 Response status: \(httpResponse.statusCode)")
+            print("📡 Response headers: \(httpResponse.allHeaderFields)")
+
+            guard httpResponse.statusCode == 200 else {
+                throw FeedbackError.serverError
+            }
+
+            var chunkCount = 0
+            var buffer = Data()
+
+            print("🚀 Starting real-time streaming - processing object by object...")
+
+            // Process streaming response object by object
+            for try await byte in bytes {
+                buffer.append(byte)
+
+                // Try to extract complete JSON objects from buffer using bracket matching
+                if let bufferString = String(data: buffer, encoding: .utf8) {
+                    var startIndex = 0
+
+                    while startIndex < bufferString.count {
+                        // Find the start of a JSON object
+                        if let jsonStart = bufferString.firstIndex(of: "{") {
+                            let searchStart = bufferString.index(jsonStart, offsetBy: 0)
+
+                            // Use bracket counting to find complete JSON object
+                            var bracketCount = 0
+                            var inString = false
+                            var escapeNext = false
+                            var jsonEnd: String.Index?
+
+                            for (index, char) in bufferString[searchStart...].enumerated() {
+                                let currentIndex = bufferString.index(searchStart, offsetBy: index)
+
+                                if escapeNext {
+                                    escapeNext = false
+                                    continue
+                                }
+
+                                if char == "\\" {
+                                    escapeNext = true
+                                    continue
+                                }
+
+                                if char == "\"" {
+                                    inString.toggle()
+                                    continue
+                                }
+
+                                if !inString {
+                                    if char == "{" {
+                                        bracketCount += 1
+                                    } else if char == "}" {
+                                        bracketCount -= 1
+                                        if bracketCount == 0 {
+                                            jsonEnd = bufferString.index(after: currentIndex)
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+
+                            // If we found a complete JSON object
+                            if let jsonEnd = jsonEnd {
+                                let jsonString = String(bufferString[jsonStart ..< jsonEnd])
+
+                                // Validate it's proper JSON
+                                if let jsonData = jsonString.data(using: .utf8) {
+                                    do {
+                                        let _ = try JSONSerialization.jsonObject(with: jsonData, options: [])
+                                        chunkCount += 1
+                                        print("📦 Streamed Object \(chunkCount): \(jsonString)")
+
+                                        // Remove processed JSON from buffer
+                                        let remainingString = String(bufferString[jsonEnd...])
+                                        buffer = remainingString.data(using: .utf8) ?? Data()
+                                        break
+                                    } catch {
+                                        // Not valid JSON, continue accumulating
+                                        break
+                                    }
+                                }
+                            } else {
+                                // Incomplete JSON object, wait for more data
+                                break
+                            }
+                        } else {
+                            // No JSON start found, clear buffer of any junk
+                            buffer = Data()
+                            break
+                        }
+                    }
+                }
+            }
+
+            // Handle any remaining data in buffer
+            if !buffer.isEmpty, let finalString = String(data: buffer, encoding: .utf8) {
+                let trimmed = finalString.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    chunkCount += 1
+                    print("📦 Final Object \(chunkCount): \(trimmed)")
+                }
+            }
+
+            print("✅ Streaming complete. Total objects received: \(chunkCount)")
+
+            // For now, return mock response while we handle the streaming
+            // TODO: Parse the actual streaming response into FeedbackResponse
+            return createMockFeedbackResponse()
+
+        } catch {
+            print("❌ Network error: \(error)")
+            throw FeedbackError.networkError
+        }
+    }
 
     private func callAPI<T: Codable>(endpoint: String, request: T) async throws -> FeedbackResponse {
         guard let url = URL(string: baseURL + endpoint) else {

@@ -64,10 +64,17 @@ struct SpeakView: View {
             }
         }
         .background(
-            NavigationLink(destination: FeedbackView(selectedImage: selectedImage, audioData: recordedAudioData ?? Data(), mediaType: mediaType)
+            NavigationLink(
+                destination: FeedbackView(
+                    showFeedbackView: $showFeedbackView,
+                    selectedImage: selectedImage,
+                    audioData: recordedAudioData ?? Data(),
+                    mediaType: mediaType
+                )
                 .navigationBarHidden(true)
-                .navigationBarBackButtonHidden(true), isActive: $showFeedbackView)
-            {
+                .navigationBarBackButtonHidden(true),
+                isActive: $showFeedbackView
+            ) {
                 EmptyView()
             }
             .hidden()
@@ -175,13 +182,16 @@ struct SpeakView: View {
             try audioSession.setActive(true)
 
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let audioFilename = documentsPath.appendingPathComponent("recording.m4a")
+            let audioFilename = documentsPath.appendingPathComponent("recording.wav")
             recordingURL = audioFilename
 
-            let settings = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            let settings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatLinearPCM),
                 AVSampleRateKey: 12000,
                 AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsFloatKey: false,
                 AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
             ]
 
