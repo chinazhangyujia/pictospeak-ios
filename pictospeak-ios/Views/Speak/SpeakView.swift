@@ -27,7 +27,7 @@ struct SpeakView: View {
                 Image(uiImage: selectedImage)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
                     .clipped()
                     .ignoresSafeArea()
 
