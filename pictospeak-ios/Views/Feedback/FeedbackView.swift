@@ -131,10 +131,12 @@ struct FeedbackView: View {
 
     private func suggestionsAndKeyExpressionsSection(_ feedback: FeedbackResponse) -> some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Suggestions & Key Expressions")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.horizontal, 20)
+            if !feedback.suggestions.isEmpty || !feedback.keyExpressions.isEmpty {
+                Text("Fixes & Key Phrases")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 20)
+            }
 
             // Key Expressions
             if !feedback.keyExpressions.isEmpty {

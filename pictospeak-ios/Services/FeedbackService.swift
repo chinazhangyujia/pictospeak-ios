@@ -23,6 +23,22 @@ class FeedbackService {
         return try await callImageAPI(image: image, audioData: audioData)
     }
 
+    // New streaming method that emits updates as they arrive
+    func getFeedbackStreamForImage(image: UIImage, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    try await streamImageAPI(image: image, audioData: audioData) { feedbackResponse in
+                        continuation.yield(feedbackResponse)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     func getFeedbackForVideo(videoURL _: URL, audioData _: Data) async throws -> FeedbackResponse {
         // TODO: Implement actual API call
         // let videoData = try Data(contentsOf: videoURL)
@@ -39,6 +55,21 @@ class FeedbackService {
     // MARK: - Private Methods
 
     private func callImageAPI(image: UIImage, audioData: Data) async throws -> FeedbackResponse {
+        // Use the streaming API but only return the last result
+        var lastResponse: FeedbackResponse?
+
+        for try await response in getFeedbackStreamForImage(image: image, audioData: audioData) {
+            lastResponse = response
+        }
+
+        guard let finalResponse = lastResponse else {
+            throw FeedbackError.serverError
+        }
+
+        return finalResponse
+    }
+
+    private func streamImageAPI(image: UIImage, audioData: Data, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
         guard let url = URL(string: baseURL + "/description/guidance/image") else {
             throw FeedbackError.invalidURL
         }
@@ -150,19 +181,31 @@ class FeedbackService {
                             if let jsonEnd = jsonEnd {
                                 let jsonString = String(bufferString[jsonStart ..< jsonEnd])
 
-                                // Validate it's proper JSON
+                                // Validate it's proper JSON and parse it
                                 if let jsonData = jsonString.data(using: .utf8) {
                                     do {
-                                        let _ = try JSONSerialization.jsonObject(with: jsonData, options: [])
+                                        // Try to decode as StreamingFeedbackResponse
+                                        let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: jsonData)
                                         chunkCount += 1
                                         print("📦 Streamed Object \(chunkCount): \(jsonString)")
+
+                                        // Convert to FeedbackResponse and emit update
+                                        let feedbackResponse = streamingResponse.toFeedbackResponse()
+                                        onUpdate(feedbackResponse)
 
                                         // Remove processed JSON from buffer
                                         let remainingString = String(bufferString[jsonEnd...])
                                         buffer = remainingString.data(using: .utf8) ?? Data()
                                         break
                                     } catch {
-                                        // Not valid JSON, continue accumulating
+                                        print("⚠️ Failed to decode JSON as StreamingFeedbackResponse: \(error)")
+                                        // Try basic JSON validation
+                                        do {
+                                            let _ = try JSONSerialization.jsonObject(with: jsonData, options: [])
+                                            print("📦 Valid JSON but not expected format: \(jsonString)")
+                                        } catch {
+                                            print("❌ Invalid JSON: \(error)")
+                                        }
                                         break
                                     }
                                 }
@@ -183,16 +226,22 @@ class FeedbackService {
             if !buffer.isEmpty, let finalString = String(data: buffer, encoding: .utf8) {
                 let trimmed = finalString.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
-                    chunkCount += 1
-                    print("📦 Final Object \(chunkCount): \(trimmed)")
+                    if let jsonData = trimmed.data(using: .utf8) {
+                        do {
+                            let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: jsonData)
+                            chunkCount += 1
+                            print("📦 Final Object \(chunkCount): \(trimmed)")
+
+                            let feedbackResponse = streamingResponse.toFeedbackResponse()
+                            onUpdate(feedbackResponse)
+                        } catch {
+                            print("⚠️ Failed to decode final JSON: \(error)")
+                        }
+                    }
                 }
             }
 
             print("✅ Streaming complete. Total objects received: \(chunkCount)")
-
-            // For now, return mock response while we handle the streaming
-            // TODO: Parse the actual streaming response into FeedbackResponse
-            return createMockFeedbackResponse()
 
         } catch {
             print("❌ Network error: \(error)")

@@ -63,22 +63,16 @@ struct SpeakView: View {
                 }
             }
         }
-        .background(
-            NavigationLink(
-                destination: FeedbackView(
-                    showFeedbackView: $showFeedbackView,
-                    selectedImage: selectedImage,
-                    audioData: recordedAudioData ?? Data(),
-                    mediaType: mediaType
-                )
-                .navigationBarHidden(true)
-                .navigationBarBackButtonHidden(true),
-                isActive: $showFeedbackView
-            ) {
-                EmptyView()
-            }
-            .hidden()
-        )
+        .navigationDestination(isPresented: $showFeedbackView) {
+            FeedbackView(
+                showFeedbackView: $showFeedbackView,
+                selectedImage: selectedImage,
+                audioData: recordedAudioData ?? Data(),
+                mediaType: mediaType
+            )
+            .navigationBarHidden(true)
+            .navigationBarBackButtonHidden(true)
+        }
     }
 
     // MARK: - Top Section

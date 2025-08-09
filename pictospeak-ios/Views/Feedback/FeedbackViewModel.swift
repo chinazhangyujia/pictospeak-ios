@@ -22,22 +22,30 @@ class FeedbackViewModel: ObservableObject {
 
         Task {
             do {
-                let response: FeedbackResponse
-
                 switch mediaType {
                 case .image:
-                    response = try await feedbackService.getFeedbackForImage(image: image, audioData: audioData)
+                    // Use streaming API for real-time updates
+                    for try await response in feedbackService.getFeedbackStreamForImage(image: image, audioData: audioData) {
+                        await MainActor.run {
+                            self.feedbackResponse = response
+                            self.isLoading = false
+                        }
+                    }
                 case .video:
                     // For video, we would need the video URL from CaptureView
                     // For now, we'll use the image method as a fallback
-                    response = try await feedbackService.getFeedbackForImage(image: image, audioData: audioData)
+                    for try await response in feedbackService.getFeedbackStreamForImage(image: image, audioData: audioData) {
+                        await MainActor.run {
+                            self.feedbackResponse = response
+                            self.isLoading = false
+                        }
+                    }
                 }
-
-                self.feedbackResponse = response
-                self.isLoading = false
             } catch {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                }
             }
         }
     }

@@ -60,12 +60,9 @@ struct CaptureView: View {
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoPicker(selectedImage: $cameraManager.selectedImage)
         }
-        .background(
-            NavigationLink(destination: SpeakView(selectedImage: cameraManager.selectedImage ?? UIImage(), mediaType: selectedMode == .photo ? .image : .video), isActive: $showingSpeakView) {
-                EmptyView()
-            }
-            .hidden()
-        )
+        .navigationDestination(isPresented: $showingSpeakView) {
+            SpeakView(selectedImage: cameraManager.selectedImage ?? UIImage(), mediaType: selectedMode == .photo ? .image : .video)
+        }
         .alert("Camera Access Required", isPresented: $cameraManager.showingPermissionAlert) {
             Button("Settings") {
                 if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
