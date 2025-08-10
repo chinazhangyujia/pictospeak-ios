@@ -132,8 +132,11 @@ struct FeedbackView: View {
             VStack(alignment: .leading, spacing: 12) {
                 if selectedTab == .mine {
                     Text(feedback.originalText)
-                        .font(.body)
-                        .lineSpacing(4)
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(Color(.label))
+                        .lineSpacing(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 } else {
                     // AI Refined text with clickable matches
                     let clickableMatches = getClickableMatches(from: feedback)
@@ -148,6 +151,7 @@ struct FeedbackView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .padding(16)
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -472,7 +476,7 @@ struct SuggestionCard: View {
                     onToggle()
                 }
             }) {
-                HStack {
+                HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
                         HighlightedSuggestionText(
                             term: suggestion.term,
@@ -482,12 +486,12 @@ struct SuggestionCard: View {
                         Text(suggestion.translation)
                             .appCardText()
                     }
-
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.caption)
                         .foregroundColor(.gray)
+                        .padding(.top, 2)
                 }
                 .padding(16)
             }
@@ -518,83 +522,74 @@ struct HighlightedSuggestionText: View {
     let refinement: String
 
     var body: some View {
-        // Create a flowing layout that wraps naturally
-        FlowLayout {
-            Text(term)
-                .appCardText()
-            Text(" → ")
-                .appCardText()
-            Text(refinement)
-                .appCardText()
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
-                .background(Color.green.opacity(0.3))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-        }
+        // Create attributed text that flows naturally
+        Text(createAttributedText())
+            .appCardText()
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func createAttributedText() -> AttributedString {
+        var attributedString = AttributedString()
+
+        // Add the term
+        var termText = AttributedString(term)
+        attributedString.append(termText)
+
+        // Add the arrow
+        var arrowText = AttributedString(" → ")
+        attributedString.append(arrowText)
+
+        // Add the highlighted refinement
+        var refinementText = AttributedString(refinement)
+        refinementText.backgroundColor = Color.green.opacity(0.3)
+
+        // Add some padding effect by adding spaces with background
+        var paddingStart = AttributedString(" ")
+        paddingStart.backgroundColor = Color.green.opacity(0.3)
+        var paddingEnd = AttributedString(" ")
+        paddingEnd.backgroundColor = Color.green.opacity(0.3)
+
+        attributedString.append(paddingStart)
+        attributedString.append(refinementText)
+        attributedString.append(paddingEnd)
+
+        return attributedString
     }
 }
 
-// Custom FlowLayout that allows natural text wrapping
-struct FlowLayout: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var currentX: CGFloat = 0
-        var currentY: CGFloat = 0
-        var maxHeight: CGFloat = 0
+// MARK: - Highlighted Key Term Text
 
-        for subview in subviews {
-            let subviewSize = subview.sizeThatFits(.unspecified)
+struct HighlightedKeyTermText: View {
+    let term: String
 
-            if currentX + subviewSize.width > width && currentX > 0 {
-                // Move to next line
-                currentY += maxHeight
-                currentX = 0
-                maxHeight = 0
-            }
-
-            currentX += subviewSize.width
-            maxHeight = max(maxHeight, subviewSize.height)
-        }
-
-        return CGSize(width: width, height: currentY + maxHeight)
+    var body: some View {
+        Text(createAttributedText())
+            .appCardText()
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
-        var currentX: CGFloat = bounds.minX
-        var currentY: CGFloat = bounds.minY
-        var lineSubviews: [(subview: LayoutSubview, size: CGSize, x: CGFloat)] = []
-        var maxHeight: CGFloat = 0
+    private func createAttributedText() -> AttributedString {
+        var attributedString = AttributedString()
 
-        for subview in subviews {
-            let subviewSize = subview.sizeThatFits(.unspecified)
+        // Add padding spaces with background
+        var paddingStart = AttributedString(" ")
+        paddingStart.backgroundColor = Color.green.opacity(0.3)
 
-            if currentX + subviewSize.width > bounds.maxX, currentX > bounds.minX {
-                // Place the current line with center alignment
-                placeLineWithCenterAlignment(lineSubviews, at: currentY, maxHeight: maxHeight)
+        // Add the highlighted term
+        var termText = AttributedString(term)
+        termText.backgroundColor = Color.green.opacity(0.3)
 
-                // Move to next line
-                currentY += maxHeight
-                currentX = bounds.minX
-                lineSubviews = []
-                maxHeight = 0
-            }
+        // Add padding spaces with background
+        var paddingEnd = AttributedString(" ")
+        paddingEnd.backgroundColor = Color.green.opacity(0.3)
 
-            lineSubviews.append((subview: subview, size: subviewSize, x: currentX))
-            currentX += subviewSize.width
-            maxHeight = max(maxHeight, subviewSize.height)
-        }
+        attributedString.append(paddingStart)
+        attributedString.append(termText)
+        attributedString.append(paddingEnd)
 
-        // Place the last line
-        if !lineSubviews.isEmpty {
-            placeLineWithCenterAlignment(lineSubviews, at: currentY, maxHeight: maxHeight)
-        }
-    }
-
-    private func placeLineWithCenterAlignment(_ lineSubviews: [(subview: LayoutSubview, size: CGSize, x: CGFloat)], at y: CGFloat, maxHeight: CGFloat) {
-        for item in lineSubviews {
-            let centerY = y + (maxHeight - item.size.height) / 2
-            item.subview.place(at: CGPoint(x: item.x, y: centerY), proposal: .unspecified)
-        }
+        return attributedString
     }
 }
 
@@ -615,12 +610,7 @@ struct KeyTermCard: View {
             }) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(keyTerm.term)
-                            .appCardText()
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.3))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        HighlightedKeyTermText(term: keyTerm.term)
 
                         Text(keyTerm.translation)
                             .appCardText()
