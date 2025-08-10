@@ -16,6 +16,15 @@ class FeedbackService {
     static let shared = FeedbackService()
     private init() {}
 
+    // MARK: - Helper Methods
+
+    private func generateRandomBearerToken() -> String {
+        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        let tokenLength = 32
+        let randomString = String((0 ..< tokenLength).map { _ in characters.randomElement()! })
+        return "Bearer \(randomString)"
+    }
+
     // MARK: - Public Methods
 
     func getFeedbackForImage(image: UIImage, audioData: Data) async throws -> FeedbackResponse {
@@ -76,6 +85,9 @@ class FeedbackService {
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
+
+        // Add Authorization header with random Bearer token
+        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
 
         // Create multipart form data
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -256,6 +268,9 @@ class FeedbackService {
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
+
+        // Add Authorization header with random Bearer token
+        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         do {
