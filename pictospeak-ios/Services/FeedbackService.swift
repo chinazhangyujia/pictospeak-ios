@@ -287,34 +287,40 @@ class FeedbackService {
 
         let suggestions = [
             Suggestion(
-                expression: "There is",
+                term: "There is",
                 refinement: "There's",
+                translation: "There is",
                 reason: "\"There's\" is a common contraction in spoken English, making the sentence sound more natural."
             ),
             Suggestion(
-                expression: "He is",
+                term: "He is",
                 refinement: "He's",
+                translation: "He is",
                 reason: "\"He's\" is a natural contraction that makes the speech flow better."
             ),
             Suggestion(
-                expression: "a little wet or something",
+                term: "a little wet or something",
                 refinement: "slightly wet",
+                translation: "a little wet or something",
                 reason: "\"Slightly wet\" is more precise and fits naturally in the context."
             ),
         ]
 
-        let keyExpressions = [
-            KeyExpression(
-                expression: "happily chasing",
-                explanation: "To pursue something with joy and enthusiasm - common phrase to describe playful behavior"
+        let keyTerms = [
+            KeyTerm(
+                term: "happily chasing",
+                translation: "To pursue something with joy and enthusiasm - common phrase to describe playful behavior",
+                example: "The dog is happily chasing the ball."
             ),
-            KeyExpression(
-                expression: "looking ahead",
-                explanation: "To focus on what's in front or plan for the future - describes forward-focused attention"
+            KeyTerm(
+                term: "looking ahead",
+                translation: "To focus on what's in front or plan for the future - describes forward-focused attention",
+                example: "The dog is looking ahead to the ball."
             ),
-            KeyExpression(
-                expression: "droplets scattering",
-                explanation: "Small drops of liquid being dispersed in different directions - vivid description of water movement"
+            KeyTerm(
+                term: "droplets scattering",
+                translation: "Small drops of liquid being dispersed in different directions - vivid description of water movement",
+                example: "The droplets are scattering around the dog."
             ),
         ]
 
@@ -322,7 +328,7 @@ class FeedbackService {
             originalText: originalText,
             refinedText: refinedText,
             suggestions: suggestions,
-            keyExpressions: keyExpressions
+            keyTerms: keyTerms
         )
     }
 }

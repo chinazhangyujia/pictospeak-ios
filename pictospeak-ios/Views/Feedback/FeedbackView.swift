@@ -9,13 +9,31 @@ import SwiftUI
 
 struct FeedbackView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = FeedbackViewModel()
+    @StateObject private var viewModel: FeedbackViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
     @Binding var showFeedbackView: Bool
 
     let selectedImage: UIImage
     let audioData: Data
     let mediaType: MediaType
+
+    // Default initializer for normal use
+    init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
+        _showFeedbackView = showFeedbackView
+        self.selectedImage = selectedImage
+        self.audioData = audioData
+        self.mediaType = mediaType
+        _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+    }
+
+    // Initializer for previews with fake data
+    init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
+        _showFeedbackView = showFeedbackView
+        self.selectedImage = selectedImage
+        self.audioData = audioData
+        self.mediaType = mediaType
+        _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
+    }
 
     enum FeedbackTab {
         case mine, aiRefined
@@ -50,11 +68,11 @@ struct FeedbackView: View {
                     }
                 } else if let feedback = viewModel.feedbackResponse {
                     ScrollView {
-                        VStack(spacing: 20) {
+                        VStack(spacing: 30) {
                             textComparisonSection(feedback)
-                            suggestionsAndKeyExpressionsSection(feedback)
+                            suggestionsAndKeyTermsSection(feedback)
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 24)
                         .padding(.top, 20)
                         .padding(.bottom, 40)
                     }
@@ -63,14 +81,17 @@ struct FeedbackView: View {
             }
         }
         .onAppear {
-            viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
+            // Only load feedback if we don't already have preview data
+            if viewModel.feedbackResponse == nil {
+                viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
+            }
         }
     }
 
     // MARK: - Text Comparison Section
 
     private func textComparisonSection(_ feedback: FeedbackResponse) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             // Tab Selector
             HStack(spacing: 0) {
                 Button(action: {
@@ -116,7 +137,6 @@ struct FeedbackView: View {
                 .font(.body)
                 .lineSpacing(4)
             }
-            .padding(20)
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -127,42 +147,27 @@ struct FeedbackView: View {
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
-    // MARK: - Suggestions and Key Expressions Section
+    // MARK: - Suggestions and Key Terms Section
 
-    private func suggestionsAndKeyExpressionsSection(_ feedback: FeedbackResponse) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            if !feedback.suggestions.isEmpty || !feedback.keyExpressions.isEmpty {
-                Text("Fixes & Key Phrases")
-                    .font(.title2)
-                    .fontWeight(.bold)
+    private func suggestionsAndKeyTermsSection(_ feedback: FeedbackResponse) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !feedback.suggestions.isEmpty || !feedback.keyTerms.isEmpty {
+                Text("Key Expressions")
+                    .appTitle()
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
             }
 
-            // Key Expressions
-            if !feedback.keyExpressions.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Key Expressions")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 20)
-
-                    ForEach(feedback.keyExpressions) { expression in
-                        KeyExpressionCard(expression: expression)
-                    }
+            // Combined section with key terms and suggestions
+            VStack(alignment: .leading, spacing: 12) {
+                // Key Terms
+                ForEach(feedback.keyTerms) { keyTerm in
+                    KeyTermCard(keyTerm: keyTerm)
                 }
-            }
 
-            // Suggestions
-            if !feedback.suggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Suggestions")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 20)
-
-                    ForEach(feedback.suggestions) { suggestion in
-                        SuggestionCard(suggestion: suggestion)
-                    }
+                // Suggestions
+                ForEach(feedback.suggestions) { suggestion in
+                    SuggestionCard(suggestion: suggestion)
                 }
             }
         }
@@ -188,8 +193,7 @@ struct FeedbackView: View {
             Spacer()
 
             Text("AI Feedback")
-                .font(.title2)
-                .fontWeight(.semibold)
+                .appTitle()
 
             Spacer()
 
@@ -280,102 +284,247 @@ struct HighlightedTextView: View {
 
 struct SuggestionCard: View {
     let suggestion: Suggestion
+    @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HighlightedSuggestionText(
-                        expression: suggestion.expression,
-                        refinement: suggestion.refinement
-                    )
-                    .font(.callout)
-                    .fontWeight(.regular)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header - always visible
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
                 }
+            }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HighlightedSuggestionText(
+                            term: suggestion.term,
+                            refinement: suggestion.refinement
+                        )
 
-                Spacer()
+                        Text(suggestion.translation)
+                            .appCardText()
+                    }
+
+                    Spacer()
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                .padding(16)
             }
+            .buttonStyle(PlainButtonStyle())
 
-            Text(suggestion.reason)
-                .font(.caption)
-                .foregroundColor(.gray)
-                .padding(.top, 4)
+            // Expanded content
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Divider()
+                        .padding(.horizontal, 16)
+
+                    Text(suggestion.reason)
+                        .appCardText(fontSize: 14)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                }
+            }
         }
-        .padding(12)
         .background(Color(.systemGray5))
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .padding(.horizontal, 20)
     }
 }
 
 // MARK: - Highlighted Suggestion Text
 
 struct HighlightedSuggestionText: View {
-    let expression: String
+    let term: String
     let refinement: String
 
     var body: some View {
-        Text(attributedString)
-    }
-
-    private var attributedString: AttributedString {
-        let fullText = "\(expression) → \(refinement)"
-
-        // Use NSAttributedString for easier range handling
-        let nsAttributedString = NSMutableAttributedString(string: fullText)
-
-        // Find the refinement part and highlight it
-        if let range = fullText.range(of: refinement, options: .caseInsensitive) {
-            let startIndex = fullText.distance(from: fullText.startIndex, to: range.lowerBound)
-            let endIndex = fullText.distance(from: fullText.startIndex, to: range.upperBound)
-
-            let nsRange = NSRange(location: startIndex, length: endIndex - startIndex)
-            nsAttributedString.addAttribute(.backgroundColor, value: UIColor.systemGreen.withAlphaComponent(0.3), range: nsRange)
-        } else {
-            // Fallback: try to highlight the part after the arrow
-            if let arrowRange = fullText.range(of: " → ") {
-                let startIndex = fullText.distance(from: fullText.startIndex, to: arrowRange.upperBound)
-                let nsRange = NSRange(location: startIndex, length: fullText.count - startIndex)
-                nsAttributedString.addAttribute(.backgroundColor, value: UIColor.systemGreen.withAlphaComponent(0.3), range: nsRange)
-            }
+        // Create a flowing layout that wraps naturally
+        FlowLayout {
+            Text(term)
+                .appCardText()
+            Text(" → ")
+                .appCardText()
+            Text(refinement)
+                .appCardText()
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.green.opacity(0.3))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
-
-        return AttributedString(nsAttributedString)
     }
 }
 
-// MARK: - Key Expression Card
+// Custom FlowLayout that allows natural text wrapping
+struct FlowLayout: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var maxHeight: CGFloat = 0
 
-struct KeyExpressionCard: View {
-    let expression: KeyExpression
+        for subview in subviews {
+            let subviewSize = subview.sizeThatFits(.unspecified)
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(expression.expression)
-                        .font(.callout)
-                        .fontWeight(.regular)
-                        .foregroundColor(.primary)
-                }
-
-                Spacer()
+            if currentX + subviewSize.width > width && currentX > 0 {
+                // Move to next line
+                currentY += maxHeight
+                currentX = 0
+                maxHeight = 0
             }
 
-            Text(expression.explanation)
-                .font(.caption)
-                .foregroundColor(.gray)
-                .padding(.top, 4)
+            currentX += subviewSize.width
+            maxHeight = max(maxHeight, subviewSize.height)
         }
-        .padding(12)
+
+        return CGSize(width: width, height: currentY + maxHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        var currentX: CGFloat = bounds.minX
+        var currentY: CGFloat = bounds.minY
+        var lineSubviews: [(subview: LayoutSubview, size: CGSize, x: CGFloat)] = []
+        var maxHeight: CGFloat = 0
+
+        for subview in subviews {
+            let subviewSize = subview.sizeThatFits(.unspecified)
+
+            if currentX + subviewSize.width > bounds.maxX, currentX > bounds.minX {
+                // Place the current line with center alignment
+                placeLineWithCenterAlignment(lineSubviews, at: currentY, maxHeight: maxHeight)
+
+                // Move to next line
+                currentY += maxHeight
+                currentX = bounds.minX
+                lineSubviews = []
+                maxHeight = 0
+            }
+
+            lineSubviews.append((subview: subview, size: subviewSize, x: currentX))
+            currentX += subviewSize.width
+            maxHeight = max(maxHeight, subviewSize.height)
+        }
+
+        // Place the last line
+        if !lineSubviews.isEmpty {
+            placeLineWithCenterAlignment(lineSubviews, at: currentY, maxHeight: maxHeight)
+        }
+    }
+
+    private func placeLineWithCenterAlignment(_ lineSubviews: [(subview: LayoutSubview, size: CGSize, x: CGFloat)], at y: CGFloat, maxHeight: CGFloat) {
+        for item in lineSubviews {
+            let centerY = y + (maxHeight - item.size.height) / 2
+            item.subview.place(at: CGPoint(x: item.x, y: centerY), proposal: .unspecified)
+        }
+    }
+}
+
+// MARK: - Key Term Card
+
+struct KeyTermCard: View {
+    let keyTerm: KeyTerm
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header - always visible
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(keyTerm.term)
+                            .appCardText()
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.3))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                        Text(keyTerm.translation)
+                            .appCardText()
+                    }
+
+                    Spacer()
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                .padding(16)
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // Expanded content
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Divider()
+                        .padding(.horizontal, 16)
+
+                    Text(keyTerm.example)
+                        .appCardText(fontSize: 14)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                }
+            }
+        }
         .background(Color(.systemGray5))
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .padding(.horizontal, 20)
     }
 }
 
 #Preview {
-    let sampleImage = UIImage(systemName: "photo") ?? UIImage()
-    let sampleAudioData = Data()
-    FeedbackView(showFeedbackView: .constant(true), selectedImage: sampleImage, audioData: sampleAudioData, mediaType: .image)
+    struct PreviewWrapper: View {
+        @State private var showFeedbackView = true
+
+        var body: some View {
+            let sampleImage = UIImage(systemName: "photo") ?? UIImage()
+            let sampleAudioData = Data()
+
+            // Create fake data for preview
+            let fakeFeedback = FeedbackResponse(
+                originalText: "The children played happily in the park.",
+                refinedText: "The children played joyfully in the park, demonstrating their carefree nature.",
+                suggestions: [
+                    Suggestion(
+                        term: "looking at the ground",
+                        refinement: "looking ahead",
+                        translation: "向前看",
+                        reason: "looking at the ground 是低头看地；looking ahead 是向前看，更符合语境。"
+                    ),
+                    Suggestion(
+                        term: "played happily",
+                        refinement: "played joyfully",
+                        translation: "愉快地玩耍",
+                        reason: "joyfully 比 happily 更生动地传达了孩子们在公园里玩耍时的开心情绪。"
+                    ),
+                ],
+                keyTerms: [
+                    KeyTerm(
+                        term: "happily",
+                        translation: "愉快地",
+                        example: "The children played happily in the park. (孩子们在公园里愉快地玩耍)"
+                    ),
+                    KeyTerm(
+                        term: "joyfully",
+                        translation: "欢快地",
+                        example: "She danced joyfully at the celebration. (她在庆祝活动中欢快地跳舞)"
+                    ),
+                ],
+                score: 85
+            )
+
+            return FeedbackView(
+                showFeedbackView: $showFeedbackView,
+                selectedImage: sampleImage,
+                audioData: sampleAudioData,
+                mediaType: .image,
+                previewData: fakeFeedback
+            )
+        }
+    }
+
+    return PreviewWrapper()
 }

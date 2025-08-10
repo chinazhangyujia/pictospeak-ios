@@ -16,6 +16,15 @@ class FeedbackViewModel: ObservableObject {
 
     private let feedbackService = FeedbackService.shared
 
+    // Initializer for previews with fake data
+    init(previewData: FeedbackResponse? = nil) {
+        if let previewData = previewData {
+            feedbackResponse = previewData
+            isLoading = false
+            errorMessage = nil
+        }
+    }
+
     func loadFeedback(image: UIImage, audioData: Data, mediaType: MediaType) {
         isLoading = true
         errorMessage = nil

@@ -13,15 +13,15 @@ struct FeedbackResponse: Codable {
     let originalText: String
     let refinedText: String
     let suggestions: [Suggestion]
-    let keyExpressions: [KeyExpression]
+    let keyTerms: [KeyTerm]
     let score: Int?
 
     // Custom initializer to handle both old and new formats
-    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyExpressions: [KeyExpression], score: Int? = nil) {
+    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil) {
         self.originalText = originalText
         self.refinedText = refinedText
         self.suggestions = suggestions
-        self.keyExpressions = keyExpressions
+        self.keyTerms = keyTerms
         self.score = score
     }
 }
@@ -43,16 +43,18 @@ struct StreamingFeedbackResponse: Codable {
     func toFeedbackResponse() -> FeedbackResponse {
         let convertedSuggestions = agentResult.suggestions.map { streamingSuggestion in
             Suggestion(
-                expression: streamingSuggestion.expression,
+                term: streamingSuggestion.term,
                 refinement: streamingSuggestion.refinement,
+                translation: streamingSuggestion.translation,
                 reason: streamingSuggestion.reason
             )
         }
 
-        let convertedKeyExpressions = agentResult.keyExpressions.map { streamingExpression in
-            KeyExpression(
-                expression: streamingExpression.expression,
-                explanation: streamingExpression.explanation
+        let convertedKeyTerms = agentResult.keyTerms.map { streamingTerm in
+            KeyTerm(
+                term: streamingTerm.term,
+                translation: streamingTerm.translation,
+                example: streamingTerm.example
             )
         }
 
@@ -60,7 +62,7 @@ struct StreamingFeedbackResponse: Codable {
             originalText: metadata.userDescription,
             refinedText: agentResult.standardDescription,
             suggestions: convertedSuggestions,
-            keyExpressions: convertedKeyExpressions,
+            keyTerms: convertedKeyTerms,
             score: agentResult.score
         )
     }
@@ -68,13 +70,13 @@ struct StreamingFeedbackResponse: Codable {
 
 struct StreamingAgentResult: Codable {
     let standardDescription: String
-    let keyExpressions: [StreamingKeyExpression]
+    let keyTerms: [StreamingKeyTerm]
     let suggestions: [StreamingSuggestion]
     let score: Int
 
     private enum CodingKeys: String, CodingKey {
         case standardDescription = "standard_description"
-        case keyExpressions = "key_expressions"
+        case keyTerms = "key_terms"
         case suggestions
         case score
     }
@@ -94,30 +96,34 @@ struct StreamingMetadata: Codable {
 
 struct Suggestion: Codable, Identifiable {
     let id = UUID()
-    let expression: String
+    let term: String
     let refinement: String
+    let translation: String
     let reason: String
 }
 
-// MARK: - Key Expression
+// MARK: - Key Term
 
-struct KeyExpression: Codable, Identifiable {
+struct KeyTerm: Codable, Identifiable {
     let id = UUID()
-    let expression: String
-    let explanation: String
+    let term: String
+    let translation: String
+    let example: String
 }
 
 // MARK: - Streaming Models
 
 struct StreamingSuggestion: Codable {
-    let expression: String
+    let term: String
     let refinement: String
+    let translation: String
     let reason: String
 }
 
-struct StreamingKeyExpression: Codable {
-    let expression: String
-    let explanation: String
+struct StreamingKeyTerm: Codable {
+    let term: String
+    let translation: String
+    let example: String
 }
 
 // MARK: - API Request Models
