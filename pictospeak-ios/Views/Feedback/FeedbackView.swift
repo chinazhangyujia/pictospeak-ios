@@ -12,6 +12,7 @@ struct FeedbackView: View {
     @StateObject private var viewModel: FeedbackViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
     @Binding var showFeedbackView: Bool
+    @State private var expandedCards: Set<UUID> = []
 
     let selectedImage: UIImage
     let audioData: Data
@@ -67,16 +68,18 @@ struct FeedbackView: View {
                             .padding(.horizontal)
                     }
                 } else if let feedback = viewModel.feedbackResponse {
-                    ScrollView {
-                        VStack(spacing: 30) {
-                            textComparisonSection(feedback)
-                            suggestionsAndKeyTermsSection(feedback)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 30) {
+                                textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
+                                suggestionsAndKeyTermsSection(feedback)
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
+                            .padding(.bottom, 40)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 20)
-                        .padding(.bottom, 40)
+                        .background(Color(.systemGray6))
                     }
-                    .background(Color(.systemGray6))
                 }
             }
         }
@@ -90,7 +93,7 @@ struct FeedbackView: View {
 
     // MARK: - Text Comparison Section
 
-    private func textComparisonSection(_ feedback: FeedbackResponse) -> some View {
+    private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
         VStack(spacing: 20) {
             // Tab Selector
             HStack(spacing: 0) {
@@ -127,15 +130,23 @@ struct FeedbackView: View {
 
             // Text Content
             VStack(alignment: .leading, spacing: 12) {
-                let displayText = selectedTab == .mine ? feedback.originalText : feedback.refinedText
-                let highlightedRanges = selectedTab == .mine ? [] : getHighlightedRanges(from: feedback)
+                if selectedTab == .mine {
+                    Text(feedback.originalText)
+                        .font(.body)
+                        .lineSpacing(4)
+                } else {
+                    // AI Refined text with clickable matches
+                    let clickableMatches = getClickableMatches(from: feedback)
 
-                HighlightedTextView(
-                    text: displayText,
-                    highlightedRanges: highlightedRanges
-                )
-                .font(.body)
-                .lineSpacing(4)
+                    ClickableHighlightedTextView(
+                        text: feedback.refinedText,
+                        clickableMatches: clickableMatches
+                    ) { match in
+                        handleTextTap(match: match, scrollProxy: scrollProxy)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -162,12 +173,34 @@ struct FeedbackView: View {
             VStack(alignment: .leading, spacing: 12) {
                 // Key Terms
                 ForEach(feedback.keyTerms) { keyTerm in
-                    KeyTermCard(keyTerm: keyTerm)
+                    KeyTermCard(
+                        keyTerm: keyTerm,
+                        isExpanded: expandedCards.contains(keyTerm.id),
+                        onToggle: {
+                            if expandedCards.contains(keyTerm.id) {
+                                expandedCards.remove(keyTerm.id)
+                            } else {
+                                expandedCards.insert(keyTerm.id)
+                            }
+                        }
+                    )
+                    .id(keyTerm.id)
                 }
 
                 // Suggestions
                 ForEach(feedback.suggestions) { suggestion in
-                    SuggestionCard(suggestion: suggestion)
+                    SuggestionCard(
+                        suggestion: suggestion,
+                        isExpanded: expandedCards.contains(suggestion.id),
+                        onToggle: {
+                            if expandedCards.contains(suggestion.id) {
+                                expandedCards.remove(suggestion.id)
+                            } else {
+                                expandedCards.insert(suggestion.id)
+                            }
+                        }
+                    )
+                    .id(suggestion.id)
                 }
             }
         }
@@ -217,65 +250,209 @@ struct FeedbackView: View {
 
     // MARK: - Helper Methods
 
-    private func getHighlightedRanges(from feedback: FeedbackResponse) -> [TextRange] {
-        var ranges: [TextRange] = []
+    private func getClickableMatches(from feedback: FeedbackResponse) -> [ClickableTextMatch] {
+        var matches: [ClickableTextMatch] = []
+        let refinedText = feedback.refinedText
+        let nsString = NSString(string: refinedText)
 
-        // Add ranges for refinements (highlighted in green)
-        for suggestion in feedback.suggestions {
-            // Find the refinement in the refined text and highlight it
-            if let range = feedback.refinedText.range(of: suggestion.refinement) {
-                let startIndex = feedback.refinedText.distance(from: feedback.refinedText.startIndex, to: range.lowerBound)
-                let endIndex = feedback.refinedText.distance(from: feedback.refinedText.startIndex, to: range.upperBound)
-                ranges.append(TextRange(startIndex: startIndex, endIndex: endIndex, color: .green))
+        // Find key term matches
+        for keyTerm in feedback.keyTerms {
+            let termText = keyTerm.term
+            var searchRange = NSRange(location: 0, length: nsString.length)
+
+            while searchRange.location < nsString.length {
+                let foundRange = nsString.range(of: termText, options: [.caseInsensitive], range: searchRange)
+                if foundRange.location != NSNotFound {
+                    matches.append(ClickableTextMatch(
+                        range: foundRange,
+                        text: termText,
+                        cardType: .keyTerm,
+                        cardId: keyTerm.id
+                    ))
+
+                    // Move search range past this match
+                    searchRange.location = foundRange.location + foundRange.length
+                    searchRange.length = nsString.length - searchRange.location
+                } else {
+                    break
+                }
             }
         }
 
-        return ranges
+        // Find refinement matches
+        for suggestion in feedback.suggestions {
+            let refinementText = suggestion.refinement
+            var searchRange = NSRange(location: 0, length: nsString.length)
+
+            while searchRange.location < nsString.length {
+                let foundRange = nsString.range(of: refinementText, options: [.caseInsensitive], range: searchRange)
+                if foundRange.location != NSNotFound {
+                    matches.append(ClickableTextMatch(
+                        range: foundRange,
+                        text: refinementText,
+                        cardType: .suggestion,
+                        cardId: suggestion.id
+                    ))
+
+                    // Move search range past this match
+                    searchRange.location = foundRange.location + foundRange.length
+                    searchRange.length = nsString.length - searchRange.location
+                } else {
+                    break
+                }
+            }
+        }
+
+        // Sort matches by their position in the text to handle overlaps properly
+        return matches.sorted { $0.range.location < $1.range.location }
+    }
+
+    private func handleTextTap(match: ClickableTextMatch, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+        // Expand the corresponding card
+        expandedCards.insert(match.cardId)
+
+        // Scroll to the card with animation
+        withAnimation(.easeInOut(duration: 0.5)) {
+            scrollProxy(match.cardId, UnitPoint.center)
+        }
     }
 }
 
-// MARK: - Highlighted Text View
+// MARK: - Self-Sizing Text View
 
-struct HighlightedTextView: View {
-    let text: String
-    let highlightedRanges: [TextRange]
-
-    var body: some View {
-        Text(attributedString)
+class SelfSizingTextView: UITextView {
+    override var intrinsicContentSize: CGSize {
+        let size = sizeThatFits(CGSize(width: bounds.width, height: CGFloat.greatestFiniteMagnitude))
+        return CGSize(width: UIView.noIntrinsicMetric, height: size.height)
     }
 
-    private var attributedString: AttributedString {
-        // Start with NSAttributedString for easier range handling
-        let nsAttributedString = NSMutableAttributedString(string: text)
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        invalidateIntrinsicContentSize()
+    }
+}
 
-        for range in highlightedRanges {
-            // Ensure the range is within bounds
-            guard range.startIndex >= 0 &&
-                range.endIndex <= text.count &&
-                range.startIndex < range.endIndex
-            else {
-                continue
-            }
+// MARK: - Clickable Highlighted Text View
 
-            // Add background color attribute
-            let nsRange = NSRange(location: range.startIndex, length: range.endIndex - range.startIndex)
-            nsAttributedString.addAttribute(.backgroundColor, value: colorFor(range.color), range: nsRange)
+struct ClickableHighlightedTextView: UIViewRepresentable {
+    let text: String
+    let clickableMatches: [ClickableTextMatch]
+    let onTap: (ClickableTextMatch) -> Void
+
+    func makeUIView(context: Context) -> UITextView {
+        let textView = SelfSizingTextView()
+        textView.isEditable = false
+        textView.isScrollEnabled = false
+        textView.backgroundColor = UIColor.clear
+        textView.font = UIFont.systemFont(ofSize: 17, weight: .regular)
+        textView.textContainerInset = UIEdgeInsets.zero
+        textView.textContainer.lineFragmentPadding = 0
+        textView.delegate = context.coordinator
+
+        // Set proper text container constraints
+        textView.textContainer.widthTracksTextView = true
+        textView.textContainer.maximumNumberOfLines = 0
+        textView.textContainer.lineBreakMode = .byWordWrapping
+
+        // Ensure the text view doesn't expand beyond its container
+        textView.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        // Add tap gesture recognizer
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleTap(_:)))
+        textView.addGestureRecognizer(tapGesture)
+        context.coordinator.textView = textView
+
+        return textView
+    }
+
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        let attributedString = createAttributedString()
+        uiView.attributedText = attributedString
+
+        // Store matches in coordinator for tap handling
+        context.coordinator.clickableMatches = clickableMatches
+        context.coordinator.onTap = onTap
+
+        // Update intrinsic content size after setting text
+        uiView.invalidateIntrinsicContentSize()
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    private func createAttributedString() -> NSAttributedString {
+        let attributedString = NSMutableAttributedString(string: text)
+
+        // Set base attributes
+        let baseAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 17, weight: .regular),
+            .foregroundColor: UIColor.label,
+        ]
+        attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: text.count))
+
+        // Add styling for clickable matches
+        for match in clickableMatches {
+            let range = match.range
+
+            // Add underline with vertical gap
+            attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+            attributedString.addAttribute(.underlineColor, value: UIColor.systemGreen, range: range)
+
+            // Add small vertical gap between text and underline
+            attributedString.addAttribute(.baselineOffset, value: 2, range: range)
+
+            // Make it look clickable
+            attributedString.addAttribute(.foregroundColor, value: UIColor.systemGreen, range: range)
         }
 
-        // Convert to AttributedString
-        return AttributedString(nsAttributedString)
+        return attributedString
     }
 
-    private func colorFor(_ color: HighlightColor) -> Color {
-        switch color {
-        case .purple:
-            return Color.purple.opacity(0.3)
-        case .blue:
-            return Color.blue.opacity(0.3)
-        case .green:
-            return Color.green.opacity(0.3)
-        case .orange:
-            return Color.orange.opacity(0.3)
+    class Coordinator: NSObject, UITextViewDelegate {
+        var clickableMatches: [ClickableTextMatch] = []
+        var onTap: ((ClickableTextMatch) -> Void)?
+        weak var textView: UITextView?
+
+        // iOS 17+ text item delegate methods
+        @available(iOS 17.0, *)
+        func textView(_: UITextView, primaryActionFor _: UITextItem, defaultAction _: UIAction) -> UIAction? {
+            return nil
+        }
+
+        @available(iOS 17.0, *)
+        func textView(_: UITextView, menuConfigurationFor _: UITextItem, defaultMenu _: UIMenu) -> UITextItem.MenuConfiguration? {
+            return nil
+        }
+
+        // Fallback for older iOS versions
+        func textView(_: UITextView, shouldInteractWith _: URL, in _: NSRange) -> Bool {
+            return false
+        }
+
+        @objc func textViewDidChangeSelection(_ textView: UITextView) {
+            // Prevent text selection - we want taps instead
+            textView.selectedTextRange = nil
+        }
+
+        func textView(_: UITextView, shouldChangeTextIn _: NSRange, replacementText _: String) -> Bool {
+            return false
+        }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let textView = textView else { return }
+
+            let location = gesture.location(in: textView)
+            let characterIndex = textView.layoutManager.characterIndex(for: location, in: textView.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
+
+            // Find if the tap is within any clickable match
+            for match in clickableMatches {
+                if NSLocationInRange(characterIndex, match.range) {
+                    onTap?(match)
+                    break
+                }
+            }
         }
     }
 }
@@ -284,14 +461,15 @@ struct HighlightedTextView: View {
 
 struct SuggestionCard: View {
     let suggestion: Suggestion
-    @State private var isExpanded = false
+    let isExpanded: Bool
+    let onToggle: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header - always visible
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    isExpanded.toggle()
+                    onToggle()
                 }
             }) {
                 HStack {
@@ -424,14 +602,15 @@ struct FlowLayout: Layout {
 
 struct KeyTermCard: View {
     let keyTerm: KeyTerm
-    @State private var isExpanded = false
+    let isExpanded: Bool
+    let onToggle: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header - always visible
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    isExpanded.toggle()
+                    onToggle()
                 }
             }) {
                 HStack {
@@ -489,12 +668,6 @@ struct KeyTermCard: View {
                 refinedText: "The children played joyfully in the park, demonstrating their carefree nature.",
                 suggestions: [
                     Suggestion(
-                        term: "looking at the ground",
-                        refinement: "looking ahead",
-                        translation: "向前看",
-                        reason: "looking at the ground 是低头看地；looking ahead 是向前看，更符合语境。"
-                    ),
-                    Suggestion(
                         term: "played happily",
                         refinement: "played joyfully",
                         translation: "愉快地玩耍",
@@ -503,14 +676,14 @@ struct KeyTermCard: View {
                 ],
                 keyTerms: [
                     KeyTerm(
-                        term: "happily",
-                        translation: "愉快地",
-                        example: "The children played happily in the park. (孩子们在公园里愉快地玩耍)"
-                    ),
-                    KeyTerm(
                         term: "joyfully",
                         translation: "欢快地",
                         example: "She danced joyfully at the celebration. (她在庆祝活动中欢快地跳舞)"
+                    ),
+                    KeyTerm(
+                        term: "carefree",
+                        translation: "无忧无虑的",
+                        example: "The carefree nature of childhood is precious. (童年无忧无虑的天性是珍贵的)"
                     ),
                 ],
                 score: 85

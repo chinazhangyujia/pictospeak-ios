@@ -139,18 +139,3 @@ enum MediaType: String, Codable {
     case image
     case video
 }
-
-// MARK: - Text Range for Highlighting
-
-struct TextRange: Codable {
-    let startIndex: Int
-    let endIndex: Int
-    let color: HighlightColor
-}
-
-enum HighlightColor: String, Codable {
-    case purple
-    case blue
-    case green
-    case orange
-}
