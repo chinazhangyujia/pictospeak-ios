@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    @StateObject private var sessionsViewModel = PastSessionsViewModel()
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -26,6 +28,24 @@ struct HomeView: View {
             }
             .background(Color(.systemBackground))
             .navigationBarHidden(true)
+        }
+        .task {
+            await sessionsViewModel.loadInitialSessions()
+        }
+        .refreshable {
+            await sessionsViewModel.refreshSessions()
+        }
+        .alert("Error Loading Sessions", isPresented: .constant(sessionsViewModel.errorMessage != nil)) {
+            Button("OK") {
+                sessionsViewModel.clearError()
+            }
+            Button("Retry") {
+                Task {
+                    await sessionsViewModel.loadInitialSessions()
+                }
+            }
+        } message: {
+            Text(sessionsViewModel.errorMessage ?? "")
         }
     }
 
@@ -124,9 +144,35 @@ struct HomeView: View {
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(sampleSessions, id: \.id) { session in
-                        SessionCard(session: session)
+                LazyHStack(spacing: 16) {
+                    ForEach(Array(sessionsViewModel.displaySessions.prefix(10))) { displaySession in
+                        SessionCard(session: displaySession)
+                            .onTapGesture {
+                                // Handle session tap - could navigate to detail view
+                                print("Tapped session: \(displaySession.id)")
+                            }
+                    }
+
+                    // Show loading indicator if there are more sessions to load
+                    if sessionsViewModel.hasMorePages && !sessionsViewModel.isLoading {
+                        Button(action: {
+                            Task {
+                                await sessionsViewModel.loadMoreSessions()
+                            }
+                        }) {
+                            VStack(spacing: 8) {
+                                Image(systemName: "plus.circle")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.blue)
+
+                                Text("Load More")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                            .frame(width: 140, height: 80)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
                     }
                 }
                 .padding(.horizontal, 4)
@@ -138,15 +184,25 @@ struct HomeView: View {
 // MARK: - Session Card
 
 struct SessionCard: View {
-    let session: Session
+    let session: SessionDisplayItem
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Placeholder for image/thumbnail
-            Rectangle()
-                .fill(Color(.systemGray4))
-                .frame(width: 140, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            // AsyncImage for loading actual session image
+            AsyncImage(url: URL(string: session.imageUrl)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Rectangle()
+                    .fill(Color(.systemGray4))
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.secondary)
+                    )
+            }
+            .frame(width: 140, height: 80)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.title)
@@ -155,38 +211,34 @@ struct SessionCard: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
 
-                Text(session.message)
+                Text(session.userDescription)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
                     .frame(height: 32, alignment: .top)
 
-                Text(session.timeAgo)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 8) {
+                    // Key terms count
+                    if session.keyTermsCount > 0 {
+                        Label("\(session.keyTermsCount)", systemImage: "book.fill")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+
+                    // Suggestions count
+                    if session.suggestionsCount > 0 {
+                        Label("\(session.suggestionsCount)", systemImage: "lightbulb.fill")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+
+                    Spacer()
+                }
             }
         }
         .frame(width: 140)
     }
 }
-
-// MARK: - Session Model
-
-struct Session {
-    let id = UUID()
-    let title: String
-    let message: String
-    let timeAgo: String
-}
-
-// MARK: - Sample Data
-
-private let sampleSessions = [
-    Session(title: "Coffee Shop", message: "Can I have a coffee? Can I have a coffee? Can I have a coffee?", timeAgo: "Yesterday"),
-    Session(title: "Grocery Shopping", message: "Where is the milk?", timeAgo: "2 days ago"),
-    Session(title: "Hospital", message: "I have an appointment", timeAgo: "3 days ago"),
-    Session(title: "Restaurant", message: "What's on the menu?", timeAgo: "1 week ago"),
-]
 
 #Preview {
     HomeView()
