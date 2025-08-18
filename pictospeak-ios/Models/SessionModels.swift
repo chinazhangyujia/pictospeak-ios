@@ -20,60 +20,33 @@ struct PaginatedSessionResponse: Codable {
 }
 
 struct SessionItem: Codable, Identifiable {
-    let descriptionGuidance: DescriptionGuidance
-    let keyTerms: [SessionKeyTerm]
-    let suggestions: [SessionSuggestion]
+    let descriptionTeaching: DescriptionTeaching
+    let keyTerms: [KeyTerm]
+    let suggestions: [Suggestion]
     let materialUrl: String
 
     private enum CodingKeys: String, CodingKey {
-        case descriptionGuidance = "description_guidance"
+        case descriptionTeaching = "description_teaching"
         case keyTerms = "key_terms"
         case suggestions
         case materialUrl = "material_url"
     }
 
     // Computed property for SwiftUI Identifiable
-    var id: String {
-        return descriptionGuidance.id
+    var id: UUID {
+        return descriptionTeaching.id ?? UUID()
     }
 
     // Convenience computed properties
     var userDescription: String {
-        return descriptionGuidance.userDescription
+        return descriptionTeaching.userDescription
     }
 
     var standardDescription: String {
-        return descriptionGuidance.standardDescription
+        return descriptionTeaching.standardDescription
     }
 
-    var sessionId: String {
-        return descriptionGuidance.id
+    var sessionId: UUID {
+        return descriptionTeaching.id ?? UUID()
     }
-}
-
-struct DescriptionGuidance: Codable {
-    let id: String
-    let userDescription: String
-    let standardDescription: String
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case userDescription = "user_description"
-        case standardDescription = "standard_description"
-    }
-}
-
-struct SessionKeyTerm: Codable, Identifiable {
-    let id: String
-    let term: String
-    let translation: String
-    let example: String
-}
-
-struct SessionSuggestion: Codable, Identifiable {
-    let id: String
-    let term: String
-    let refinement: String
-    let translation: String
-    let reason: String
 }

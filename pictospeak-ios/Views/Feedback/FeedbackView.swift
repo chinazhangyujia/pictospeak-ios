@@ -145,7 +145,7 @@ struct FeedbackView: View {
                         text: feedback.refinedText,
                         clickableMatches: clickableMatches
                     ) { match in
-                        handleTextTap(match: match, scrollProxy: scrollProxy)
+                        handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -259,50 +259,58 @@ struct FeedbackView: View {
         let refinedText = feedback.refinedText
         let nsString = NSString(string: refinedText)
 
-        // Find key term matches
-        for keyTerm in feedback.keyTerms {
-            let termText = keyTerm.term
-            var searchRange = NSRange(location: 0, length: nsString.length)
+        // Only use chosen key terms for highlighting
+        if let chosenKeyTerms = feedback.chosenKeyTerms {
+            for chosenTerm in chosenKeyTerms {
+                var searchRange = NSRange(location: 0, length: nsString.length)
 
-            while searchRange.location < nsString.length {
-                let foundRange = nsString.range(of: termText, options: [.caseInsensitive], range: searchRange)
-                if foundRange.location != NSNotFound {
-                    matches.append(ClickableTextMatch(
-                        range: foundRange,
-                        text: termText,
-                        cardType: .keyTerm,
-                        cardId: keyTerm.id
-                    ))
+                while searchRange.location < nsString.length {
+                    let foundRange = nsString.range(of: chosenTerm, options: [.caseInsensitive], range: searchRange)
+                    if foundRange.location != NSNotFound {
+                        // Find the corresponding keyTerm to get its ID
+                        if let keyTerm = feedback.keyTerms.first(where: { $0.term == chosenTerm }) {
+                            matches.append(ClickableTextMatch(
+                                range: foundRange,
+                                text: chosenTerm,
+                                cardType: .keyTerm,
+                                cardId: keyTerm.id
+                            ))
+                        }
 
-                    // Move search range past this match
-                    searchRange.location = foundRange.location + foundRange.length
-                    searchRange.length = nsString.length - searchRange.location
-                } else {
-                    break
+                        // Move search range past this match
+                        searchRange.location = foundRange.location + foundRange.length
+                        searchRange.length = nsString.length - searchRange.location
+                    } else {
+                        break
+                    }
                 }
             }
         }
 
-        // Find refinement matches
-        for suggestion in feedback.suggestions {
-            let refinementText = suggestion.refinement
-            var searchRange = NSRange(location: 0, length: nsString.length)
+        // Only use chosen refinements for highlighting
+        if let chosenRefinements = feedback.chosenRefinements {
+            for chosenRefinement in chosenRefinements {
+                var searchRange = NSRange(location: 0, length: nsString.length)
 
-            while searchRange.location < nsString.length {
-                let foundRange = nsString.range(of: refinementText, options: [.caseInsensitive], range: searchRange)
-                if foundRange.location != NSNotFound {
-                    matches.append(ClickableTextMatch(
-                        range: foundRange,
-                        text: refinementText,
-                        cardType: .suggestion,
-                        cardId: suggestion.id
-                    ))
+                while searchRange.location < nsString.length {
+                    let foundRange = nsString.range(of: chosenRefinement, options: [.caseInsensitive], range: searchRange)
+                    if foundRange.location != NSNotFound {
+                        // Find the corresponding suggestion to get its ID
+                        if let suggestion = feedback.suggestions.first(where: { $0.refinement == chosenRefinement }) {
+                            matches.append(ClickableTextMatch(
+                                range: foundRange,
+                                text: chosenRefinement,
+                                cardType: .suggestion,
+                                cardId: suggestion.id
+                            ))
+                        }
 
-                    // Move search range past this match
-                    searchRange.location = foundRange.location + foundRange.length
-                    searchRange.length = nsString.length - searchRange.location
-                } else {
-                    break
+                        // Move search range past this match
+                        searchRange.location = foundRange.location + foundRange.length
+                        searchRange.length = nsString.length - searchRange.location
+                    } else {
+                        break
+                    }
                 }
             }
         }
@@ -311,7 +319,21 @@ struct FeedbackView: View {
         return matches.sorted { $0.range.location < $1.range.location }
     }
 
-    private func handleTextTap(match: ClickableTextMatch, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+    private func handleTextTap(match: ClickableTextMatch, feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+        // Verify that the corresponding card actually exists
+        let cardExists: Bool
+        switch match.cardType {
+        case .keyTerm:
+            cardExists = feedback.keyTerms.contains { $0.id == match.cardId }
+        case .suggestion:
+            cardExists = feedback.suggestions.contains { $0.id == match.cardId }
+        }
+
+        // Only respond if the card exists
+        guard cardExists else {
+            return
+        }
+
         // Expand the corresponding card
         expandedCards.insert(match.cardId)
 

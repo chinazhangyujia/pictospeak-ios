@@ -211,7 +211,7 @@ struct SessionCard: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
 
-                Text(session.userDescription)
+                Text(session.standardDescription)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(2)

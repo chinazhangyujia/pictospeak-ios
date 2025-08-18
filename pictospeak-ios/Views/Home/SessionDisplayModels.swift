@@ -11,7 +11,7 @@ import Foundation
 
 /// A simplified model for displaying sessions in lists/cards
 struct SessionDisplayItem: Identifiable {
-    let id: String
+    let id: UUID
     let title: String
     let userDescription: String
     let standardDescription: String
@@ -22,7 +22,7 @@ struct SessionDisplayItem: Identifiable {
 
     init(from sessionItem: SessionItem) {
         id = sessionItem.id
-        title = String(sessionItem.userDescription.prefix(50))
+        title = String(sessionItem.standardDescription.prefix(50))
         userDescription = sessionItem.userDescription
         standardDescription = sessionItem.standardDescription
         imageUrl = sessionItem.materialUrl
