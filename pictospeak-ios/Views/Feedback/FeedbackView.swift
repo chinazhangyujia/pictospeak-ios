@@ -141,14 +141,21 @@ struct FeedbackView: View {
                     // AI Refined text with clickable matches
                     let clickableMatches = getClickableMatches(from: feedback)
 
-                    ClickableHighlightedTextView(
-                        text: feedback.refinedText,
-                        clickableMatches: clickableMatches
-                    ) { match in
-                        handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                    HStack(alignment: .top, spacing: 2) {
+                        // Speaker icon at the beginning of the text block
+                        if let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
+                            AudioPlayerButton(audioUrl: pronunciationUrl)
+                        }
+
+                        ClickableHighlightedTextView(
+                            text: feedback.refinedText,
+                            clickableMatches: clickableMatches
+                        ) { match in
+                            handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(16)
@@ -698,7 +705,10 @@ struct KeyTermCard: View {
                         example: "The carefree nature of childhood is precious. (童年无忧无虑的天性是珍贵的)"
                     ),
                 ],
-                score: 85
+                score: 85,
+                chosenKeyTerms: ["joyfully", "carefree"],
+                chosenRefinements: ["joyfully", "carefree"],
+                pronunciationUrl: "https://example.com/pronunciation.mp3"
             )
 
             return FeedbackView(

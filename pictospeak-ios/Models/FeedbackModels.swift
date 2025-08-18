@@ -17,9 +17,10 @@ struct FeedbackResponse: Codable {
     let score: Int?
     let chosenKeyTerms: [String]?
     let chosenRefinements: [String]?
+    let pronunciationUrl: String?
 
     // Custom initializer to handle both old and new formats
-    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil) {
+    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, pronunciationUrl: String? = nil) {
         self.originalText = originalText
         self.refinedText = refinedText
         self.suggestions = suggestions
@@ -27,6 +28,7 @@ struct FeedbackResponse: Codable {
         self.score = score
         self.chosenKeyTerms = chosenKeyTerms
         self.chosenRefinements = chosenRefinements
+        self.pronunciationUrl = pronunciationUrl
     }
 }
 
@@ -56,7 +58,8 @@ struct StreamingFeedbackResponse: Codable {
             keyTerms: keyTerms,
             score: nil,
             chosenKeyTerms: metadata.chosenKeyTerms,
-            chosenRefinements: metadata.chosenRefinements
+            chosenRefinements: metadata.chosenRefinements,
+            pronunciationUrl: descriptionTeaching.standardDescriptionPronunciationUrl
         )
     }
 }
@@ -64,11 +67,13 @@ struct StreamingFeedbackResponse: Codable {
 struct DescriptionTeaching: Codable {
     let userDescription: String
     let standardDescription: String
+    let standardDescriptionPronunciationUrl: String?
     let id: UUID?
 
     private enum CodingKeys: String, CodingKey {
         case userDescription = "user_description"
         case standardDescription = "standard_description"
+        case standardDescriptionPronunciationUrl = "standard_description_pronunciation_url"
         case id
     }
 }
