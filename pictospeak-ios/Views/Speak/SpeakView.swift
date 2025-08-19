@@ -176,20 +176,11 @@ struct SpeakView: View {
             try audioSession.setActive(true)
 
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let audioFilename = documentsPath.appendingPathComponent("recording.wav")
+            let audioFilename = documentsPath.appendingPathComponent("recording.m4a")
             recordingURL = audioFilename
 
-            let settings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatLinearPCM),
-                AVSampleRateKey: 12000,
-                AVNumberOfChannelsKey: 1,
-                AVLinearPCMBitDepthKey: 16,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsFloatKey: false,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-            ]
-
-            audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
+            // Use default settings for simplest recording
+            audioRecorder = try AVAudioRecorder(url: audioFilename, settings: [:])
             audioRecorder?.prepareToRecord()
 
         } catch {

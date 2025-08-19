@@ -507,27 +507,35 @@ struct SuggestionCard: View {
             }) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
+                        // Show term -> refinement when expanded, only refinement when collapsed
                         HighlightedSuggestionText(
-                            term: suggestion.term,
+                            term: isExpanded ? suggestion.term : nil,
                             refinement: suggestion.refinement
                         )
 
-                        Text(suggestion.translation)
-                            .appCardText()
+                        // Only show translation if we have it (not empty)
+                        if !suggestion.translation.isEmpty {
+                            Text(suggestion.translation)
+                                .appCardText()
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .padding(.top, 2)
+                    // Only show chevron if card can be expanded
+                    if !suggestion.term.isEmpty && !suggestion.reason.isEmpty {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.top, 2)
+                    }
                 }
                 .padding(16)
             }
             .buttonStyle(PlainButtonStyle())
+            .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty) // Disable if no full data
 
             // Expanded content
-            if isExpanded {
+            if isExpanded && !suggestion.reason.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Divider()
                         .padding(.horizontal, 16)
@@ -547,7 +555,7 @@ struct SuggestionCard: View {
 // MARK: - Highlighted Suggestion Text
 
 struct HighlightedSuggestionText: View {
-    let term: String
+    let term: String?
     let refinement: String
 
     var body: some View {
@@ -561,13 +569,16 @@ struct HighlightedSuggestionText: View {
     private func createAttributedText() -> AttributedString {
         var attributedString = AttributedString()
 
-        // Add the term
-        var termText = AttributedString(term)
-        attributedString.append(termText)
+        // If we have a term, show "term → refinement"
+        if let term = term, !term.isEmpty {
+            // Add the term
+            var termText = AttributedString(term)
+            attributedString.append(termText)
 
-        // Add the arrow
-        var arrowText = AttributedString(" → ")
-        attributedString.append(arrowText)
+            // Add the arrow
+            var arrowText = AttributedString(" → ")
+            attributedString.append(arrowText)
+        }
 
         // Add the highlighted refinement
         var refinementText = AttributedString(refinement)
