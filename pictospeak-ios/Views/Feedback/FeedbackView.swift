@@ -14,13 +14,18 @@ struct FeedbackView: View {
     @Binding var showFeedbackView: Bool
     @State private var expandedCards: Set<UUID> = []
 
-    let selectedImage: UIImage
-    let audioData: Data
-    let mediaType: MediaType
+    // For session viewing mode
+    let session: SessionDisplayItem?
+
+    // For normal feedback mode
+    let selectedImage: UIImage?
+    let audioData: Data?
+    let mediaType: MediaType?
 
     // Default initializer for normal use
     init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
         _showFeedbackView = showFeedbackView
+        session = nil
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
@@ -30,10 +35,21 @@ struct FeedbackView: View {
     // Initializer for previews with fake data
     init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
         _showFeedbackView = showFeedbackView
+        session = nil
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
+    }
+
+    // New initializer for session viewing
+    init(showFeedbackView: Binding<Bool>, session: SessionDisplayItem) {
+        _showFeedbackView = showFeedbackView
+        self.session = session
+        selectedImage = nil
+        audioData = nil
+        mediaType = nil
+        _viewModel = StateObject(wrappedValue: FeedbackViewModel())
     }
 
     enum FeedbackTab {
@@ -49,30 +65,13 @@ struct FeedbackView: View {
                 Color(.systemGray6)
                     .ignoresSafeArea()
 
-                if viewModel.isLoading {
-                    ProgressView("Loading feedback...")
-                        .font(.title2)
-                        .foregroundColor(.gray)
-                } else if let error = viewModel.errorMessage {
-                    VStack {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 50))
-                            .foregroundColor(.orange)
-                        Text("Error")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Text(error)
-                            .font(.body)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-                } else if let feedback = viewModel.feedbackResponse {
+                if let session = session {
+                    // Session viewing mode - show session data directly
                     ScrollViewReader { proxy in
                         ScrollView {
                             VStack(spacing: 30) {
-                                textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
-                                suggestionsAndKeyTermsSection(feedback)
+                                textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
+                                suggestionsAndKeyTermsSectionForSession(session)
                             }
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
@@ -80,15 +79,51 @@ struct FeedbackView: View {
                         }
                         .background(Color(.systemGray6))
                     }
+                } else {
+                    // Normal feedback mode - show loading/error/content
+                    if viewModel.isLoading {
+                        ProgressView("Loading feedback...")
+                            .font(.title2)
+                            .foregroundColor(.gray)
+                    } else if let error = viewModel.errorMessage {
+                        VStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 50))
+                                .foregroundColor(.orange)
+                            Text("Error")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            Text(error)
+                                .font(.body)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                    } else if let feedback = viewModel.feedbackResponse {
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                VStack(spacing: 30) {
+                                    textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
+                                    suggestionsAndKeyTermsSection(feedback)
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 20)
+                                .padding(.bottom, 40)
+                            }
+                            .background(Color(.systemGray6))
+                        }
+                    }
                 }
             }
         }
         .onAppear {
-            // Only load feedback if we don't already have preview data
-            if viewModel.feedbackResponse == nil {
+            // Only load feedback if we don't already have preview data and we're in normal mode
+            if session == nil && viewModel.feedbackResponse == nil {
+                guard let selectedImage = selectedImage, let audioData = audioData, let mediaType = mediaType else { return }
                 viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
             }
         }
+        .navigationBarHidden(true)
     }
 
     // MARK: - Text Comparison Section
@@ -200,6 +235,125 @@ struct FeedbackView: View {
 
                 // Suggestions
                 ForEach(feedback.suggestions) { suggestion in
+                    SuggestionCard(
+                        suggestion: suggestion,
+                        isExpanded: expandedCards.contains(suggestion.id),
+                        onToggle: {
+                            if expandedCards.contains(suggestion.id) {
+                                expandedCards.remove(suggestion.id)
+                            } else {
+                                expandedCards.insert(suggestion.id)
+                            }
+                        }
+                    )
+                    .id(suggestion.id)
+                }
+            }
+        }
+    }
+
+    // MARK: - Session Viewing Mode Methods
+
+    private func textComparisonSectionForSession(_ session: SessionDisplayItem, scrollProxy _: @escaping (UUID, UnitPoint?) -> Void) -> some View {
+        VStack(spacing: 20) {
+            // Tab Selector
+            HStack(spacing: 0) {
+                Button(action: {
+                    selectedTab = .mine
+                }) {
+                    Text("Mine")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(selectedTab == .mine ? .primary : .gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            selectedTab == .mine ? Color(.systemGray5) : Color.clear
+                        )
+                }
+
+                Button(action: {
+                    selectedTab = .aiRefined
+                }) {
+                    Text("AI Refined")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            selectedTab == .aiRefined ? Color(.systemGray5) : Color.clear
+                        )
+                }
+            }
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            // Text Content
+            VStack(alignment: .leading, spacing: 12) {
+                if selectedTab == .mine {
+                    Text(session.userDescription)
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(Color(.label))
+                        .lineSpacing(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    // AI Refined text with pronunciation button if available
+                    HStack(alignment: .top, spacing: 8) {
+                        if let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
+                            AudioPlayerButton(audioUrl: pronunciationUrl)
+                        }
+
+                        Text(session.standardDescription)
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(Color(.label))
+                            .lineSpacing(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(16)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 24)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    }
+
+    private func suggestionsAndKeyTermsSectionForSession(_ session: SessionDisplayItem) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !session.suggestions.isEmpty || !session.keyTerms.isEmpty {
+                Text("Key Expressions")
+                    .appTitle()
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+            }
+
+            // Combined section with key terms and suggestions
+            VStack(alignment: .leading, spacing: 12) {
+                // Key Terms
+                ForEach(session.keyTerms) { keyTerm in
+                    KeyTermCard(
+                        keyTerm: keyTerm,
+                        isExpanded: expandedCards.contains(keyTerm.id),
+                        onToggle: {
+                            if expandedCards.contains(keyTerm.id) {
+                                expandedCards.remove(keyTerm.id)
+                            } else {
+                                expandedCards.insert(keyTerm.id)
+                            }
+                        }
+                    )
+                    .id(keyTerm.id)
+                }
+
+                // Suggestions
+                ForEach(session.suggestions) { suggestion in
                     SuggestionCard(
                         suggestion: suggestion,
                         isExpanded: expandedCards.contains(suggestion.id),

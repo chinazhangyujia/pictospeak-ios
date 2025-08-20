@@ -146,11 +146,10 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
                     ForEach(Array(sessionsViewModel.displaySessions.prefix(10))) { displaySession in
-                        SessionCard(session: displaySession)
-                            .onTapGesture {
-                                // Handle session tap - could navigate to detail view
-                                print("Tapped session: \(displaySession.id)")
-                            }
+                        NavigationLink(destination: SessionFeedbackWrapper(session: displaySession)) {
+                            SessionCard(session: displaySession)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
 
                     // Show loading indicator if there are more sessions to load
@@ -237,6 +236,17 @@ struct SessionCard: View {
             }
         }
         .frame(width: 140)
+    }
+}
+
+// MARK: - Session Feedback Wrapper
+
+struct SessionFeedbackWrapper: View {
+    let session: SessionDisplayItem
+    @State private var showFeedbackView = true
+
+    var body: some View {
+        FeedbackView(showFeedbackView: $showFeedbackView, session: session)
     }
 }
 
