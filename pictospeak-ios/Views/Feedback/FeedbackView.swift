@@ -145,6 +145,7 @@ struct FeedbackView: View {
                                         keyTerms: [],
                                         chosenKeyTerms: nil,
                                         chosenRefinements: nil,
+                                        chosenItemsGenerated: false,
                                         pronunciationUrl: nil
                                     )
                                     textComparisonSection(emptyFeedback, scrollProxy: proxy.scrollTo)
@@ -271,21 +272,14 @@ struct FeedbackView: View {
     private func suggestionsAndKeyTermsSection(_ feedback: FeedbackResponse) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             // Section title - show waving placeholder if no chosen items loaded yet
-            if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements,
-               !chosenKeyTerms.isEmpty || !chosenRefinements.isEmpty
-            {
-                // State 2 or 3: Either chosen items or full items are loaded
-                Text("Key Expressions")
-                    .appTitle()
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 20)
-            } else if feedback.keyTerms.isEmpty && feedback.suggestions.isEmpty {
-                // State 1: Nothing loaded - show skeleton placeholder for title
+            let chosenItemsGenerated = feedback.chosenItemsGenerated
+            if !chosenItemsGenerated {
                 SkeletonPlaceholder(width: 200, height: 24)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
+            } else if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements, chosenKeyTerms.isEmpty && chosenRefinements.isEmpty {
+                // don't show anything
             } else {
-                // State 3: Full items loaded - show title
                 Text("Key Expressions")
                     .appTitle()
                     .frame(maxWidth: .infinity)
@@ -294,60 +288,50 @@ struct FeedbackView: View {
 
             // Combined section with key terms and suggestions
             VStack(alignment: .leading, spacing: 12) {
-                // Calculate total chosen items for skeleton count
-                let chosenKeyTermsCount = feedback.chosenKeyTerms?.count ?? 0
-                let chosenRefinementsCount = feedback.chosenRefinements?.count ?? 0
-                let totalChosenItems = chosenKeyTermsCount + chosenRefinementsCount
+                // Check if chosen items are generated
+                let chosenItemsGenerated = feedback.chosenItemsGenerated
 
-                // Key Terms - show chosenKeyTerms if available, otherwise show skeleton
-                if let chosenKeyTerms = feedback.chosenKeyTerms {
-                    if feedback.keyTerms.isEmpty {
-                        // State 2: Chosen items loaded but full items not ready
-                        // Show chosen terms with skeleton placeholders for missing fields
-                        ForEach(Array(chosenKeyTerms.enumerated()), id: \.offset) { index, chosenTerm in
-                            // Create a temporary KeyTerm with chosen data and skeleton placeholders
-                            let tempKeyTerm = KeyTerm(
-                                term: chosenTerm, // This should be the chosen term string
-                                translation: "", // Will show skeleton
-                                example: "", // Will show skeleton
-                                id: UUID() // Generate new UUID for this session
-                            )
-                            KeyTermCard(
-                                keyTerm: tempKeyTerm,
-                                isExpanded: false, // Always start collapsed for chosen items
-                                onToggle: {
-                                    // For chosen items, we don't need to track expansion state
-                                    // since they only show basic info
-                                }
-                            )
-                            .id("chosen-keyterm-\(index)") // Use string ID for ForEach
-                        }
-                    } else {
-                        // State 3: Full items loaded - show actual key terms with no skeletons
-                        ForEach(feedback.keyTerms) { keyTerm in
-                            KeyTermCard(
-                                keyTerm: keyTerm,
-                                isExpanded: expandedCards.contains(keyTerm.id),
-                                onToggle: {
-                                    if expandedCards.contains(keyTerm.id) {
-                                        expandedCards.remove(keyTerm.id)
+                // Key Terms - show chosenKeyTerms if available and generated, otherwise show skeleton
+                if let chosenKeyTerms = feedback.chosenKeyTerms, chosenItemsGenerated {
+                    // Show cards based on chosen items when they are generated
+                    ForEach(Array(chosenKeyTerms.enumerated()), id: \.offset) { index, chosenTerm in
+                        // Find matching real keyTerm if available
+                        let matchingKeyTerm = feedback.keyTerms.first { $0.term == chosenTerm }
+
+                        // Create a card with chosen data + real data if available
+                        let displayKeyTerm = KeyTerm(
+                            term: chosenTerm, // Always use chosen term
+                            translation: matchingKeyTerm?.translation ?? "", // Real translation or empty for skeleton
+                            example: matchingKeyTerm?.example ?? "", // Real example or empty for skeleton
+                            id: matchingKeyTerm?.id ?? UUID() // Use real ID if available
+                        )
+
+                        KeyTermCard(
+                            keyTerm: displayKeyTerm,
+                            isExpanded: matchingKeyTerm != nil ? expandedCards.contains(displayKeyTerm.id) : false,
+                            onToggle: {
+                                if let realKeyTerm = matchingKeyTerm {
+                                    // Only allow expansion if we have real data
+                                    if expandedCards.contains(displayKeyTerm.id) {
+                                        expandedCards.remove(displayKeyTerm.id)
                                     } else {
-                                        expandedCards.insert(keyTerm.id)
+                                        expandedCards.insert(displayKeyTerm.id)
                                     }
                                 }
-                            )
-                            .id(keyTerm.id)
-                        }
+                            }
+                        )
+                        .id("chosen-keyterm-\(index)")
                     }
-                } else if feedback.keyTerms.isEmpty {
-                    // State 1: Nothing loaded - show skeleton placeholders
-                    ForEach(0 ..< 4, id: \.self) { _ in
+                } else {
+                    // Show fake waving cards when chosen items are not generated
+                    ForEach(0 ..< 2, id: \.self) { _ in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     SkeletonPlaceholder(width: 100, height: 16)
                                     SkeletonPlaceholder(width: 150, height: 14)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
                                 Spacer()
 
@@ -358,75 +342,52 @@ struct FeedbackView: View {
                         .background(Color(.systemGray5))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                } else {
-                    // This case should never happen since if keyTerms are loaded, chosenKeyTerms are also loaded
-                    // But keeping it as a fallback for safety
-                    ForEach(feedback.keyTerms) { keyTerm in
-                        KeyTermCard(
-                            keyTerm: keyTerm,
-                            isExpanded: expandedCards.contains(keyTerm.id),
+                }
+
+                // Suggestions - show chosenRefinements if available and generated, otherwise show skeleton
+                if let chosenRefinements = feedback.chosenRefinements, chosenItemsGenerated {
+                    // Show cards based on chosen items when they are generated
+                    ForEach(Array(chosenRefinements.enumerated()), id: \.offset) { index, chosenRefinement in
+                        // Find matching real suggestion if available
+                        let matchingSuggestion = feedback.suggestions.first {
+                            $0.term + $0.refinement == chosenRefinement || $0.refinement == chosenRefinement
+                        }
+
+                        // Create a card with chosen data + real data if available
+                        let displaySuggestion = Suggestion(
+                            term: matchingSuggestion?.term ?? "", // Real term or empty for skeleton
+                            refinement: chosenRefinement, // Always use chosen refinement
+                            translation: matchingSuggestion?.translation ?? "", // Real translation or empty for skeleton
+                            reason: matchingSuggestion?.reason ?? "", // Real reason or empty for skeleton
+                            id: matchingSuggestion?.id ?? UUID() // Use real ID if available
+                        )
+
+                        SuggestionCard(
+                            suggestion: displaySuggestion,
+                            isExpanded: matchingSuggestion != nil ? expandedCards.contains(displaySuggestion.id) : false,
                             onToggle: {
-                                if expandedCards.contains(keyTerm.id) {
-                                    expandedCards.remove(keyTerm.id)
-                                } else {
-                                    expandedCards.insert(keyTerm.id)
+                                if let realSuggestion = matchingSuggestion {
+                                    // Only allow expansion if we have real data
+                                    if expandedCards.contains(displaySuggestion.id) {
+                                        expandedCards.remove(displaySuggestion.id)
+                                    } else {
+                                        expandedCards.insert(displaySuggestion.id)
+                                    }
                                 }
                             }
                         )
-                        .id(keyTerm.id)
+                        .id("chosen-suggestion-\(index)")
                     }
-                }
-
-                // Suggestions - show chosenRefinements if available, otherwise show skeleton
-                if let chosenRefinements = feedback.chosenRefinements {
-                    if feedback.suggestions.isEmpty {
-                        // State 2: Chosen items loaded but full items not ready
-                        // Show chosen refinements with skeleton placeholders for missing fields
-                        ForEach(Array(chosenRefinements.enumerated()), id: \.offset) { index, chosenRefinement in
-                            // Create a temporary Suggestion with chosen data and skeleton placeholders
-                            let tempSuggestion = Suggestion(
-                                term: "", // Will show skeleton
-                                refinement: chosenRefinement, // This should be the chosen refinement string
-                                translation: "", // Will show skeleton
-                                reason: "", // Will show skeleton
-                                id: UUID() // Generate new UUID for this session
-                            )
-                            SuggestionCard(
-                                suggestion: tempSuggestion,
-                                isExpanded: false, // Always start collapsed for chosen items
-                                onToggle: {
-                                    // For chosen items, we don't need to track expansion state
-                                    // since they only show basic info
-                                }
-                            )
-                            .id("chosen-suggestion-\(index)") // Use string ID for ForEach
-                        }
-                    } else {
-                        // State 3: Full items loaded - show actual suggestions with no skeletons
-                        ForEach(feedback.suggestions) { suggestion in
-                            SuggestionCard(
-                                suggestion: suggestion,
-                                isExpanded: expandedCards.contains(suggestion.id),
-                                onToggle: {
-                                    if expandedCards.contains(suggestion.id) {
-                                        expandedCards.remove(suggestion.id)
-                                    } else {
-                                        expandedCards.insert(suggestion.id)
-                                    }
-                                }
-                            )
-                            .id(suggestion.id)
-                        }
-                    }
-                } else if feedback.suggestions.isEmpty {
-                    // State 1: Nothing loaded - show skeleton placeholders
-                    ForEach(0 ..< 4, id: \.self) { _ in
+                } else {
+                    // Show fake waving cards when chosen items are not generated
+                    ForEach(0 ..< 2, id: \.self) { _ in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     SkeletonPlaceholder(width: 100, height: 16)
                                     SkeletonPlaceholder(width: 150, height: 14)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
                                 Spacer()
 
@@ -436,23 +397,6 @@ struct FeedbackView: View {
                         }
                         .background(Color(.systemGray5))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                } else {
-                    // This case should never happen since if suggestions are loaded, chosenRefinements are also loaded
-                    // But keeping it as a fallback for safety
-                    ForEach(feedback.suggestions) { suggestion in
-                        SuggestionCard(
-                            suggestion: suggestion,
-                            isExpanded: expandedCards.contains(suggestion.id),
-                            onToggle: {
-                                if expandedCards.contains(suggestion.id) {
-                                    expandedCards.remove(suggestion.id)
-                                } else {
-                                    expandedCards.insert(suggestion.id)
-                                }
-                            }
-                        )
-                        .id(suggestion.id)
                     }
                 }
             }
@@ -626,8 +570,11 @@ struct FeedbackView: View {
         let refinedText = feedback.refinedText
         let nsString = NSString(string: refinedText)
 
-        // Only use chosen key terms for highlighting
-        if let chosenKeyTerms = feedback.chosenKeyTerms {
+        // Check if chosen items are generated
+        let chosenItemsGenerated = feedback.chosenItemsGenerated
+
+        // Only use chosen key terms for highlighting when they are generated
+        if let chosenKeyTerms = feedback.chosenKeyTerms, chosenItemsGenerated {
             for chosenTerm in chosenKeyTerms {
                 var searchRange = NSRange(location: 0, length: nsString.length)
 
@@ -654,8 +601,8 @@ struct FeedbackView: View {
             }
         }
 
-        // Only use chosen refinements for highlighting
-        if let chosenRefinements = feedback.chosenRefinements {
+        // Only use chosen refinements for highlighting when they are generated
+        if let chosenRefinements = feedback.chosenRefinements, chosenItemsGenerated {
             for chosenRefinement in chosenRefinements {
                 var searchRange = NSRange(location: 0, length: nsString.length)
 
@@ -1095,7 +1042,8 @@ struct FeedbackView: View {
                 suggestions: [],
                 keyTerms: [],
                 chosenKeyTerms: ["Hello", "World"],
-                chosenRefinements: ["Hi", "Earth"]
+                chosenRefinements: ["Hi", "Earth"],
+                chosenItemsGenerated: true
             )
         )
     }
@@ -1114,7 +1062,8 @@ struct FeedbackView: View {
                 suggestions: [],
                 keyTerms: [],
                 chosenKeyTerms: nil,
-                chosenRefinements: nil
+                chosenRefinements: nil,
+                chosenItemsGenerated: false
             )
         )
     }
@@ -1133,7 +1082,8 @@ struct FeedbackView: View {
                 suggestions: [],
                 keyTerms: [],
                 chosenKeyTerms: ["sample", "text"],
-                chosenRefinements: ["improved", "better"]
+                chosenRefinements: ["improved", "better"],
+                chosenItemsGenerated: true
             )
         )
     }
@@ -1158,7 +1108,8 @@ struct FeedbackView: View {
                     KeyTerm(term: "improvement", translation: "改进", example: "We need to make improvements", id: UUID()),
                 ],
                 chosenKeyTerms: ["original", "improvement"],
-                chosenRefinements: ["content", "requires"]
+                chosenRefinements: ["content", "requires"],
+                chosenItemsGenerated: true
             )
         )
     }

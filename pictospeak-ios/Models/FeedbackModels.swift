@@ -17,10 +17,11 @@ struct FeedbackResponse: Codable {
     let score: Int?
     let chosenKeyTerms: [String]?
     let chosenRefinements: [String]?
+    let chosenItemsGenerated: Bool
     let pronunciationUrl: String?
 
     // Custom initializer to handle both old and new formats
-    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, pronunciationUrl: String? = nil) {
+    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, chosenItemsGenerated: Bool = false, pronunciationUrl: String? = nil) {
         self.originalText = originalText
         self.refinedText = refinedText
         self.suggestions = suggestions
@@ -28,6 +29,7 @@ struct FeedbackResponse: Codable {
         self.score = score
         self.chosenKeyTerms = chosenKeyTerms
         self.chosenRefinements = chosenRefinements
+        self.chosenItemsGenerated = chosenItemsGenerated
         self.pronunciationUrl = pronunciationUrl
     }
 }
@@ -59,6 +61,7 @@ struct StreamingFeedbackResponse: Codable {
             score: nil,
             chosenKeyTerms: metadata.chosenKeyTerms,
             chosenRefinements: metadata.chosenRefinements,
+            chosenItemsGenerated: metadata.chosenItemsGenerated,
             pronunciationUrl: descriptionTeaching.standardDescriptionPronunciationUrl
         )
     }
@@ -82,11 +85,13 @@ struct StreamingMetadata: Codable {
     let userDescription: String
     let chosenKeyTerms: [String]
     let chosenRefinements: [String]
+    let chosenItemsGenerated: Bool
 
     private enum CodingKeys: String, CodingKey {
         case userDescription = "user_description"
         case chosenKeyTerms = "chosen_key_terms"
         case chosenRefinements = "chosen_refinements"
+        case chosenItemsGenerated = "chosen_items_generated"
     }
 }
 

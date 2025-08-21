@@ -343,7 +343,8 @@ class FeedbackService {
             originalText: originalText,
             refinedText: refinedText,
             suggestions: suggestions,
-            keyTerms: keyTerms
+            keyTerms: keyTerms,
+            chosenItemsGenerated: true
         )
     }
 }
