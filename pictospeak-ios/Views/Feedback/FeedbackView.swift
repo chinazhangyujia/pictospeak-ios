@@ -62,6 +62,17 @@ struct FeedbackView: View {
     @Binding var showFeedbackView: Bool
     @State private var expandedCards: Set<UUID> = []
 
+    // Thinking process animation
+    @State private var currentThinkingStep = 0
+    @State private var thinkingTimer: Timer?
+    private let thinkingSteps = [
+        "Organizing your input…",
+        "Distilling key ideas…",
+        "Polishing for natural phrasing…",
+        "Picking & highlighting keywords…",
+        "Almost ready…",
+    ]
+
     // For session viewing mode
     let session: SessionDisplayItem?
 
@@ -162,11 +173,24 @@ struct FeedbackView: View {
             }
         }
         .onAppear {
+            // Start thinking animation timer
+            startThinkingAnimation()
+
             // Only load feedback if we don't already have preview data and we're in normal mode
             if session == nil && viewModel.feedbackResponse == nil {
                 guard let selectedImage = selectedImage, let audioData = audioData, let mediaType = mediaType else { return }
                 viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
             }
+        }
+        .onChange(of: viewModel.feedbackResponse?.refinedText) { newValue in
+            // Stop thinking animation when refined text is loaded
+            if let newValue = newValue, !newValue.isEmpty {
+                stopThinkingAnimation()
+            }
+        }
+        .onDisappear {
+            // Stop thinking animation timer
+            stopThinkingAnimation()
         }
         .navigationBarHidden(true)
     }
@@ -176,47 +200,71 @@ struct FeedbackView: View {
     private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
         VStack(spacing: 20) {
             // Tab Selector
-            HStack(spacing: 0) {
+            HStack(spacing: 5) {
                 Button(action: {
                     selectedTab = .mine
                 }) {
-                    Text("Mine")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedTab == .mine ? .primary : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            selectedTab == .mine ? Color(.systemGray5) : Color.clear
-                        )
+                    Group {
+                        if feedback.refinedText.isEmpty {
+                            SkeletonPlaceholder(width: 60, height: 20)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Mine")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(selectedTab == .mine ? .primary : .gray)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                    .background(
+                        selectedTab == .mine ? Color(.systemGray6) : Color(.systemGray5)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 40))
                 }
 
                 Button(action: {
                     selectedTab = .aiRefined
                 }) {
-                    Text("AI Refined")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            selectedTab == .aiRefined ? Color(.systemGray5) : Color.clear
-                        )
+                    Group {
+                        if feedback.refinedText.isEmpty {
+                            SkeletonPlaceholder(width: 80, height: 20)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("AI Refined")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                    .background(
+                        selectedTab == .aiRefined ? Color(.systemGray6) : Color(.systemGray5)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 40))
                 }
             }
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
 
             // Text Content
             VStack(alignment: .leading, spacing: 12) {
                 if selectedTab == .mine {
-                    if feedback.originalText.isEmpty {
-                        // Show skeleton placeholders for original text
-                        VStack(alignment: .leading, spacing: 8) {
-                            SkeletonPlaceholder(width: 200, height: 16)
-                            SkeletonPlaceholder(width: 230, height: 16)
-                            SkeletonPlaceholder(width: 180, height: 16)
+                    if feedback.refinedText.isEmpty {
+                        // Show animated thinking process and skeleton placeholders when refinedText is empty
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Animated thinking process step
+                            ThinkingProcessView(
+                                currentStep: currentThinkingStep,
+                                thinkingSteps: thinkingSteps
+                            )
+                            .padding(.bottom, 8)
+
+                            // Skeleton placeholders
+                            VStack(alignment: .leading, spacing: 8) {
+                                SkeletonPlaceholder(width: 200, height: 16)
+                                SkeletonPlaceholder(width: 230, height: 16)
+                                SkeletonPlaceholder(width: 180, height: 16)
+                            }
                         }
                     } else {
                         Text(feedback.originalText)
@@ -237,11 +285,21 @@ struct FeedbackView: View {
                         }
 
                         if feedback.refinedText.isEmpty {
-                            // Show skeleton placeholders for refined text
-                            VStack(alignment: .leading, spacing: 8) {
-                                SkeletonPlaceholder(width: 200, height: 16)
-                                SkeletonPlaceholder(width: 230, height: 16)
-                                SkeletonPlaceholder(width: 180, height: 16)
+                            // Show animated thinking process and skeleton placeholders when refinedText is empty
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Animated thinking process step
+                                ThinkingProcessView(
+                                    currentStep: currentThinkingStep,
+                                    thinkingSteps: thinkingSteps
+                                )
+                                .padding(.bottom, 8)
+
+                                // Skeleton placeholders
+                                VStack(alignment: .leading, spacing: 8) {
+                                    SkeletonPlaceholder(width: 200, height: 16)
+                                    SkeletonPlaceholder(width: 230, height: 16)
+                                    SkeletonPlaceholder(width: 180, height: 16)
+                                }
                             }
                         } else {
                             ClickableHighlightedTextView(
@@ -657,6 +715,41 @@ struct FeedbackView: View {
         }
     }
 
+    // MARK: - Thinking Process View
+
+    struct ThinkingProcessView: View {
+        let currentStep: Int
+        let thinkingSteps: [String]
+
+        var body: some View {
+            Text(thinkingSteps[currentStep])
+                .font(.system(size: 16, weight: .regular, design: .default))
+                .italic()
+                .foregroundColor(.secondary)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: currentStep)
+        }
+    }
+
+    // MARK: - Thinking Animation Methods
+
+    private func startThinkingAnimation() {
+        // Stop any existing timer
+        stopThinkingAnimation()
+
+        // Start new timer that cycles through thinking steps every 1.5 seconds
+        thinkingTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentThinkingStep = (currentThinkingStep + 1) % thinkingSteps.count
+            }
+        }
+    }
+
+    private func stopThinkingAnimation() {
+        thinkingTimer?.invalidate()
+        thinkingTimer = nil
+    }
+
     // MARK: - Self-Sizing Text View
 
     private class SelfSizingTextView: UITextView {
@@ -834,7 +927,7 @@ struct FeedbackView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                         // Only show chevron if card can be expanded
-                        if suggestion.term.isEmpty || suggestion.reason.isEmpty {
+                        if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
                             SkeletonPlaceholder(width: 16, height: 16)
                         } else {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -989,7 +1082,7 @@ struct FeedbackView: View {
 
                         Spacer()
 
-                        if keyTerm.term.isEmpty || keyTerm.translation.isEmpty {
+                        if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
                             SkeletonPlaceholder(width: 16, height: 16)
                         } else {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")

@@ -33,7 +33,7 @@ struct AudioPlayerButton: View {
                     .font(.system(size: 16))
                     .foregroundColor(.gray)
             } else {
-                Image(systemName: isPlaying ? "speaker.wave.3" : "speaker")
+                Image(systemName: isPlaying ? "pause" : "speaker.wave.2")
                     .font(.system(size: 16))
                     .foregroundColor(.primary)
             }
