@@ -68,7 +68,8 @@ struct SpeakView: View {
                 showFeedbackView: $showFeedbackView,
                 selectedImage: selectedImage,
                 audioData: recordedAudioData ?? Data(),
-                mediaType: mediaType
+                mediaType: mediaType,
+                pastSessionsViewModel: PastSessionsViewModel()
             )
             .navigationBarHidden(true)
             .navigationBarBackButtonHidden(true)

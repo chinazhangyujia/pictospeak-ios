@@ -21,8 +21,8 @@ struct PaginatedSessionResponse: Codable {
 
 struct SessionItem: Codable, Identifiable {
     let descriptionTeaching: DescriptionTeaching
-    let keyTerms: [KeyTerm]
-    let suggestions: [Suggestion]
+    var keyTerms: [KeyTerm]
+    var suggestions: [Suggestion]
     let materialUrl: String
 
     private enum CodingKeys: String, CodingKey {
@@ -44,6 +44,10 @@ struct SessionItem: Codable, Identifiable {
 
     var standardDescription: String {
         return descriptionTeaching.standardDescription
+    }
+    
+    var pronunciationUrl: String? {
+        return descriptionTeaching.standardDescriptionPronunciationUrl
     }
 
     var sessionId: UUID {

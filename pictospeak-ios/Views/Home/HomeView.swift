@@ -12,24 +12,41 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header Section
-                    headerSection
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header Section
+                        headerSection
 
-                    // Central Call-to-Action Section
-                    centralActionSection
+                        // Central Call-to-Action Section
+                        centralActionSection
 
-                    // Recent Sessions Section
-                    recentSessionsSection
+                        // Recent Sessions Section
+                        recentSessionsSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .background(Color(.systemBackground))
+                
+                // Loading overlay for refresh
+                if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading sessions...")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground).opacity(0.8))
+                }
             }
-            .background(Color(.systemBackground))
             .navigationBarHidden(true)
         }
         .task {
+            sessionsViewModel.clearError() // Clear any stale errors
             await sessionsViewModel.loadInitialSessions()
         }
         .refreshable {
@@ -41,6 +58,7 @@ struct HomeView: View {
             }
             Button("Retry") {
                 Task {
+                    sessionsViewModel.clearError() // Clear error before retrying
                     await sessionsViewModel.loadInitialSessions()
                 }
             }
@@ -172,6 +190,19 @@ struct HomeView: View {
                             .background(Color(.systemGray6))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
+                    } else if sessionsViewModel.isLoading {
+                        // Show loading indicator when loading
+                        VStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            
+                            Text("Loading...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(width: 140, height: 80)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
                 .padding(.horizontal, 4)
@@ -246,7 +277,7 @@ struct SessionFeedbackWrapper: View {
     @State private var showFeedbackView = true
 
     var body: some View {
-        FeedbackView(showFeedbackView: $showFeedbackView, session: session)
+        FeedbackView(showFeedbackView: $showFeedbackView, pastSessionsViewModel: PastSessionsViewModel())
     }
 }
 
