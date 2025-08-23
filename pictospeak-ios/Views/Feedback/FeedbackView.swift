@@ -96,7 +96,7 @@ struct FeedbackView: View {
     let selectedImage: UIImage?
     let audioData: Data?
     let mediaType: MediaType?
-
+    
     // Default initializer for normal use
     init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType, pastSessionsViewModel: PastSessionsViewModel) {
         _showFeedbackView = showFeedbackView
@@ -116,15 +116,15 @@ struct FeedbackView: View {
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
     }
-
-    // Initializer for session viewing mode
-    init(showFeedbackView: Binding<Bool>, pastSessionsViewModel: PastSessionsViewModel) {
-        _showFeedbackView = showFeedbackView
+    
+    // Initializer for session viewing mode (without showFeedbackView binding)
+    init(pastSessionsViewModel: PastSessionsViewModel) {
         self.pastSessionsViewModel = pastSessionsViewModel
         self.selectedImage = nil
         self.audioData = nil
         self.mediaType = nil
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+        _showFeedbackView = State(initialValue: false).projectedValue // Convert State to Binding
     }
 
     enum FeedbackTab {
@@ -481,7 +481,10 @@ struct FeedbackView: View {
 
                                 Spacer()
 
-                                SkeletonPlaceholder(width: 16, height: 16)
+                                VStack(spacing: 10) {
+                                    SkeletonPlaceholder(width: 16, height: 16)
+                                    SkeletonPlaceholder(width: 16, height: 16)
+                                }
                             }
                             .padding(16)
                         }
@@ -628,7 +631,9 @@ struct FeedbackView: View {
     private var customHeader: some View {
         HStack {
             Button(action: {
-                showFeedbackView = false
+                // Clear the active session when going back
+                print("🔍 Clearing active session")
+                pastSessionsViewModel.clearActiveSession()
                 dismiss()
             }) {
                 Image(systemName: "chevron.left")
@@ -664,8 +669,6 @@ struct FeedbackView: View {
         .padding(.bottom, 20)
         .background(Color(.systemGray6))
     }
-
-
 
     // MARK: - Helper Methods
 

@@ -65,6 +65,7 @@ struct HomeView: View {
         } message: {
             Text(sessionsViewModel.errorMessage ?? "")
         }
+
     }
 
     // MARK: - Header Section
@@ -164,9 +165,17 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
                     ForEach(Array(sessionsViewModel.displaySessions.prefix(10))) { displaySession in
-                        NavigationLink(destination: SessionFeedbackWrapper(session: displaySession)) {
+                        NavigationLink(destination: FeedbackView(pastSessionsViewModel: sessionsViewModel)) {
                             SessionCard(session: displaySession)
                         }
+                        .simultaneousGesture(
+                            TapGesture()
+                                .onEnded { _ in
+                                    // Set the active session when the button is tapped
+                                    print("🔍 Setting active session to: \(displaySession.id)")
+                                    sessionsViewModel.setActiveSession(by: displaySession.id)
+                                }
+                        )
                         .buttonStyle(PlainButtonStyle())
                     }
 
@@ -270,16 +279,7 @@ struct SessionCard: View {
     }
 }
 
-// MARK: - Session Feedback Wrapper
 
-struct SessionFeedbackWrapper: View {
-    let session: SessionDisplayItem
-    @State private var showFeedbackView = true
-
-    var body: some View {
-        FeedbackView(showFeedbackView: $showFeedbackView, pastSessionsViewModel: PastSessionsViewModel())
-    }
-}
 
 #Preview {
     HomeView()

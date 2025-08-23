@@ -161,9 +161,9 @@ class PastSessionsViewModel: ObservableObject {
     /// Sets the active session by finding it in the sessions list using sessionId
     /// - Parameter sessionId: The UUID of the session to set as active
     func setActiveSession(by sessionId: UUID) {
-        if let session = sessions.first(where: { $0.sessionId == sessionId }) {
+        if let session = sessions.first(where: { $0.id == sessionId }) {
             activeSession = session
-            print("✅ Set active session: \(sessionId)")
+            print("✅ Set active session: \(activeSession)")
         } else {
             print("❌ Session not found with ID: \(sessionId)")
         }
