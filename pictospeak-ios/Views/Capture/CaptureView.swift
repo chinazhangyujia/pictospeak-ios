@@ -10,7 +10,7 @@ import PhotosUI
 import SwiftUI
 
 struct CaptureView: View {
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var router: Router
     @StateObject private var cameraManager = CameraManager()
     @State private var selectedMode: CaptureMode = .photo
     @State private var showingImagePicker = false
@@ -18,7 +18,6 @@ struct CaptureView: View {
     @State private var isRecording = false
     @State private var recordingTime: TimeInterval = 0
     @State private var timer: Timer?
-    @State private var showingSpeakView = false
 
     enum CaptureMode: String, CaseIterable {
         case photo = "Photo"
@@ -50,7 +49,7 @@ struct CaptureView: View {
         .onChange(of: cameraManager.selectedImage) { _, newValue in
             if newValue != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showingSpeakView = true
+                    router.goTo(.speak(selectedImage: cameraManager.selectedImage ?? UIImage(), mediaType: selectedMode == .photo ? .image : .video))
                 }
             }
         }
@@ -59,9 +58,6 @@ struct CaptureView: View {
         }
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoPicker(selectedImage: $cameraManager.selectedImage)
-        }
-        .navigationDestination(isPresented: $showingSpeakView) {
-            SpeakView(selectedImage: cameraManager.selectedImage ?? UIImage(), mediaType: selectedMode == .photo ? .image : .video)
         }
         .alert("Camera Access Required", isPresented: $cameraManager.showingPermissionAlert) {
             Button("Settings") {
@@ -80,7 +76,7 @@ struct CaptureView: View {
     private var topSection: some View {
         HStack {
             Button(action: {
-                dismiss()
+                router.resetToHome()
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)

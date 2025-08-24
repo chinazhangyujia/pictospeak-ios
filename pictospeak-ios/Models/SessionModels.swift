@@ -45,7 +45,7 @@ struct SessionItem: Codable, Identifiable {
     var standardDescription: String {
         return descriptionTeaching.standardDescription
     }
-    
+
     var pronunciationUrl: String? {
         return descriptionTeaching.standardDescriptionPronunciationUrl
     }

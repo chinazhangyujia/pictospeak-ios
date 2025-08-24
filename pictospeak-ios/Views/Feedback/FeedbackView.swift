@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-
-
 // MARK: - Skeleton Loading Components
 
 struct ShimmerEffect: ViewModifier {
@@ -59,13 +57,13 @@ struct SkeletonPlaceholder: View {
 
 extension View {
     func appTitle() -> some View {
-        self.font(.title2)
+        font(.title2)
             .fontWeight(.semibold)
             .foregroundColor(.primary)
     }
-    
+
     func appCardText(fontSize: CGFloat = 16) -> some View {
-        self.font(.system(size: fontSize, weight: .regular))
+        font(.system(size: fontSize, weight: .regular))
             .foregroundColor(.primary)
             .lineSpacing(2)
     }
@@ -74,12 +72,11 @@ extension View {
 // MARK: - FeedbackView
 
 struct FeedbackView: View {
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var router: Router
     @StateObject private var viewModel: FeedbackViewModel
-    @ObservedObject private var pastSessionsViewModel: PastSessionsViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
-    @Binding var showFeedbackView: Bool
     @State private var expandedCards: Set<UUID> = []
+    let session: SessionItem?
 
     // Thinking process animation
     @State private var currentThinkingStep = 0
@@ -96,35 +93,35 @@ struct FeedbackView: View {
     let selectedImage: UIImage?
     let audioData: Data?
     let mediaType: MediaType?
-    
+
     // Default initializer for normal use
-    init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType, pastSessionsViewModel: PastSessionsViewModel) {
-        _showFeedbackView = showFeedbackView
-        self.pastSessionsViewModel = pastSessionsViewModel
+    init(selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
+        print("🔍 Created FeedbackFromSpeak: \(selectedImage)")
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+        session = nil
     }
 
     // Initializer for previews with fake data
-    init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse, pastSessionsViewModel: PastSessionsViewModel) {
-        _showFeedbackView = showFeedbackView
-        self.pastSessionsViewModel = pastSessionsViewModel
+    init(selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
+        print("🔍 Created FeedbackFromSpeak: \(selectedImage)")
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
+        session = nil
     }
-    
+
     // Initializer for session viewing mode (without showFeedbackView binding)
-    init(pastSessionsViewModel: PastSessionsViewModel) {
-        self.pastSessionsViewModel = pastSessionsViewModel
-        self.selectedImage = nil
-        self.audioData = nil
-        self.mediaType = nil
+    init(session: SessionItem) {
+        print("🔍 Created FeedbackFromSession")
+        self.session = session
+        selectedImage = nil
+        audioData = nil
+        mediaType = nil
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
-        _showFeedbackView = State(initialValue: false).projectedValue // Convert State to Binding
     }
 
     enum FeedbackTab {
@@ -140,13 +137,12 @@ struct FeedbackView: View {
                 Color(.systemGray6)
                     .ignoresSafeArea()
 
-                if let activeSession = pastSessionsViewModel.activeSession {
-                    // Active session mode - show session data from PastSessionsViewModel
+                if let session = session {
                     ScrollViewReader { proxy in
                         ScrollView {
                             VStack(spacing: 30) {
-                                textComparisonSectionForSession(activeSession, scrollProxy: proxy.scrollTo)
-                                suggestionsAndKeyTermsSectionForSession(activeSession)
+                                textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
+                                suggestionsAndKeyTermsSectionForSession(session)
                             }
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
@@ -190,10 +186,11 @@ struct FeedbackView: View {
         }
         .onAppear {
             // Start thinking animation timer
+            print("🔍 FeedbackView onAppear: \(session)")
             startThinkingAnimation()
 
             // Only load feedback if we don't already have preview data and we're in normal mode
-            if pastSessionsViewModel.activeSession == nil && viewModel.feedbackResponse == nil {
+            if session == nil && viewModel.feedbackResponse == nil {
                 guard let selectedImage = selectedImage, let audioData = audioData, let mediaType = mediaType else { return }
                 viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
             }
@@ -207,9 +204,6 @@ struct FeedbackView: View {
         .onDisappear {
             // Stop thinking animation timer
             stopThinkingAnimation()
-            
-            // Clear active session when leaving the page
-            pastSessionsViewModel.clearActiveSession()
         }
         .navigationBarHidden(true)
     }
@@ -397,7 +391,7 @@ struct FeedbackView: View {
                                     }
                                 }
                             },
-                            onFavoriteToggle: { termId, isFavorite in
+                            onFavoriteToggle: { _, _ in
                                 // In normal feedback mode, we don't have a PastSessionsViewModel to update
                                 // This is just for display purposes
                             }
@@ -461,7 +455,7 @@ struct FeedbackView: View {
                                     }
                                 }
                             },
-                            onFavoriteToggle: { suggestionId, isFavorite in
+                            onFavoriteToggle: { _, _ in
                                 // In normal feedback mode, we don't have a PastSessionsViewModel to update
                                 // This is just for display purposes
                             }
@@ -591,11 +585,11 @@ struct FeedbackView: View {
                                 expandedCards.insert(keyTerm.id)
                             }
                         },
-                        onFavoriteToggle: { termId, isFavorite in
-                            pastSessionsViewModel.updateKeyTermFavorite(
-                                termId: termId, 
-                                favorite: isFavorite
-                            )
+                        onFavoriteToggle: { _, _ in
+                            // pastSessionsViewModel.updateKeyTermFavorite(
+                            //     termId: termId,
+                            //     favorite: isFavorite
+                            // )
                         }
                     )
                     .id(keyTerm.id)
@@ -613,11 +607,11 @@ struct FeedbackView: View {
                                 expandedCards.insert(suggestion.id)
                             }
                         },
-                        onFavoriteToggle: { suggestionId, isFavorite in
-                            pastSessionsViewModel.updateSuggestionFavorite(
-                                suggestionId: suggestionId, 
-                                favorite: isFavorite
-                            )
+                        onFavoriteToggle: { _, _ in
+                            // pastSessionsViewModel.updateSuggestionFavorite(
+                            //     suggestionId: suggestionId,
+                            //     favorite: isFavorite
+                            // )
                         }
                     )
                     .id(suggestion.id)
@@ -631,10 +625,7 @@ struct FeedbackView: View {
     private var customHeader: some View {
         HStack {
             Button(action: {
-                // Clear the active session when going back
-                print("🔍 Clearing active session")
-                pastSessionsViewModel.clearActiveSession()
-                dismiss()
+                router.resetToHome()
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
@@ -966,7 +957,7 @@ struct FeedbackView: View {
                                     refinement: suggestion.refinement
                                 )
                             }
-                            
+
                             // Row 2: Translation
                             if suggestion.translation.isEmpty {
                                 SkeletonPlaceholder(width: 150, height: 14)
@@ -975,7 +966,7 @@ struct FeedbackView: View {
                                     .appCardText()
                             }
                         }
-                        
+
                         // Right side: Controls (Star + Chevron)
                         VStack(spacing: 10) {
                             // Star button with waving effect when refinement is empty
@@ -994,7 +985,7 @@ struct FeedbackView: View {
                                 .frame(width: 20, height: 20)
                                 .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty)
                             }
-                            
+
                             // Chevron
                             if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
                                 SkeletonPlaceholder(width: 20, height: 16)
@@ -1143,7 +1134,7 @@ struct FeedbackView: View {
                             } else {
                                 HighlightedKeyTermText(term: keyTerm.term)
                             }
-                            
+
                             // Row 2: Translation
                             if keyTerm.translation.isEmpty {
                                 SkeletonPlaceholder(width: 150, height: 14)
@@ -1152,7 +1143,7 @@ struct FeedbackView: View {
                                     .appCardText()
                             }
                         }
-                        
+
                         // Right side: Controls (Star + Chevron)
                         VStack(spacing: 10) {
                             // Star button with waving effect when term is empty
@@ -1170,7 +1161,7 @@ struct FeedbackView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 .frame(width: 20, height: 20)
                             }
-                            
+
                             // Chevron
                             if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
                                 SkeletonPlaceholder(width: 20, height: 16)
@@ -1216,7 +1207,6 @@ struct FeedbackView: View {
 #Preview {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1229,7 +1219,6 @@ struct FeedbackView: View {
                 chosenRefinements: ["Hi", "Earth"],
                 chosenItemsGenerated: true
             ),
-            pastSessionsViewModel: PastSessionsViewModel()
         )
     }
 }
@@ -1237,7 +1226,6 @@ struct FeedbackView: View {
 #Preview("Loading State - No Data") {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1250,7 +1238,6 @@ struct FeedbackView: View {
                 chosenRefinements: nil,
                 chosenItemsGenerated: false
             ),
-            pastSessionsViewModel: PastSessionsViewModel()
         )
     }
 }
@@ -1258,7 +1245,6 @@ struct FeedbackView: View {
 #Preview("Loading State - Chosen Items Only") {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1271,7 +1257,6 @@ struct FeedbackView: View {
                 chosenRefinements: ["improved", "better"],
                 chosenItemsGenerated: true
             ),
-            pastSessionsViewModel: PastSessionsViewModel()
         )
     }
 }
@@ -1279,7 +1264,6 @@ struct FeedbackView: View {
 #Preview("Fully Loaded") {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1298,7 +1282,6 @@ struct FeedbackView: View {
                 chosenRefinements: ["content", "requires"],
                 chosenItemsGenerated: true
             ),
-            pastSessionsViewModel: PastSessionsViewModel()
         )
     }
 }

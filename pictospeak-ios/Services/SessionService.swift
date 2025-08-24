@@ -66,9 +66,6 @@ class SessionService {
                 throw SessionError.serverError
             }
 
-            print("📡 Past sessions response status: \(httpResponse.statusCode)")
-            print("📡 Response headers: \(httpResponse.allHeaderFields)")
-
             guard httpResponse.statusCode == 200 else {
                 print("❌ Past sessions API error: \(httpResponse.statusCode)")
                 // Try to read error response body
@@ -78,24 +75,18 @@ class SessionService {
                 throw SessionError.serverError
             }
 
-            // Log response data for debugging
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("📡 Response data: \(responseString)")
-            }
-
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .useDefaultKeys
-            
+
             do {
                 let paginatedResponse = try decoder.decode(PaginatedSessionResponse.self, from: data)
-                
-                print("✅ Successfully loaded \(paginatedResponse.items.count) past sessions")
+
                 if let nextCursor = paginatedResponse.nextCursor {
                     print("📄 Next page cursor: \(nextCursor)")
                 } else {
                     print("📄 No more pages available")
                 }
-                
+
                 return paginatedResponse
             } catch {
                 print("❌ Decoding error: \(error)")

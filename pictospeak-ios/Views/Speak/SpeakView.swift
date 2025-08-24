@@ -9,7 +9,7 @@ import AVFoundation
 import SwiftUI
 
 struct SpeakView: View {
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var router: Router
     let selectedImage: UIImage
     let mediaType: MediaType
     @State private var isRecording = false
@@ -56,23 +56,12 @@ struct SpeakView: View {
                 if let url = recordingURL {
                     do {
                         recordedAudioData = try Data(contentsOf: url)
-                        showFeedbackView = true
+                        router.goTo(.feedbackFromSpeak(selectedImage: selectedImage, audioData: recordedAudioData ?? Data(), mediaType: mediaType))
                     } catch {
                         print("Failed to read audio data: \(error)")
                     }
                 }
             }
-        }
-        .navigationDestination(isPresented: $showFeedbackView) {
-            FeedbackView(
-                showFeedbackView: $showFeedbackView,
-                selectedImage: selectedImage,
-                audioData: recordedAudioData ?? Data(),
-                mediaType: mediaType,
-                pastSessionsViewModel: PastSessionsViewModel()
-            )
-            .navigationBarHidden(true)
-            .navigationBarBackButtonHidden(true)
         }
     }
 
@@ -81,7 +70,7 @@ struct SpeakView: View {
     private var topSection: some View {
         HStack {
             Button(action: {
-                dismiss()
+                router.resetToHome()
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)

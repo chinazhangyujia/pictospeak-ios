@@ -11,7 +11,6 @@ import SwiftUI
 @MainActor
 class PastSessionsViewModel: ObservableObject {
     @Published var sessions: [SessionItem] = []
-    @Published var activeSession: SessionItem? = nil
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var hasMorePages = true
@@ -23,11 +22,9 @@ class PastSessionsViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     /// Convert sessions to display items on-the-fly
-    var displaySessions: [SessionDisplayItem] {
-        return sessionService.convertToDisplayItems(sessions)
-    }
-    
-
+    // var displaySessions: [SessionDisplayItem] {
+    //     return sessionService.convertToDisplayItems(sessions)
+    // }
 
     // MARK: - Public Methods
 
@@ -35,7 +32,7 @@ class PastSessionsViewModel: ObservableObject {
     func loadInitialSessions() async {
         // Cancel any existing loading task
         loadingTask?.cancel()
-        
+
         // Create new loading task
         loadingTask = Task {
             guard !isLoading else { return }
@@ -45,10 +42,10 @@ class PastSessionsViewModel: ObservableObject {
 
             do {
                 let response = try await sessionService.getPastSessions()
-                
+
                 // Check if task was cancelled
                 if Task.isCancelled { return }
-                
+
                 sessions = response.items
                 currentCursor = response.nextCursor
                 hasMorePages = response.nextCursor != nil
@@ -57,7 +54,7 @@ class PastSessionsViewModel: ObservableObject {
             } catch {
                 // Check if task was cancelled
                 if Task.isCancelled { return }
-                
+
                 let errorDescription: String
                 if let sessionError = error as? SessionError {
                     switch sessionError {
@@ -75,14 +72,14 @@ class PastSessionsViewModel: ObservableObject {
                 } else {
                     errorDescription = error.localizedDescription
                 }
-                
+
                 errorMessage = "Failed to load sessions: \(errorDescription)"
                 print("❌ Error loading initial sessions: \(error)")
             }
 
             isLoading = false
         }
-        
+
         await loadingTask?.value
     }
 
@@ -90,7 +87,7 @@ class PastSessionsViewModel: ObservableObject {
     func loadMoreSessions() async {
         // Cancel any existing loading task
         loadingTask?.cancel()
-        
+
         // Create new loading task
         loadingTask = Task {
             guard !isLoading, hasMorePages, let cursor = currentCursor else { return }
@@ -99,10 +96,10 @@ class PastSessionsViewModel: ObservableObject {
 
             do {
                 let response = try await sessionService.getPastSessions(cursor: cursor)
-                
+
                 // Check if task was cancelled
                 if Task.isCancelled { return }
-                
+
                 sessions.append(contentsOf: response.items)
                 currentCursor = response.nextCursor
                 hasMorePages = response.nextCursor != nil
@@ -111,7 +108,7 @@ class PastSessionsViewModel: ObservableObject {
             } catch {
                 // Check if task was cancelled
                 if Task.isCancelled { return }
-                
+
                 let errorDescription: String
                 if let sessionError = error as? SessionError {
                     switch sessionError {
@@ -129,14 +126,14 @@ class PastSessionsViewModel: ObservableObject {
                 } else {
                     errorDescription = error.localizedDescription
                 }
-                
+
                 errorMessage = "Failed to load more sessions: \(errorDescription)"
                 print("❌ Error loading more sessions: \(error)")
             }
 
             isLoading = false
         }
-        
+
         await loadingTask?.value
     }
 
@@ -144,7 +141,7 @@ class PastSessionsViewModel: ObservableObject {
     func refreshSessions() async {
         // Cancel any existing loading task
         loadingTask?.cancel()
-        
+
         // Create new loading task
         loadingTask = Task {
             sessions = []
@@ -152,103 +149,75 @@ class PastSessionsViewModel: ObservableObject {
             hasMorePages = true
             await loadInitialSessions()
         }
-        
+
         await loadingTask?.value
     }
 
-    // MARK: - Active Session Management
-    
-    /// Sets the active session by finding it in the sessions list using sessionId
-    /// - Parameter sessionId: The UUID of the session to set as active
-    func setActiveSession(by sessionId: UUID) {
-        if let session = sessions.first(where: { $0.id == sessionId }) {
-            activeSession = session
-            print("✅ Set active session: \(activeSession)")
+    func updateKeyTermFavorite(sessionId: UUID, termId: UUID, favorite: Bool) {
+        // First, find the session in the sessions array using sessionId
+        if let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }) {
+            var updatedSession = sessions[sessionIndex]
+
+            // Find and update the KeyTerm in the session
+            if let keyTermIndex = updatedSession.keyTerms.firstIndex(where: { $0.id == termId }) {
+                // Create updated KeyTerm with new favorite status
+                let updatedKeyTerm = KeyTerm(
+                    term: updatedSession.keyTerms[keyTermIndex].term,
+                    translation: updatedSession.keyTerms[keyTermIndex].translation,
+                    example: updatedSession.keyTerms[keyTermIndex].example,
+                    favorite: favorite,
+                    id: updatedSession.keyTerms[keyTermIndex].id
+                )
+
+                // Update the session with the modified KeyTerm
+                updatedSession.keyTerms[keyTermIndex] = updatedKeyTerm
+
+                // Update the sessions array
+                sessions[sessionIndex] = updatedSession
+
+                print("✅ Updated KeyTerm favorite status: \(termId) -> \(favorite)")
+            } else {
+                print("❌ KeyTerm not found with ID: \(termId)")
+            }
         } else {
             print("❌ Session not found with ID: \(sessionId)")
         }
     }
-    
-    /// Clears the active session when leaving detailed view
-    func clearActiveSession() {
-        activeSession = nil
-        print("✅ Cleared active session")
-    }
-    
-    // MARK: - Favorite Management Methods
-    
-    /// Updates the favorite status of a KeyTerm by ID
-    /// - Parameters:
-    ///   - termId: The UUID of the KeyTerm to update
-    ///   - favorite: The new favorite status
-    func updateKeyTermFavorite(termId: UUID, favorite: Bool) {
-        guard let activeSession = activeSession else {
-            print("❌ No active session to update")
-            return
-        }
-        
-        // Update the active session first
-        if let keyTermIndex = activeSession.keyTerms.firstIndex(where: { $0.id == termId }) {
-            // Create updated KeyTerm with new favorite status
-            let updatedKeyTerm = KeyTerm(
-                term: activeSession.keyTerms[keyTermIndex].term,
-                translation: activeSession.keyTerms[keyTermIndex].translation,
-                example: activeSession.keyTerms[keyTermIndex].example,
-                favorite: favorite,
-                id: activeSession.keyTerms[keyTermIndex].id
-            )
-            
-            // Update the active session with the modified KeyTerm
-            var updatedActiveSession = activeSession
-            updatedActiveSession.keyTerms[keyTermIndex] = updatedKeyTerm
-            self.activeSession = updatedActiveSession
-            
-            // Now find and replace the corresponding session in the sessions array
-            if let sessionIndex = sessions.firstIndex(where: { $0.sessionId == activeSession.sessionId }) {
-                sessions[sessionIndex] = updatedActiveSession
-            }
-            
-            print("✅ Updated KeyTerm favorite status: \(termId) -> \(favorite)")
-        } else {
-            print("❌ KeyTerm not found with ID: \(termId)")
-        }
-    }
-    
+
     /// Updates the favorite status of a Suggestion by ID
     /// - Parameters:
+    ///   - sessionId: The UUID of the session containing the suggestion
     ///   - suggestionId: The UUID of the Suggestion to update
     ///   - favorite: The new favorite status
-    func updateSuggestionFavorite(suggestionId: UUID, favorite: Bool) {
-        guard let activeSession = activeSession else {
-            print("❌ No active session to update")
-            return
-        }
-        
-        // Update the active session first
-        if let suggestionIndex = activeSession.suggestions.firstIndex(where: { $0.id == suggestionId }) {
-            // Create updated Suggestion with new favorite status
-            let updatedSuggestion = Suggestion(
-                term: activeSession.suggestions[suggestionIndex].term,
-                refinement: activeSession.suggestions[suggestionIndex].refinement,
-                translation: activeSession.suggestions[suggestionIndex].translation,
-                reason: activeSession.suggestions[suggestionIndex].reason,
-                favorite: favorite,
-                id: activeSession.suggestions[suggestionIndex].id
-            )
-            
-            // Update the active session with the modified Suggestion
-            var updatedActiveSession = activeSession
-            updatedActiveSession.suggestions[suggestionIndex] = updatedSuggestion
-            self.activeSession = updatedActiveSession
-            
-            // Now find and replace the corresponding session in the sessions array
-            if let sessionIndex = sessions.firstIndex(where: { $0.sessionId == activeSession.sessionId }) {
-                sessions[sessionIndex] = updatedActiveSession
+    func updateSuggestionFavorite(sessionId: UUID, suggestionId: UUID, favorite: Bool) {
+        // First, find the session in the sessions array using sessionId
+        if let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }) {
+            var updatedSession = sessions[sessionIndex]
+
+            // Find and update the Suggestion in the session
+            if let suggestionIndex = updatedSession.suggestions.firstIndex(where: { $0.id == suggestionId }) {
+                // Create updated Suggestion with new favorite status
+                let updatedSuggestion = Suggestion(
+                    term: updatedSession.suggestions[suggestionIndex].term,
+                    refinement: updatedSession.suggestions[suggestionIndex].refinement,
+                    translation: updatedSession.suggestions[suggestionIndex].translation,
+                    reason: updatedSession.suggestions[suggestionIndex].reason,
+                    favorite: favorite,
+                    id: updatedSession.suggestions[suggestionIndex].id
+                )
+
+                // Update the session with the modified Suggestion
+                updatedSession.suggestions[suggestionIndex] = updatedSuggestion
+
+                // Update the sessions array
+                sessions[sessionIndex] = updatedSession
+
+                print("✅ Updated Suggestion favorite status: \(suggestionId) -> \(favorite)")
+            } else {
+                print("❌ Suggestion not found with ID: \(suggestionId)")
             }
-            
-            print("✅ Updated Suggestion favorite status: \(suggestionId) -> \(favorite)")
         } else {
-            print("❌ Suggestion not found with ID: \(suggestionId)")
+            print("❌ Session not found with ID: \(sessionId)")
         }
     }
 
@@ -258,13 +227,13 @@ class PastSessionsViewModel: ObservableObject {
     func clearError() {
         errorMessage = nil
     }
-    
+
     /// Cancel any ongoing loading operations
     func cancelLoading() {
         loadingTask?.cancel()
         isLoading = false
     }
-    
+
     deinit {
         loadingTask?.cancel()
     }

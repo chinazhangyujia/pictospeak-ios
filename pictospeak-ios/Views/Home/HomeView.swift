@@ -8,42 +8,40 @@
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject private var router: Router
     @StateObject private var sessionsViewModel = PastSessionsViewModel()
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header Section
-                        headerSection
+        ZStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header Section
+                    headerSection
 
-                        // Central Call-to-Action Section
-                        centralActionSection
+                    // Central Call-to-Action Section
+                    centralActionSection
 
-                        // Recent Sessions Section
-                        recentSessionsSection
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
+                    // Recent Sessions Section
+                    recentSessionsSection
                 }
-                .background(Color(.systemBackground))
-                
-                // Loading overlay for refresh
-                if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
-                    VStack {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        Text("Loading sessions...")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground).opacity(0.8))
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
             }
-            .navigationBarHidden(true)
+            .background(Color(.systemBackground))
+
+            // Loading overlay for refresh
+            if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
+                VStack {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading sessions...")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground).opacity(0.8))
+            }
         }
         .task {
             sessionsViewModel.clearError() // Clear any stale errors
@@ -65,7 +63,6 @@ struct HomeView: View {
         } message: {
             Text(sessionsViewModel.errorMessage ?? "")
         }
-
     }
 
     // MARK: - Header Section
@@ -107,7 +104,9 @@ struct HomeView: View {
 
     private var centralActionSection: some View {
         VStack(spacing: 16) {
-            NavigationLink(destination: CaptureView()) {
+            Button(action: {
+                router.goTo(.capture)
+            }) {
                 VStack(spacing: 12) {
                     ZStack {
                         Circle()
@@ -164,18 +163,12 @@ struct HomeView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
-                    ForEach(Array(sessionsViewModel.displaySessions.prefix(10))) { displaySession in
-                        NavigationLink(destination: FeedbackView(pastSessionsViewModel: sessionsViewModel)) {
-                            SessionCard(session: displaySession)
+                    ForEach(Array(sessionsViewModel.sessions.prefix(10))) { session in
+                        Button(action: {
+                            router.goTo(.feedbackFromSession(session: session))
+                        }) {
+                            SessionCard(session: session)
                         }
-                        .simultaneousGesture(
-                            TapGesture()
-                                .onEnded { _ in
-                                    // Set the active session when the button is tapped
-                                    print("🔍 Setting active session to: \(displaySession.id)")
-                                    sessionsViewModel.setActiveSession(by: displaySession.id)
-                                }
-                        )
                         .buttonStyle(PlainButtonStyle())
                     }
 
@@ -204,7 +197,7 @@ struct HomeView: View {
                         VStack(spacing: 8) {
                             ProgressView()
                                 .scaleEffect(0.8)
-                            
+
                             Text("Loading...")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -223,12 +216,12 @@ struct HomeView: View {
 // MARK: - Session Card
 
 struct SessionCard: View {
-    let session: SessionDisplayItem
+    let session: SessionItem
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // AsyncImage for loading actual session image
-            AsyncImage(url: URL(string: session.imageUrl)) { image in
+            AsyncImage(url: URL(string: session.materialUrl)) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -244,7 +237,7 @@ struct SessionCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.title)
+                Text(String(session.standardDescription.prefix(50)))
                     .font(.headline)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
@@ -258,15 +251,15 @@ struct SessionCard: View {
 
                 HStack(spacing: 8) {
                     // Key terms count
-                    if session.keyTermsCount > 0 {
-                        Label("\(session.keyTermsCount)", systemImage: "book.fill")
+                    if session.keyTerms.count > 0 {
+                        Label("\(session.keyTerms.count)", systemImage: "book.fill")
                             .font(.caption2)
                             .foregroundColor(.blue)
                     }
 
                     // Suggestions count
-                    if session.suggestionsCount > 0 {
-                        Label("\(session.suggestionsCount)", systemImage: "lightbulb.fill")
+                    if session.suggestions.count > 0 {
+                        Label("\(session.suggestions.count)", systemImage: "lightbulb.fill")
                             .font(.caption2)
                             .foregroundColor(.orange)
                     }
@@ -279,8 +272,7 @@ struct SessionCard: View {
     }
 }
 
-
-
 #Preview {
     HomeView()
+        .environmentObject(Router())
 }
