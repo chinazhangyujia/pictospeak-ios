@@ -20,8 +20,8 @@ struct ContentView: View {
                         CaptureView()
                     case let .speak(selectedImage, mediaType):
                         SpeakView(selectedImage: selectedImage, mediaType: mediaType)
-                    case let .feedbackFromSession(session):
-                        FeedbackView(session: session)
+                    case let .feedbackFromSession(sessionId, pastSessionsViewModel):
+                        FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                     case let .feedbackFromSpeak(selectedImage, audioData, mediaType):
                         FeedbackView(selectedImage: selectedImage, audioData: audioData, mediaType: mediaType)
                     }

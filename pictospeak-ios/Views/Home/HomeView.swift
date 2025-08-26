@@ -165,7 +165,7 @@ struct HomeView: View {
                 LazyHStack(spacing: 16) {
                     ForEach(Array(sessionsViewModel.sessions.prefix(10))) { session in
                         Button(action: {
-                            router.goTo(.feedbackFromSession(session: session))
+                            router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
                         }) {
                             SessionCard(session: session)
                         }

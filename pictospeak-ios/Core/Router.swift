@@ -4,7 +4,7 @@ enum AppRoute: Hashable {
     case home
     case capture
     case speak(selectedImage: UIImage, mediaType: MediaType)
-    case feedbackFromSession(session: SessionItem)
+    case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
     case feedbackFromSpeak(selectedImage: UIImage, audioData: Data, mediaType: MediaType)
 
     func hash(into hasher: inout Hasher) {
@@ -17,9 +17,10 @@ enum AppRoute: Hashable {
             hasher.combine(2)
             hasher.combine(selectedImage.hashValue)
             hasher.combine(mediaType)
-        case let .feedbackFromSession(session):
+        case let .feedbackFromSession(sessionId, pastSessionsViewModel):
             hasher.combine(3)
-            hasher.combine(session.id)
+            hasher.combine(sessionId)
+            hasher.combine(ObjectIdentifier(pastSessionsViewModel))
         case let .feedbackFromSpeak(selectedImage, audioData, mediaType):
             hasher.combine(4)
             hasher.combine(selectedImage.hashValue)
@@ -36,8 +37,8 @@ enum AppRoute: Hashable {
             return true
         case let (.speak(lhsImage, lhsMediaType), .speak(rhsImage, rhsMediaType)):
             return lhsImage.hashValue == rhsImage.hashValue && lhsMediaType == rhsMediaType
-        case let (.feedbackFromSession(lhsSession), .feedbackFromSession(rhsSession)):
-            return lhsSession.id == rhsSession.id
+        case let (.feedbackFromSession(lhsSessionId, lhsPastSessionsViewModel), .feedbackFromSession(rhsSessionId, rhsPastSessionsViewModel)):
+            return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
         case let (.feedbackFromSpeak(lhsImage, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsAudioData, rhsMediaType)):
             return lhsImage.hashValue == rhsImage.hashValue && lhsAudioData.hashValue == rhsAudioData.hashValue && lhsMediaType == rhsMediaType
         default:

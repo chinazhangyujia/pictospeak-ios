@@ -76,7 +76,12 @@ struct FeedbackView: View {
     @StateObject private var viewModel: FeedbackViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
     @State private var expandedCards: Set<UUID> = []
-    let session: SessionItem?
+    let sessionId: UUID?
+    var session: SessionItem? {
+        pastSessionsViewModel.sessions.first { $0.id == sessionId }
+    }
+
+    @ObservedObject private var pastSessionsViewModel: PastSessionsViewModel
 
     // Thinking process animation
     @State private var currentThinkingStep = 0
@@ -96,32 +101,32 @@ struct FeedbackView: View {
 
     // Default initializer for normal use
     init(selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
-        print("🔍 Created FeedbackFromSpeak: \(selectedImage)")
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
-        session = nil
+        sessionId = nil
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel())
     }
 
     // Initializer for previews with fake data
     init(selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
-        print("🔍 Created FeedbackFromSpeak: \(selectedImage)")
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
-        session = nil
+        sessionId = nil
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel())
     }
 
     // Initializer for session viewing mode (without showFeedbackView binding)
-    init(session: SessionItem) {
-        print("🔍 Created FeedbackFromSession")
-        self.session = session
+    init(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel) {
+        self.sessionId = sessionId
         selectedImage = nil
         audioData = nil
         mediaType = nil
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+        _pastSessionsViewModel = ObservedObject(wrappedValue: pastSessionsViewModel)
     }
 
     enum FeedbackTab {
@@ -185,8 +190,6 @@ struct FeedbackView: View {
             }
         }
         .onAppear {
-            // Start thinking animation timer
-            print("🔍 FeedbackView onAppear: \(session)")
             startThinkingAnimation()
 
             // Only load feedback if we don't already have preview data and we're in normal mode
@@ -391,9 +394,24 @@ struct FeedbackView: View {
                                     }
                                 }
                             },
-                            onFavoriteToggle: { _, _ in
-                                // In normal feedback mode, we don't have a PastSessionsViewModel to update
-                                // This is just for display purposes
+                            onFavoriteToggle: { termId, isFavorite in
+                                // Only proceed if the keyTerm is fully loaded (has all required data)
+                                guard !displayKeyTerm.term.isEmpty, !displayKeyTerm.translation.isEmpty, !displayKeyTerm.example.isEmpty else {
+                                    return
+                                }
+
+                                // Update server-side favorite status
+                                Task {
+                                    do {
+                                        try await FavoriteService.shared.updateKeyTermFavorite(
+                                            termId: termId.uuidString,
+                                            favorite: isFavorite
+                                        )
+                                        print("✅ Successfully updated key term favorite on server: \(termId) -> \(isFavorite)")
+                                    } catch {
+                                        print("❌ Failed to update key term favorite on server: \(error)")
+                                    }
+                                }
                             }
                         )
                         .id("chosen-keyterm-\(index)")
@@ -455,9 +473,24 @@ struct FeedbackView: View {
                                     }
                                 }
                             },
-                            onFavoriteToggle: { _, _ in
-                                // In normal feedback mode, we don't have a PastSessionsViewModel to update
-                                // This is just for display purposes
+                            onFavoriteToggle: { suggestionId, isFavorite in
+                                // Only proceed if the suggestion is fully loaded (has all required data)
+                                guard !displaySuggestion.term.isEmpty, !displaySuggestion.refinement.isEmpty, !displaySuggestion.translation.isEmpty, !displaySuggestion.reason.isEmpty else {
+                                    return
+                                }
+
+                                // Update server-side favorite status
+                                Task {
+                                    do {
+                                        try await FavoriteService.shared.updateSuggestionFavorite(
+                                            suggestionId: suggestionId.uuidString,
+                                            favorite: isFavorite
+                                        )
+                                        print("✅ Successfully updated suggestion favorite on server: \(suggestionId) -> \(isFavorite)")
+                                    } catch {
+                                        print("❌ Failed to update suggestion favorite on server: \(error)")
+                                    }
+                                }
                             }
                         )
                         .id("chosen-suggestion-\(index)")
@@ -585,11 +618,30 @@ struct FeedbackView: View {
                                 expandedCards.insert(keyTerm.id)
                             }
                         },
-                        onFavoriteToggle: { _, _ in
-                            // pastSessionsViewModel.updateKeyTermFavorite(
-                            //     termId: termId,
-                            //     favorite: isFavorite
-                            // )
+                        onFavoriteToggle: { termId, isFavorite in
+                            // Only proceed if the keyTerm is fully loaded (has all required data)
+                            guard !keyTerm.term.isEmpty, !keyTerm.translation.isEmpty, !keyTerm.example.isEmpty else {
+                                return
+                            }
+
+                            pastSessionsViewModel.updateKeyTermFavorite(
+                                sessionId: session.id,
+                                termId: termId,
+                                favorite: isFavorite
+                            )
+
+                            // Update server-side favorite status
+                            Task {
+                                do {
+                                    try await FavoriteService.shared.updateKeyTermFavorite(
+                                        termId: termId.uuidString,
+                                        favorite: isFavorite
+                                    )
+                                    print("✅ Successfully updated key term favorite on server: \(termId) -> \(isFavorite)")
+                                } catch {
+                                    print("❌ Failed to update key term favorite on server: \(error)")
+                                }
+                            }
                         }
                     )
                     .id(keyTerm.id)
@@ -607,11 +659,30 @@ struct FeedbackView: View {
                                 expandedCards.insert(suggestion.id)
                             }
                         },
-                        onFavoriteToggle: { _, _ in
-                            // pastSessionsViewModel.updateSuggestionFavorite(
-                            //     suggestionId: suggestionId,
-                            //     favorite: isFavorite
-                            // )
+                        onFavoriteToggle: { suggestionId, isFavorite in
+                            // Only proceed if the suggestion is fully loaded (has all required data)
+                            guard !suggestion.term.isEmpty, !suggestion.refinement.isEmpty, !suggestion.translation.isEmpty, !suggestion.reason.isEmpty else {
+                                return
+                            }
+
+                            pastSessionsViewModel.updateSuggestionFavorite(
+                                sessionId: session.id,
+                                suggestionId: suggestionId,
+                                favorite: isFavorite
+                            )
+
+                            // Update server-side favorite status
+                            Task {
+                                do {
+                                    try await FavoriteService.shared.updateSuggestionFavorite(
+                                        suggestionId: suggestionId.uuidString,
+                                        favorite: isFavorite
+                                    )
+                                    print("✅ Successfully updated suggestion favorite on server: \(suggestionId) -> \(isFavorite)")
+                                } catch {
+                                    print("❌ Failed to update suggestion favorite on server: \(error)")
+                                }
+                            }
                         }
                     )
                     .id(suggestion.id)
