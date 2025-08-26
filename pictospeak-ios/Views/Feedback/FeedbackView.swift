@@ -53,14 +53,35 @@ struct SkeletonPlaceholder: View {
     }
 }
 
+// MARK: - View Extensions
+
+extension View {
+    func appTitle() -> some View {
+        font(.title2)
+            .fontWeight(.semibold)
+            .foregroundColor(.primary)
+    }
+
+    func appCardText(fontSize: CGFloat = 16) -> some View {
+        font(.system(size: fontSize, weight: .regular))
+            .foregroundColor(.primary)
+            .lineSpacing(2)
+    }
+}
+
 // MARK: - FeedbackView
 
 struct FeedbackView: View {
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var router: Router
     @StateObject private var viewModel: FeedbackViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
-    @Binding var showFeedbackView: Bool
     @State private var expandedCards: Set<UUID> = []
+    let sessionId: UUID?
+    var session: SessionItem? {
+        pastSessionsViewModel.sessions.first { $0.id == sessionId }
+    }
+
+    @ObservedObject private var pastSessionsViewModel: PastSessionsViewModel
 
     // Thinking process animation
     @State private var currentThinkingStep = 0
@@ -73,42 +94,39 @@ struct FeedbackView: View {
         "Almost ready…",
     ]
 
-    // For session viewing mode
-    let session: SessionDisplayItem?
-
     // For normal feedback mode
     let selectedImage: UIImage?
     let audioData: Data?
     let mediaType: MediaType?
 
     // Default initializer for normal use
-    init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
-        _showFeedbackView = showFeedbackView
-        session = nil
+    init(selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+        sessionId = nil
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel())
     }
 
     // Initializer for previews with fake data
-    init(showFeedbackView: Binding<Bool>, selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
-        _showFeedbackView = showFeedbackView
-        session = nil
+    init(selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
+        sessionId = nil
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel())
     }
 
-    // New initializer for session viewing
-    init(showFeedbackView: Binding<Bool>, session: SessionDisplayItem) {
-        _showFeedbackView = showFeedbackView
-        self.session = session
+    // Initializer for session viewing mode (without showFeedbackView binding)
+    init(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel) {
+        self.sessionId = sessionId
         selectedImage = nil
         audioData = nil
         mediaType = nil
         _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+        _pastSessionsViewModel = ObservedObject(wrappedValue: pastSessionsViewModel)
     }
 
     enum FeedbackTab {
@@ -125,7 +143,6 @@ struct FeedbackView: View {
                     .ignoresSafeArea()
 
                 if let session = session {
-                    // Session viewing mode - show session data directly
                     ScrollViewReader { proxy in
                         ScrollView {
                             VStack(spacing: 30) {
@@ -173,7 +190,6 @@ struct FeedbackView: View {
             }
         }
         .onAppear {
-            // Start thinking animation timer
             startThinkingAnimation()
 
             // Only load feedback if we don't already have preview data and we're in normal mode
@@ -361,6 +377,7 @@ struct FeedbackView: View {
                             term: chosenTerm, // Always use chosen term
                             translation: matchingKeyTerm?.translation ?? "", // Real translation or empty for skeleton
                             example: matchingKeyTerm?.example ?? "", // Real example or empty for skeleton
+                            favorite: matchingKeyTerm?.favorite ?? false,
                             id: matchingKeyTerm?.id ?? UUID() // Use real ID if available
                         )
 
@@ -376,6 +393,25 @@ struct FeedbackView: View {
                                         expandedCards.insert(displayKeyTerm.id)
                                     }
                                 }
+                            },
+                            onFavoriteToggle: { termId, isFavorite in
+                                // Only proceed if the keyTerm is fully loaded (has all required data)
+                                guard !displayKeyTerm.term.isEmpty, !displayKeyTerm.translation.isEmpty, !displayKeyTerm.example.isEmpty else {
+                                    return
+                                }
+
+                                // Update server-side favorite status
+                                Task {
+                                    do {
+                                        try await FavoriteService.shared.updateKeyTermFavorite(
+                                            termId: termId.uuidString,
+                                            favorite: isFavorite
+                                        )
+                                        print("✅ Successfully updated key term favorite on server: \(termId) -> \(isFavorite)")
+                                    } catch {
+                                        print("❌ Failed to update key term favorite on server: \(error)")
+                                    }
+                                }
                             }
                         )
                         .id("chosen-keyterm-\(index)")
@@ -385,7 +421,7 @@ struct FeedbackView: View {
                     ForEach(0 ..< 2, id: \.self) { _ in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: 10) {
                                     SkeletonPlaceholder(width: 100, height: 16)
                                     SkeletonPlaceholder(width: 150, height: 14)
                                 }
@@ -393,7 +429,10 @@ struct FeedbackView: View {
 
                                 Spacer()
 
-                                SkeletonPlaceholder(width: 16, height: 16)
+                                VStack(spacing: 10) {
+                                    SkeletonPlaceholder(width: 16, height: 16)
+                                    SkeletonPlaceholder(width: 16, height: 16)
+                                }
                             }
                             .padding(16)
                         }
@@ -417,6 +456,7 @@ struct FeedbackView: View {
                             refinement: chosenRefinement, // Always use chosen refinement
                             translation: matchingSuggestion?.translation ?? "", // Real translation or empty for skeleton
                             reason: matchingSuggestion?.reason ?? "", // Real reason or empty for skeleton
+                            favorite: matchingSuggestion?.favorite ?? false, // Real favorite status or false for skeleton
                             id: matchingSuggestion?.id ?? UUID() // Use real ID if available
                         )
 
@@ -430,6 +470,25 @@ struct FeedbackView: View {
                                         expandedCards.remove(displaySuggestion.id)
                                     } else {
                                         expandedCards.insert(displaySuggestion.id)
+                                    }
+                                }
+                            },
+                            onFavoriteToggle: { suggestionId, isFavorite in
+                                // Only proceed if the suggestion is fully loaded (has all required data)
+                                guard !displaySuggestion.term.isEmpty, !displaySuggestion.refinement.isEmpty, !displaySuggestion.translation.isEmpty, !displaySuggestion.reason.isEmpty else {
+                                    return
+                                }
+
+                                // Update server-side favorite status
+                                Task {
+                                    do {
+                                        try await FavoriteService.shared.updateSuggestionFavorite(
+                                            suggestionId: suggestionId.uuidString,
+                                            favorite: isFavorite
+                                        )
+                                        print("✅ Successfully updated suggestion favorite on server: \(suggestionId) -> \(isFavorite)")
+                                    } catch {
+                                        print("❌ Failed to update suggestion favorite on server: \(error)")
                                     }
                                 }
                             }
@@ -449,7 +508,10 @@ struct FeedbackView: View {
 
                                 Spacer()
 
-                                SkeletonPlaceholder(width: 16, height: 16)
+                                VStack(spacing: 10) {
+                                    SkeletonPlaceholder(width: 16, height: 16)
+                                    SkeletonPlaceholder(width: 16, height: 16)
+                                }
                             }
                             .padding(16)
                         }
@@ -463,7 +525,7 @@ struct FeedbackView: View {
 
     // MARK: - Session Viewing Mode Methods
 
-    private func textComparisonSectionForSession(_ session: SessionDisplayItem, scrollProxy _: @escaping (UUID, UnitPoint?) -> Void) -> some View {
+    private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy _: @escaping (UUID, UnitPoint?) -> Void) -> some View {
         VStack(spacing: 20) {
             // Tab Selector
             HStack(spacing: 0) {
@@ -534,7 +596,7 @@ struct FeedbackView: View {
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
-    private func suggestionsAndKeyTermsSectionForSession(_ session: SessionDisplayItem) -> some View {
+    private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             // Section title - always show since session data is already loaded
             Text("Key Expressions")
@@ -555,6 +617,31 @@ struct FeedbackView: View {
                             } else {
                                 expandedCards.insert(keyTerm.id)
                             }
+                        },
+                        onFavoriteToggle: { termId, isFavorite in
+                            // Only proceed if the keyTerm is fully loaded (has all required data)
+                            guard !keyTerm.term.isEmpty, !keyTerm.translation.isEmpty, !keyTerm.example.isEmpty else {
+                                return
+                            }
+
+                            pastSessionsViewModel.updateKeyTermFavorite(
+                                sessionId: session.id,
+                                termId: termId,
+                                favorite: isFavorite
+                            )
+
+                            // Update server-side favorite status
+                            Task {
+                                do {
+                                    try await FavoriteService.shared.updateKeyTermFavorite(
+                                        termId: termId.uuidString,
+                                        favorite: isFavorite
+                                    )
+                                    print("✅ Successfully updated key term favorite on server: \(termId) -> \(isFavorite)")
+                                } catch {
+                                    print("❌ Failed to update key term favorite on server: \(error)")
+                                }
+                            }
                         }
                     )
                     .id(keyTerm.id)
@@ -571,6 +658,31 @@ struct FeedbackView: View {
                             } else {
                                 expandedCards.insert(suggestion.id)
                             }
+                        },
+                        onFavoriteToggle: { suggestionId, isFavorite in
+                            // Only proceed if the suggestion is fully loaded (has all required data)
+                            guard !suggestion.term.isEmpty, !suggestion.refinement.isEmpty, !suggestion.translation.isEmpty, !suggestion.reason.isEmpty else {
+                                return
+                            }
+
+                            pastSessionsViewModel.updateSuggestionFavorite(
+                                sessionId: session.id,
+                                suggestionId: suggestionId,
+                                favorite: isFavorite
+                            )
+
+                            // Update server-side favorite status
+                            Task {
+                                do {
+                                    try await FavoriteService.shared.updateSuggestionFavorite(
+                                        suggestionId: suggestionId.uuidString,
+                                        favorite: isFavorite
+                                    )
+                                    print("✅ Successfully updated suggestion favorite on server: \(suggestionId) -> \(isFavorite)")
+                                } catch {
+                                    print("❌ Failed to update suggestion favorite on server: \(error)")
+                                }
+                            }
                         }
                     )
                     .id(suggestion.id)
@@ -584,8 +696,7 @@ struct FeedbackView: View {
     private var customHeader: some View {
         HStack {
             Button(action: {
-                showFeedbackView = false
-                dismiss()
+                router.resetToHome()
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
@@ -895,6 +1006,7 @@ struct FeedbackView: View {
         let suggestion: Suggestion
         let isExpanded: Bool
         let onToggle: () -> Void
+        let onFavoriteToggle: (UUID, Bool) -> Void
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
@@ -904,9 +1016,10 @@ struct FeedbackView: View {
                         onToggle()
                     }
                 }) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            // Show term -> refinement when expanded, only refinement when collapsed
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left side: Content (Term/Refinement + Translation)
+                        VStack(alignment: .leading, spacing: 10) {
+                            // Row 1: Term/Refinement
                             if suggestion.refinement.isEmpty {
                                 SkeletonPlaceholder(width: 100, height: 16)
                             } else {
@@ -916,7 +1029,7 @@ struct FeedbackView: View {
                                 )
                             }
 
-                            // Only show translation if we have it (not empty)
+                            // Row 2: Translation
                             if suggestion.translation.isEmpty {
                                 SkeletonPlaceholder(width: 150, height: 14)
                             } else {
@@ -924,16 +1037,34 @@ struct FeedbackView: View {
                                     .appCardText()
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                        // Only show chevron if card can be expanded
-                        if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
-                            SkeletonPlaceholder(width: 16, height: 16)
-                        } else {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                                .padding(.top, 2)
+                        // Right side: Controls (Star + Chevron)
+                        VStack(spacing: 10) {
+                            // Star button with waving effect when refinement is empty
+                            if suggestion.refinement.isEmpty {
+                                SkeletonPlaceholder(width: 16, height: 16)
+                                    .modifier(ShimmerEffect())
+                            } else {
+                                Button(action: {
+                                    onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                                }) {
+                                    Image(systemName: suggestion.favorite ? "star.fill" : "star")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(suggestion.favorite ? .yellow : .gray)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .frame(width: 20, height: 20)
+                                .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty)
+                            }
+
+                            // Chevron
+                            if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
+                                SkeletonPlaceholder(width: 20, height: 16)
+                            } else {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                         }
                     }
                     .padding(16)
@@ -965,6 +1096,41 @@ struct FeedbackView: View {
             }
             .background(Color(.systemGray5))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    // MARK: - Highlighted Key Term Text
+
+    struct HighlightedKeyTermText: View {
+        let term: String
+
+        var body: some View {
+            Text(createAttributedText())
+                .appCardText()
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        private func createAttributedText() -> AttributedString {
+            var attributedString = AttributedString()
+
+            // Add padding spaces with background
+            var paddingStart = AttributedString(" ")
+            paddingStart.backgroundColor = Color.green.opacity(0.3)
+
+            // Add the highlighted term
+            var termText = AttributedString(term)
+            termText.backgroundColor = Color.green.opacity(0.3)
+
+            // Add padding spaces with background
+            var paddingEnd = AttributedString(" ")
+            paddingEnd.backgroundColor = Color.green.opacity(0.3)
+
+            attributedString.append(paddingStart)
+            attributedString.append(termText)
+            attributedString.append(paddingEnd)
+
+            return attributedString
         }
     }
 
@@ -1014,47 +1180,13 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: - Highlighted Key Term Text
-
-    struct HighlightedKeyTermText: View {
-        let term: String
-
-        var body: some View {
-            Text(createAttributedText())
-                .appCardText()
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        private func createAttributedText() -> AttributedString {
-            var attributedString = AttributedString()
-
-            // Add padding spaces with background
-            var paddingStart = AttributedString(" ")
-            paddingStart.backgroundColor = Color.green.opacity(0.3)
-
-            // Add the highlighted term
-            var termText = AttributedString(term)
-            termText.backgroundColor = Color.green.opacity(0.3)
-
-            // Add padding spaces with background
-            var paddingEnd = AttributedString(" ")
-            paddingEnd.backgroundColor = Color.green.opacity(0.3)
-
-            attributedString.append(paddingStart)
-            attributedString.append(termText)
-            attributedString.append(paddingEnd)
-
-            return attributedString
-        }
-    }
-
     // MARK: - Key Term Card
 
     struct KeyTermCard: View {
         let keyTerm: KeyTerm
         let isExpanded: Bool
         let onToggle: () -> Void
+        let onFavoriteToggle: (UUID, Bool) -> Void
 
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
@@ -1064,14 +1196,17 @@ struct FeedbackView: View {
                         onToggle()
                     }
                 }) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left side: Content (Term + Translation)
+                        VStack(alignment: .leading, spacing: 10) {
+                            // Row 1: Term
                             if keyTerm.term.isEmpty {
                                 SkeletonPlaceholder(width: 100, height: 16)
                             } else {
                                 HighlightedKeyTermText(term: keyTerm.term)
                             }
 
+                            // Row 2: Translation
                             if keyTerm.translation.isEmpty {
                                 SkeletonPlaceholder(width: 150, height: 14)
                             } else {
@@ -1080,14 +1215,32 @@ struct FeedbackView: View {
                             }
                         }
 
-                        Spacer()
+                        // Right side: Controls (Star + Chevron)
+                        VStack(spacing: 10) {
+                            // Star button with waving effect when term is empty
+                            if keyTerm.term.isEmpty {
+                                SkeletonPlaceholder(width: 16, height: 16)
+                                    .modifier(ShimmerEffect())
+                            } else {
+                                Button(action: {
+                                    onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
+                                }) {
+                                    Image(systemName: keyTerm.favorite ? "star.fill" : "star")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(keyTerm.favorite ? .yellow : .gray)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .frame(width: 20, height: 20)
+                            }
 
-                        if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
-                            SkeletonPlaceholder(width: 16, height: 16)
-                        } else {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                            // Chevron
+                            if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
+                                SkeletonPlaceholder(width: 20, height: 16)
+                            } else {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                         }
                     }
                     .padding(16)
@@ -1125,7 +1278,6 @@ struct FeedbackView: View {
 #Preview {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1137,7 +1289,7 @@ struct FeedbackView: View {
                 chosenKeyTerms: ["Hello", "World"],
                 chosenRefinements: ["Hi", "Earth"],
                 chosenItemsGenerated: true
-            )
+            ),
         )
     }
 }
@@ -1145,7 +1297,6 @@ struct FeedbackView: View {
 #Preview("Loading State - No Data") {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1157,7 +1308,7 @@ struct FeedbackView: View {
                 chosenKeyTerms: nil,
                 chosenRefinements: nil,
                 chosenItemsGenerated: false
-            )
+            ),
         )
     }
 }
@@ -1165,7 +1316,6 @@ struct FeedbackView: View {
 #Preview("Loading State - Chosen Items Only") {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1177,7 +1327,7 @@ struct FeedbackView: View {
                 chosenKeyTerms: ["sample", "text"],
                 chosenRefinements: ["improved", "better"],
                 chosenItemsGenerated: true
-            )
+            ),
         )
     }
 }
@@ -1185,7 +1335,6 @@ struct FeedbackView: View {
 #Preview("Fully Loaded") {
     NavigationView {
         FeedbackView(
-            showFeedbackView: .constant(true),
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
             audioData: Data(),
             mediaType: .image,
@@ -1193,17 +1342,17 @@ struct FeedbackView: View {
                 originalText: "This is the original text that needs improvement.",
                 refinedText: "This is the refined and improved text version.",
                 suggestions: [
-                    Suggestion(term: "text", refinement: "content", translation: "内容", reason: "More specific term", id: UUID()),
-                    Suggestion(term: "needs", refinement: "requires", translation: "需要", reason: "More formal", id: UUID()),
+                    Suggestion(term: "text", refinement: "content", translation: "内容", reason: "More specific term", favorite: false, id: UUID()),
+                    Suggestion(term: "needs", refinement: "requires", translation: "需要", reason: "More formal", favorite: false, id: UUID()),
                 ],
                 keyTerms: [
-                    KeyTerm(term: "original", translation: "原始的", example: "This is the original version", id: UUID()),
-                    KeyTerm(term: "improvement", translation: "改进", example: "We need to make improvements", id: UUID()),
+                    KeyTerm(term: "original", translation: "原始的", example: "This is the original version", favorite: false, id: UUID()),
+                    KeyTerm(term: "improvement", translation: "改进", example: "We need to make improvements", favorite: false, id: UUID()),
                 ],
                 chosenKeyTerms: ["original", "improvement"],
                 chosenRefinements: ["content", "requires"],
                 chosenItemsGenerated: true
-            )
+            ),
         )
     }
 }

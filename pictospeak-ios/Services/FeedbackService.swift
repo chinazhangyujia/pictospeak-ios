@@ -305,19 +305,22 @@ class FeedbackService {
                 term: "There is",
                 refinement: "There's",
                 translation: "There is",
-                reason: "\"There's\" is a common contraction in spoken English, making the sentence sound more natural."
+                reason: "\"There's\" is a common contraction in spoken English, making the sentence sound more natural.",
+                favorite: false
             ),
             Suggestion(
                 term: "He is",
                 refinement: "He's",
                 translation: "He is",
-                reason: "\"He's\" is a natural contraction that makes the speech flow better."
+                reason: "\"He's\" is a natural contraction that makes the speech flow better.",
+                favorite: false
             ),
             Suggestion(
                 term: "a little wet or something",
                 refinement: "slightly wet",
                 translation: "a little wet or something",
-                reason: "\"Slightly wet\" is more precise and fits naturally in the context."
+                reason: "\"Slightly wet\" is more precise and fits naturally in the context.",
+                favorite: false
             ),
         ]
 
@@ -325,17 +328,20 @@ class FeedbackService {
             KeyTerm(
                 term: "happily chasing",
                 translation: "To pursue something with joy and enthusiasm - common phrase to describe playful behavior",
-                example: "The dog is happily chasing the ball."
+                example: "The dog is happily chasing the ball.",
+                favorite: false
             ),
             KeyTerm(
                 term: "looking ahead",
                 translation: "To focus on what's in front or plan for the future - describes forward-focused attention",
-                example: "The dog is looking ahead to the ball."
+                example: "The dog is looking ahead to the ball.",
+                favorite: false
             ),
             KeyTerm(
                 term: "droplets scattering",
                 translation: "Small drops of liquid being dispersed in different directions - vivid description of water movement",
-                example: "The droplets are scattering around the dog."
+                example: "The droplets are scattering around the dog.",
+                favorite: false
             ),
         ]
 

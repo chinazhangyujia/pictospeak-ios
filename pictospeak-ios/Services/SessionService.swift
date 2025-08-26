@@ -51,6 +51,7 @@ class SessionService {
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
+        urlRequest.timeoutInterval = 30 // Add timeout
 
         // Add Authorization header with random Bearer token
         urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
@@ -61,33 +62,48 @@ class SessionService {
             let (data, response) = try await URLSession.shared.data(for: urlRequest)
 
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
                 throw SessionError.serverError
             }
 
-            print("📡 Past sessions response status: \(httpResponse.statusCode)")
-
             guard httpResponse.statusCode == 200 else {
                 print("❌ Past sessions API error: \(httpResponse.statusCode)")
+                // Try to read error response body
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
                 throw SessionError.serverError
             }
 
             let decoder = JSONDecoder()
-            let paginatedResponse = try decoder.decode(PaginatedSessionResponse.self, from: data)
+            decoder.keyDecodingStrategy = .useDefaultKeys
 
-            print("✅ Successfully loaded \(paginatedResponse.items.count) past sessions")
-            if let nextCursor = paginatedResponse.nextCursor {
-                print("📄 Next page cursor: \(nextCursor)")
-            } else {
-                print("📄 No more pages available")
+            do {
+                let paginatedResponse = try decoder.decode(PaginatedSessionResponse.self, from: data)
+
+                if let nextCursor = paginatedResponse.nextCursor {
+                    print("📄 Next page cursor: \(nextCursor)")
+                } else {
+                    print("📄 No more pages available")
+                }
+
+                return paginatedResponse
+            } catch {
+                print("❌ Decoding error: \(error)")
+                print("❌ Decoding error details: \(error.localizedDescription)")
+                throw SessionError.decodingError
             }
 
-            return paginatedResponse
-
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            print("❌ URL Error code: \(urlError.code.rawValue)")
+            throw SessionError.networkError
         } catch let decodingError as DecodingError {
             print("❌ Failed to decode past sessions response: \(decodingError)")
             throw SessionError.decodingError
         } catch {
-            print("❌ Network error fetching past sessions: \(error)")
+            print("❌ Unexpected error fetching past sessions: \(error)")
+            print("❌ Error type: \(type(of: error))")
             throw SessionError.networkError
         }
     }

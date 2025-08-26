@@ -103,18 +103,20 @@ struct Suggestion: Codable, Identifiable {
     let refinement: String
     let translation: String
     let reason: String
+    let favorite: Bool
 
-    init(term: String, refinement: String, translation: String, reason: String, id: UUID? = nil) {
+    init(term: String, refinement: String, translation: String, reason: String, favorite: Bool, id: UUID? = nil) {
         self.term = term
         self.refinement = refinement
         self.translation = translation
         self.reason = reason
+        self.favorite = favorite
         self.id = id ?? UUID()
     }
 
     // Custom Codable implementation to handle optional id from JSON
     private enum CodingKeys: String, CodingKey {
-        case id, term, refinement, translation, reason
+        case id, term, refinement, translation, reason, favorite
     }
 
     init(from decoder: Decoder) throws {
@@ -123,6 +125,7 @@ struct Suggestion: Codable, Identifiable {
         refinement = try container.decode(String.self, forKey: .refinement)
         translation = try container.decode(String.self, forKey: .translation)
         reason = try container.decode(String.self, forKey: .reason)
+        favorite = try container.decode(Bool.self, forKey: .favorite)
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
     }
 }
@@ -134,17 +137,19 @@ struct KeyTerm: Codable, Identifiable {
     let term: String
     let translation: String
     let example: String
+    let favorite: Bool
 
-    init(term: String, translation: String, example: String, id: UUID? = nil) {
+    init(term: String, translation: String, example: String, favorite: Bool, id: UUID? = nil) {
         self.term = term
         self.translation = translation
         self.example = example
+        self.favorite = favorite
         self.id = id ?? UUID()
     }
 
     // Custom Codable implementation to handle optional id from JSON
     private enum CodingKeys: String, CodingKey {
-        case id, term, translation, example
+        case id, term, translation, example, favorite
     }
 
     init(from decoder: Decoder) throws {
@@ -152,6 +157,7 @@ struct KeyTerm: Codable, Identifiable {
         term = try container.decode(String.self, forKey: .term)
         translation = try container.decode(String.self, forKey: .translation)
         example = try container.decode(String.self, forKey: .example)
+        favorite = try container.decode(Bool.self, forKey: .favorite)
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
     }
 }

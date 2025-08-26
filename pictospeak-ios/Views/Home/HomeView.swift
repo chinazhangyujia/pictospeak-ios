@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject private var router: Router
     @StateObject private var sessionsViewModel = PastSessionsViewModel()
 
     var body: some View {
-        NavigationStack {
+        ZStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Header Section
@@ -27,9 +28,23 @@ struct HomeView: View {
                 .padding(.top, 10)
             }
             .background(Color(.systemBackground))
-            .navigationBarHidden(true)
+
+            // Loading overlay for refresh
+            if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
+                VStack {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading sessions...")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground).opacity(0.8))
+            }
         }
         .task {
+            sessionsViewModel.clearError() // Clear any stale errors
             await sessionsViewModel.loadInitialSessions()
         }
         .refreshable {
@@ -41,6 +56,7 @@ struct HomeView: View {
             }
             Button("Retry") {
                 Task {
+                    sessionsViewModel.clearError() // Clear error before retrying
                     await sessionsViewModel.loadInitialSessions()
                 }
             }
@@ -88,7 +104,9 @@ struct HomeView: View {
 
     private var centralActionSection: some View {
         VStack(spacing: 16) {
-            NavigationLink(destination: CaptureView()) {
+            Button(action: {
+                router.goTo(.capture)
+            }) {
                 VStack(spacing: 12) {
                     ZStack {
                         Circle()
@@ -145,9 +163,11 @@ struct HomeView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
-                    ForEach(Array(sessionsViewModel.displaySessions.prefix(10))) { displaySession in
-                        NavigationLink(destination: SessionFeedbackWrapper(session: displaySession)) {
-                            SessionCard(session: displaySession)
+                    ForEach(Array(sessionsViewModel.sessions.prefix(10))) { session in
+                        Button(action: {
+                            router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
+                        }) {
+                            SessionCard(session: session)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -172,6 +192,19 @@ struct HomeView: View {
                             .background(Color(.systemGray6))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
+                    } else if sessionsViewModel.isLoading {
+                        // Show loading indicator when loading
+                        VStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+
+                            Text("Loading...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(width: 140, height: 80)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
                 .padding(.horizontal, 4)
@@ -183,12 +216,12 @@ struct HomeView: View {
 // MARK: - Session Card
 
 struct SessionCard: View {
-    let session: SessionDisplayItem
+    let session: SessionItem
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // AsyncImage for loading actual session image
-            AsyncImage(url: URL(string: session.imageUrl)) { image in
+            AsyncImage(url: URL(string: session.materialUrl)) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -204,7 +237,7 @@ struct SessionCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.title)
+                Text(String(session.standardDescription.prefix(50)))
                     .font(.headline)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
@@ -218,15 +251,15 @@ struct SessionCard: View {
 
                 HStack(spacing: 8) {
                     // Key terms count
-                    if session.keyTermsCount > 0 {
-                        Label("\(session.keyTermsCount)", systemImage: "book.fill")
+                    if session.keyTerms.count > 0 {
+                        Label("\(session.keyTerms.count)", systemImage: "book.fill")
                             .font(.caption2)
                             .foregroundColor(.blue)
                     }
 
                     // Suggestions count
-                    if session.suggestionsCount > 0 {
-                        Label("\(session.suggestionsCount)", systemImage: "lightbulb.fill")
+                    if session.suggestions.count > 0 {
+                        Label("\(session.suggestions.count)", systemImage: "lightbulb.fill")
                             .font(.caption2)
                             .foregroundColor(.orange)
                     }
@@ -239,17 +272,7 @@ struct SessionCard: View {
     }
 }
 
-// MARK: - Session Feedback Wrapper
-
-struct SessionFeedbackWrapper: View {
-    let session: SessionDisplayItem
-    @State private var showFeedbackView = true
-
-    var body: some View {
-        FeedbackView(showFeedbackView: $showFeedbackView, session: session)
-    }
-}
-
 #Preview {
     HomeView()
+        .environmentObject(Router())
 }
