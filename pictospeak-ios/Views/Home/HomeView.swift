@@ -10,6 +10,12 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var router: Router
     @StateObject private var sessionsViewModel = PastSessionsViewModel()
+    @State private var selectedMode: NavigationMode = .home
+
+    enum NavigationMode {
+        case home
+        case review
+    }
 
     var body: some View {
         ZStack {
@@ -18,14 +24,18 @@ struct HomeView: View {
                     // Header Section
                     headerSection
 
-                    // Central Call-to-Action Section
-                    centralActionSection
+                    // Start Talking Section
+                    startTalkingSection
+
+                    // Review Section
+                    reviewSection
 
                     // Recent Sessions Section
                     recentSessionsSection
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
+                .padding(.bottom, 120) // Add bottom padding for navigation overlay
             }
             .background(Color(.systemBackground))
 
@@ -41,6 +51,79 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemBackground).opacity(0.8))
+            }
+
+            // Custom bottom navigation overlay
+            VStack {
+                Spacer()
+
+                HStack(spacing: 0) {
+                    // Home/Review switch button
+                    HStack(spacing: 0) {
+                        // Home button
+                        Button(action: {
+                            selectedMode = .home
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "house.fill")
+                                    .font(.system(size: 16))
+                                Text("Home")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(selectedMode == .home ? .blue : .gray)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(selectedMode == .home ? .white : .clear)
+                            )
+                        }
+
+                        // Review button
+                        Button(action: {
+                            selectedMode = .review
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "book")
+                                    .font(.system(size: 16))
+                                Text("Review")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(selectedMode == .review ? .blue : .gray)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(selectedMode == .review ? .white : .clear)
+                            )
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(Color(.systemGray6))
+                    )
+                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+
+                    Spacer()
+
+                    // Record button
+                    Button(action: {
+                        // Navigate to capture view
+                        router.goTo(.capture)
+                    }) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray)
+                            .frame(width: 50, height: 50)
+                            .background(
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                            )
+                    }
+                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 34) // Account for safe area
             }
         }
         .task {
@@ -94,44 +177,72 @@ struct HomeView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
 
-            Text("Spot something interesting nearby?")
+            Text("Ready to practice with real scenarios?")
                 .font(.body)
                 .foregroundColor(.secondary)
         }
     }
 
-    // MARK: - Central Call-to-Action Section
+    // MARK: - Start Talking Section
 
-    private var centralActionSection: some View {
-        VStack(spacing: 16) {
-            Button(action: {
-                router.goTo(.capture)
-            }) {
-                VStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.purple.opacity(0.1))
-                            .frame(width: 80, height: 80)
+    private var startTalkingSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Start Talking")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
 
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.purple)
+            Text("Tap a video to start speaking")
+                .font(.body)
+                .foregroundColor(.secondary)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 16) {
+                    ForEach(scenarioPreviews, id: \.id) { scenario in
+                        Button(action: {
+                            // Handle scenario selection
+                        }) {
+                            ScenarioPreviewCard(scenario: scenario)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-
-                    Text("Start a New PicTalk")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
                 }
+                .padding(.horizontal, 4)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemGray6))
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-            )
         }
+    }
+
+    // MARK: - Review Section
+
+    private var reviewSection: some View {
+        HStack {
+            Image(systemName: "book")
+                .font(.title2)
+                .foregroundColor(.primary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Review today · 5 due")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+            }
+
+            Spacer()
+
+            Button("Start review") {
+                // Handle review action
+            }
+            .font(.body)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.blue)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(16)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Recent Sessions Section
@@ -269,6 +380,84 @@ struct SessionCard: View {
             }
         }
         .frame(width: 140)
+    }
+}
+
+// MARK: - Scenario Preview Card
+
+struct ScenarioPreviewCard: View {
+    let scenario: ScenarioPreview
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                // Background gradient
+                scenario.backgroundColor
+                    .frame(width: 120, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // Icon
+                Image(systemName: scenario.systemImageName)
+                    .font(.system(size: 32))
+                    .foregroundColor(scenario.foregroundColor)
+
+                // Add a subtle overlay to make text more readable
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.black.opacity(0.1))
+                    .frame(width: 120, height: 80)
+            }
+        }
+        .frame(width: 120)
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+    }
+}
+
+// MARK: - Models for Placeholder Data
+
+struct ScenarioPreview {
+    let id = UUID()
+    let systemImageName: String
+    let foregroundColor: Color
+    let backgroundColor: LinearGradient
+    let title: String
+}
+
+// MARK: - Placeholder Data
+
+extension HomeView {
+    private var scenarioPreviews: [ScenarioPreview] {
+        [
+            ScenarioPreview(
+                systemImageName: "dog.fill",
+                foregroundColor: .brown,
+                backgroundColor: LinearGradient(
+                    colors: [.green.opacity(0.3), .brown.opacity(0.2)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                title: "Dog Playing"
+            ),
+            ScenarioPreview(
+                systemImageName: "cup.and.saucer.fill",
+                foregroundColor: .orange,
+                backgroundColor: LinearGradient(
+                    colors: [.blue.opacity(0.3), .orange.opacity(0.2)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                title: "Coffee Shop"
+            ),
+            ScenarioPreview(
+                systemImageName: "cart.fill",
+                foregroundColor: .green,
+                backgroundColor: LinearGradient(
+                    colors: [.blue.opacity(0.3), .green.opacity(0.2)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                title: "Grocery Store"
+            ),
+        ]
     }
 }
 
