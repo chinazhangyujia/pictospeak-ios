@@ -130,6 +130,7 @@ struct HomeView: View {
             sessionsViewModel.clearError() // Clear any stale errors
             await sessionsViewModel.loadInitialSessions()
         }
+        .navigationBarBackButtonHidden(true)
         .refreshable {
             await sessionsViewModel.refreshSessions()
         }
@@ -359,24 +360,6 @@ struct SessionCard: View {
                     .foregroundColor(.secondary)
                     .lineLimit(2)
                     .frame(height: 32, alignment: .top)
-
-                HStack(spacing: 8) {
-                    // Key terms count
-                    if session.keyTerms.count > 0 {
-                        Label("\(session.keyTerms.count)", systemImage: "book.fill")
-                            .font(.caption2)
-                            .foregroundColor(.blue)
-                    }
-
-                    // Suggestions count
-                    if session.suggestions.count > 0 {
-                        Label("\(session.suggestions.count)", systemImage: "lightbulb.fill")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                    }
-
-                    Spacer()
-                }
             }
         }
         .frame(width: 140)

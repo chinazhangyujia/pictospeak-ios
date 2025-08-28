@@ -11,7 +11,7 @@ struct ContentView: View {
     @StateObject private var router = Router()
     var body: some View {
         NavigationStack(path: $router.path) {
-            HomeView()
+            OnboardingLanguageToLearnView()
                 .navigationDestination(for: AppRoute.self) { route in
                     switch route {
                     case .home:
@@ -24,6 +24,10 @@ struct ContentView: View {
                         FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                     case let .feedbackFromSpeak(selectedImage, audioData, mediaType):
                         FeedbackView(selectedImage: selectedImage, audioData: audioData, mediaType: mediaType)
+                    case .onboardingLanguageToLearn:
+                        OnboardingLanguageToLearnView()
+                    case .onboardingLearningLanguage:
+                        OnboardingLearningLanguageView()
                     }
                 }
         }
