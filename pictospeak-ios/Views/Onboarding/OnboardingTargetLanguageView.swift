@@ -1,5 +1,5 @@
 //
-//  OnboardingLanguageToLearnView.swift
+//  OnboardingTargetLanguageView.swift
 //  pictospeak-ios
 //
 //  Created by AI Assistant
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct OnboardingLanguageToLearnView: View {
+struct OnboardingTargetLanguageView: View {
     @EnvironmentObject private var router: Router
     @State private var selectedLanguage: String = "English"
 
@@ -63,7 +63,7 @@ struct OnboardingLanguageToLearnView: View {
 
             // Continue button
             Button(action: {
-                router.goTo(.onboardingLearningLanguage)
+                router.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage))
             }) {
                 Text("Continue")
                     .font(.system(size: 18, weight: .semibold))
@@ -90,6 +90,6 @@ struct OnboardingLanguageToLearnView: View {
 }
 
 #Preview {
-    OnboardingLanguageToLearnView()
+    OnboardingTargetLanguageView()
         .environmentObject(Router())
 }

@@ -1,5 +1,5 @@
 //
-//  OnboardingLearningLanguageView.swift
+//  OnboardingNativeLanguageView.swift
 //  pictospeak-ios
 //
 //  Created by AI Assistant
@@ -7,16 +7,22 @@
 
 import SwiftUI
 
-struct OnboardingLearningLanguageView: View {
+struct OnboardingNativeLanguageView: View {
     @EnvironmentObject private var router: Router
-    @State private var selectedLearningLanguage: String = "English"
+    @EnvironmentObject private var contentViewModel: ContentViewModel
+    let selectedTargetLanguage: String
+    @State private var selectedNativeLanguage: String = "Chinese"
+
+    init(selectedTargetLanguage: String) {
+        self.selectedTargetLanguage = selectedTargetLanguage
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // Top navigation
             HStack {
                 Button(action: {
-                    router.goTo(.onboardingLanguageToLearn)
+                    router.goBack()
                 }) {
                     Image(systemName: "chevron.left")
                         .font(.title2)
@@ -52,22 +58,22 @@ struct OnboardingLearningLanguageView: View {
                     LanguageOptionView(
                         flag: "🇨🇳",
                         language: "中文 (简体)",
-                        isSelected: selectedLearningLanguage == "Chinese",
-                        action: { selectedLearningLanguage = "Chinese" }
+                        isSelected: selectedNativeLanguage == "Chinese",
+                        action: { selectedNativeLanguage = "Chinese" }
                     )
 
                     // English option
                     LanguageOptionView(
                         flag: "🇺🇸",
                         language: "English",
-                        isSelected: selectedLearningLanguage == "English",
-                        action: { selectedLearningLanguage = "English" }
+                        isSelected: selectedNativeLanguage == "English",
+                        action: { selectedNativeLanguage = "English" }
                     )
                 }
 
                 // Request other languages link
                 Button(action: {
-                    // TODO: Implement request other languages functionality
+                    print("🔐 Requesting other languages")
                 }) {
                     Text("Request other languages")
                         .font(.system(size: 16))
@@ -81,8 +87,7 @@ struct OnboardingLearningLanguageView: View {
 
             // Get Started button
             Button(action: {
-                // TODO: Complete onboarding and go to main app
-                router.goTo(.home)
+                completeOnboarding()
             }) {
                 Text("Get Started")
                     .font(.system(size: 18, weight: .semibold))
@@ -106,6 +111,22 @@ struct OnboardingLearningLanguageView: View {
         )
         .navigationBarHidden(true)
     }
+
+    private func completeOnboarding() {
+        // Create user setting from selected languages
+        let userSetting = UserSetting(
+            targetLanguage: selectedTargetLanguage.uppercased(),
+            nativeLanguage: selectedNativeLanguage.uppercased()
+        )
+        
+        // Set the user setting in ContentViewModel
+        contentViewModel.setUserSetting(userSetting)
+
+        // Pop to root
+        router.popToRoot()
+    }
+    
+
 }
 
 struct LanguageOptionView: View {
@@ -160,6 +181,7 @@ struct LanguageOptionView: View {
 }
 
 #Preview {
-    OnboardingLearningLanguageView()
+    OnboardingNativeLanguageView(selectedTargetLanguage: "English")
         .environmentObject(Router())
+        .environmentObject(ContentViewModel())
 }

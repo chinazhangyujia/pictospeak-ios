@@ -6,8 +6,8 @@ enum AppRoute: Hashable {
     case speak(selectedImage: UIImage, mediaType: MediaType)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
     case feedbackFromSpeak(selectedImage: UIImage, audioData: Data, mediaType: MediaType)
-    case onboardingLanguageToLearn
-    case onboardingLearningLanguage
+    case onboardingTargetLanguage
+    case onboardingNativeLanguage(selectedTargetLanguage: String)
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -28,10 +28,11 @@ enum AppRoute: Hashable {
             hasher.combine(selectedImage.hashValue)
             hasher.combine(audioData.hashValue)
             hasher.combine(mediaType)
-        case .onboardingLanguageToLearn:
+        case .onboardingTargetLanguage:
             hasher.combine(5)
-        case .onboardingLearningLanguage:
+        case let .onboardingNativeLanguage(selectedTargetLanguage):
             hasher.combine(6)
+            hasher.combine(selectedTargetLanguage)
         }
     }
 
@@ -47,10 +48,10 @@ enum AppRoute: Hashable {
             return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
         case let (.feedbackFromSpeak(lhsImage, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsAudioData, rhsMediaType)):
             return lhsImage.hashValue == rhsImage.hashValue && lhsAudioData.hashValue == rhsAudioData.hashValue && lhsMediaType == rhsMediaType
-        case (.onboardingLanguageToLearn, .onboardingLanguageToLearn):
+        case (.onboardingTargetLanguage, .onboardingTargetLanguage):
             return true
-        case (.onboardingLearningLanguage, .onboardingLearningLanguage):
-            return true
+        case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage), .onboardingNativeLanguage(rhsSelectedTargetLanguage)):
+            return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
         default:
             return false
         }
@@ -58,7 +59,24 @@ enum AppRoute: Hashable {
 }
 
 final class Router: ObservableObject {
-    @Published var path = NavigationPath()
+    @Published var path = NavigationPath() {
+        didSet {
+            print("🧭 Navigation stack changed:")
+            print("   Previous count: \(oldValue.count)")
+            print("   New count: \(path.count)")
+            
+            // Log the current routes in the stack
+            if path.count > 0 {
+                print("   Current routes:")
+                // Note: NavigationPath doesn't expose individual routes easily
+                // We can only see the count, but this is still useful for debugging
+                print("     Stack contains \(path.count) route(s)")
+            } else {
+                print("   Stack is empty")
+            }
+            print("---")
+        }
+    }
 
     func resetToHome() {
         path = NavigationPath() // Pops everything to HomeView
@@ -66,5 +84,9 @@ final class Router: ObservableObject {
 
     func goTo(_ route: AppRoute) {
         path.append(route)
+    }
+
+    func goBack() {
+        path.removeLast()
     }
 }
