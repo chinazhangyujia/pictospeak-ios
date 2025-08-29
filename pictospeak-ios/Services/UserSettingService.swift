@@ -76,6 +76,7 @@ class UserSettingService {
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .useDefaultKeys
             
+            print("🔍 Data: \(data)")
             do {
                 let backendResponse = try decoder.decode(BackendUserSettingResponse.self, from: data)
                 
@@ -103,6 +104,60 @@ class UserSettingService {
             throw UserSettingError.unknownError
         }
     }
+    
+    /// Updates user settings on the backend
+    /// - Parameter userSetting: The UserSetting to update
+    func createUserSettings(_ userSetting: UserSetting) async throws {
+        guard let url = URL(string: baseURL + "/user-setting") else {
+            throw UserSettingError.invalidURL
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.timeoutInterval = 30
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Add Authorization header with random Bearer token
+        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
+        
+        // Encode the userSetting as JSON for the request body
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .useDefaultKeys
+        
+        do {
+            let jsonData = try encoder.encode(userSetting)
+            urlRequest.httpBody = jsonData
+            
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw UserSettingError.serverError
+            }
+            
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Update user settings API error: \(httpResponse.statusCode)")
+                // Try to read error response body
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                throw UserSettingError.serverError
+            }
+            
+            print("✅ Successfully updated user settings")
+            
+        } catch let encodingError as EncodingError {
+            print("❌ Encoding error: \(encodingError)")
+            throw UserSettingError.encodingError
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            print("❌ URL Error code: \(urlError.code.rawValue)")
+            throw UserSettingError.networkError
+        } catch {
+            print("❌ Unexpected error: \(error)")
+            throw UserSettingError.unknownError
+        }
+    }
 }
 
 // MARK: - Error Types
@@ -112,6 +167,7 @@ enum UserSettingError: Error, LocalizedError {
     case networkError
     case serverError
     case decodingError
+    case encodingError
     case unknownError
     
     var errorDescription: String? {
@@ -124,6 +180,8 @@ enum UserSettingError: Error, LocalizedError {
             return "Server error occurred"
         case .decodingError:
             return "Failed to decode response"
+        case .encodingError:
+            return "Failed to encode request"
         case .unknownError:
             return "Unknown error occurred"
         }

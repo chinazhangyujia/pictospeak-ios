@@ -119,9 +119,19 @@ struct OnboardingNativeLanguageView: View {
             nativeLanguage: selectedNativeLanguage.uppercased()
         )
         
+        // Update user settings on the backend
+        Task {
+            do {
+                try await UserSettingService.shared.createUserSettings(userSetting)
+                print("✅ User settings updated successfully on backend")
+            } catch {
+                print("❌ Failed to update user settings on backend: \(error)")
+                // Continue with onboarding even if backend update fails
+            }
+        }
+        
         // Set the user setting in ContentViewModel
         contentViewModel.setUserSetting(userSetting)
-
     }
     
 
