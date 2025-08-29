@@ -64,7 +64,7 @@ final class Router: ObservableObject {
             print("🧭 Navigation stack changed:")
             print("   Previous count: \(oldValue.count)")
             print("   New count: \(path.count)")
-            
+
             // Log the current routes in the stack
             if path.count > 0 {
                 print("   Current routes:")

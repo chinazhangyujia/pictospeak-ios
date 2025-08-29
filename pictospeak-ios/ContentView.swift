@@ -11,7 +11,7 @@ struct ContentView: View {
     @StateObject private var router = Router()
     @StateObject private var onboardingRouter = OnboardingRouter()
     @StateObject private var contentViewModel = ContentViewModel()
-    
+
     var body: some View {
         Group {
             if contentViewModel.isLoading {

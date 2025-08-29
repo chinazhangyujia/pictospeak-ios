@@ -118,7 +118,7 @@ struct OnboardingNativeLanguageView: View {
             targetLanguage: selectedTargetLanguage.uppercased(),
             nativeLanguage: selectedNativeLanguage.uppercased()
         )
-        
+
         // Update user settings on the backend
         Task {
             do {
@@ -129,12 +129,10 @@ struct OnboardingNativeLanguageView: View {
                 // Continue with onboarding even if backend update fails
             }
         }
-        
+
         // Set the user setting in ContentViewModel
         contentViewModel.setUserSetting(userSetting)
     }
-    
-
 }
 
 struct LanguageOptionView: View {
