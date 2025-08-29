@@ -9,39 +9,53 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var router = Router()
+    @StateObject private var onboardingRouter = OnboardingRouter()
     @StateObject private var contentViewModel = ContentViewModel()
     
     var body: some View {
-        NavigationStack(path: $router.path) {
-            Group {
-                if contentViewModel.isLoading {
-                    LoadingView()
-                } else if contentViewModel.hasUserSettings {
+        Group {
+            if contentViewModel.isLoading {
+                LoadingView()
+            } else if contentViewModel.hasUserSettings {
+                NavigationStack(path: $router.path) {
                     HomeView()
-                } else {
-                    OnboardingTargetLanguageView()
+                        .navigationDestination(for: AppRoute.self) { route in
+                            switch route {
+                            case .home:
+                                HomeView()
+                            case .capture:
+                                CaptureView()
+                            case let .speak(selectedImage, mediaType):
+                                SpeakView(selectedImage: selectedImage, mediaType: mediaType)
+                            case let .feedbackFromSession(sessionId, pastSessionsViewModel):
+                                FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
+                            case let .feedbackFromSpeak(selectedImage, audioData, mediaType):
+                                FeedbackView(selectedImage: selectedImage, audioData: audioData, mediaType: mediaType)
+                            case .onboardingTargetLanguage:
+                                OnboardingTargetLanguageView()
+                            case let .onboardingNativeLanguage(selectedTargetLanguage):
+                                OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
+                            }
+                        }
                 }
-            }
-            .navigationDestination(for: AppRoute.self) { route in
-                switch route {
-                case .home:
-                    HomeView()
-                case .capture:
-                    CaptureView()
-                case let .speak(selectedImage, mediaType):
-                    SpeakView(selectedImage: selectedImage, mediaType: mediaType)
-                case let .feedbackFromSession(sessionId, pastSessionsViewModel):
-                    FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
-                case let .feedbackFromSpeak(selectedImage, audioData, mediaType):
-                    FeedbackView(selectedImage: selectedImage, audioData: audioData, mediaType: mediaType)
-                case .onboardingTargetLanguage:
+            } else {
+                NavigationStack(path: $onboardingRouter.path) {
                     OnboardingTargetLanguageView()
-                case let .onboardingNativeLanguage(selectedTargetLanguage):
-                    OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
+                        .navigationDestination(for: AppRoute.self) { route in
+                            switch route {
+                            case .onboardingTargetLanguage:
+                                OnboardingTargetLanguageView()
+                            case let .onboardingNativeLanguage(selectedTargetLanguage):
+                                OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
+                            default:
+                                EmptyView()
+                            }
+                        }
                 }
             }
         }
         .environmentObject(router)
+        .environmentObject(onboardingRouter)
         .environmentObject(contentViewModel)
     }
 }

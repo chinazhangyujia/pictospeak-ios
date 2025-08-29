@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct OnboardingTargetLanguageView: View {
-    @EnvironmentObject private var router: Router
+    @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @State private var selectedLanguage: String = "English"
 
     var body: some View {
@@ -63,7 +63,7 @@ struct OnboardingTargetLanguageView: View {
 
             // Continue button
             Button(action: {
-                router.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage))
+                onboardingRouter.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage))
             }) {
                 Text("Continue")
                     .font(.system(size: 18, weight: .semibold))

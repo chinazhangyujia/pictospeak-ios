@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct OnboardingNativeLanguageView: View {
-    @EnvironmentObject private var router: Router
+    @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
     let selectedTargetLanguage: String
     @State private var selectedNativeLanguage: String = "Chinese"
@@ -22,7 +22,7 @@ struct OnboardingNativeLanguageView: View {
             // Top navigation
             HStack {
                 Button(action: {
-                    router.goBack()
+                    onboardingRouter.goBack()
                 }) {
                     Image(systemName: "chevron.left")
                         .font(.title2)
@@ -122,8 +122,6 @@ struct OnboardingNativeLanguageView: View {
         // Set the user setting in ContentViewModel
         contentViewModel.setUserSetting(userSetting)
 
-        // Pop to root
-        router.popToRoot()
     }
     
 
