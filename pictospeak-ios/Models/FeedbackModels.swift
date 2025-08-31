@@ -170,8 +170,3 @@ struct FeedbackRequest: Codable {
     let audioData: Data?
     let mediaType: MediaType
 }
-
-enum MediaType: String, Codable {
-    case image
-    case video
-}

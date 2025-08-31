@@ -10,6 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var router: Router
     @StateObject private var sessionsViewModel = PastSessionsViewModel()
+    @StateObject private var materialsModel = InternalUploadedMaterialsModel()
     @State private var selectedMode: NavigationMode = .home
 
     enum NavigationMode {
@@ -133,6 +134,7 @@ struct HomeView: View {
         .navigationBarBackButtonHidden(true)
         .refreshable {
             await sessionsViewModel.refreshSessions()
+            await materialsModel.refresh()
         }
         .alert("Error Loading Sessions", isPresented: .constant(sessionsViewModel.errorMessage != nil)) {
             Button("OK") {
@@ -146,6 +148,19 @@ struct HomeView: View {
             }
         } message: {
             Text(sessionsViewModel.errorMessage ?? "")
+        }
+        .alert("Error Loading Materials", isPresented: .constant(materialsModel.errorMessage != nil)) {
+            Button("OK") {
+                materialsModel.errorMessage = nil
+            }
+            Button("Retry") {
+                Task {
+                    materialsModel.errorMessage = nil
+                    await materialsModel.refresh()
+                }
+            }
+        } message: {
+            Text(materialsModel.errorMessage ?? "")
         }
     }
 
@@ -197,18 +212,63 @@ struct HomeView: View {
                 .font(.body)
                 .foregroundColor(.secondary)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
-                    ForEach(scenarioPreviews, id: \.id) { scenario in
-                        Button(action: {
-                            // Handle scenario selection
-                        }) {
-                            ScenarioPreviewCard(scenario: scenario)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+            if materialsModel.isLoading {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Loading materials...")
+                        .font(.body)
+                        .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 16) {
+                        ForEach(Array(materialsModel.materials.enumerated()), id: \.element.id) { index, material in
+                            Button(action: {
+                                materialsModel.setCurrentIndex(index)
+                                // Handle material selection - navigate to speak view
+                                Task {
+                                    if let url = URL(string: material.materialUrl),
+                                       let imageData = try? Data(contentsOf: url),
+                                       let image = UIImage(data: imageData)
+                                    {
+                                        await MainActor.run {
+                                            router.goTo(.speak(selectedImage: image, mediaType: material.type))
+                                        }
+                                    }
+                                }
+                            }) {
+                                MaterialPreviewCard(material: material)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+
+                        // Show loading indicator if there are more materials to load
+                        if materialsModel.hasMoreMaterials && !materialsModel.isLoading {
+                            Button(action: {
+                                Task {
+                                    await materialsModel.refresh()
+                                }
+                            }) {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "plus.circle")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.blue)
+
+                                    Text("Load More")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                                .frame(width: 120, height: 80)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
             }
         }
     }
@@ -366,28 +426,51 @@ struct SessionCard: View {
     }
 }
 
-// MARK: - Scenario Preview Card
+// MARK: - Material Preview Card
 
-struct ScenarioPreviewCard: View {
-    let scenario: ScenarioPreview
+struct MaterialPreviewCard: View {
+    let material: Material
 
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                // Background gradient
-                scenario.backgroundColor
+                // Material content based on type
+                if material.type == .image {
+                    // Image content
+                    AsyncImage(url: URL(string: material.materialUrl)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        // Placeholder while loading
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .overlay(
+                                Image(systemName: material.type.systemIconName)
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.gray)
+                            )
+                    }
                     .frame(width: 120, height: 80)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    // Video or Audio content - show thumbnail with play button
+                    Rectangle()
+                        .fill(Color(.systemGray5))
+                        .frame(width: 120, height: 80)
+                        .overlay(
+                            VStack(spacing: 8) {
+                                Image(systemName: material.type.systemIconName)
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.gray)
 
-                // Icon
-                Image(systemName: scenario.systemImageName)
-                    .font(.system(size: 32))
-                    .foregroundColor(scenario.foregroundColor)
-
-                // Add a subtle overlay to make text more readable
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.black.opacity(0.1))
-                    .frame(width: 120, height: 80)
+                                Image(systemName: "play.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.white)
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
             }
         }
         .frame(width: 120)
