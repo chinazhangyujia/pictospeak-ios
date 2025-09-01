@@ -110,7 +110,9 @@ class InternalUploadedMaterialsModel: ObservableObject {
 
     /// Returns the current material being viewed
     var currentMaterial: Material? {
-        guard currentIndex >= 0, currentIndex < materials.count else { return nil }
+        guard currentIndex >= 0, currentIndex < materials.count else {
+            return nil
+        }
         return materials[currentIndex]
     }
 

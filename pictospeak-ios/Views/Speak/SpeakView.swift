@@ -10,8 +10,9 @@ import SwiftUI
 
 struct SpeakView: View {
     @EnvironmentObject private var router: Router
-    let selectedImage: UIImage
-    let mediaType: MediaType
+    let selectedImage: UIImage?
+    let selectedVideo: URL?
+    let materialsModel: InternalUploadedMaterialsModel?
     @State private var isRecording = false
     @State private var audioRecorder: AVAudioRecorder?
     @State private var recordingURL: URL?
@@ -19,17 +20,63 @@ struct SpeakView: View {
     @State private var recordingTime: TimeInterval = 0
     @State private var showFeedbackView = false
     @State private var recordedAudioData: Data?
+    @State private var currentImage: UIImage?
+    @State private var currentVideo: URL?
+    @State private var displayImage: UIImage
+
+    init(selectedImage: UIImage) {
+        self.selectedImage = selectedImage
+        selectedVideo = nil
+        materialsModel = nil
+        _currentImage = State(initialValue: selectedImage)
+        _currentVideo = State(initialValue: nil)
+        _displayImage = State(initialValue: selectedImage)
+    }
+
+    init(selectedVideo: URL) {
+        selectedImage = nil
+        self.selectedVideo = selectedVideo
+        materialsModel = nil
+        _currentImage = State(initialValue: nil)
+        _currentVideo = State(initialValue: selectedVideo)
+        _displayImage = State(initialValue: UIImage())
+    }
+
+    init(materialsModel: InternalUploadedMaterialsModel) {
+        selectedImage = nil
+        selectedVideo = nil
+        self.materialsModel = materialsModel
+        _currentImage = State(initialValue: nil)
+        _currentVideo = State(initialValue: nil)
+        _displayImage = State(initialValue: UIImage())
+    }
 
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 // Background Image
-                Image(uiImage: selectedImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-                    .clipped()
-                    .ignoresSafeArea()
+                if displayImage != UIImage() {
+                    Image(uiImage: displayImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                        .gesture(
+                            // Only enable gestures if we have a materialsModel
+                            materialsModel != nil ?
+                                DragGesture()
+                                .onEnded { value in
+                                    handleSwipeGesture(value)
+                                } : nil
+                        )
+                } else {
+                    // Placeholder while loading
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                        .ignoresSafeArea()
+                }
 
                 VStack {
                     topSection
@@ -41,6 +88,11 @@ struct SpeakView: View {
         .navigationBarHidden(true)
         .onAppear {
             setupAudioRecorder()
+
+            // Load material if we have a materials model
+            if let model = materialsModel, let material = model.currentMaterial {
+                loadMaterialSynchronously(material)
+            }
         }
         .onDisappear {
             stopRecording()
@@ -56,7 +108,11 @@ struct SpeakView: View {
                 if let url = recordingURL {
                     do {
                         recordedAudioData = try Data(contentsOf: url)
-                        router.goTo(.feedbackFromSpeak(selectedImage: selectedImage, audioData: recordedAudioData ?? Data(), mediaType: mediaType))
+                        if let currentImage = currentImage {
+                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, audioData: recordedAudioData ?? Data(), mediaType: .image))
+                        } else if let currentVideo = currentVideo {
+                            router.goTo(.feedbackFromSpeak(selectedImage: displayImage, audioData: recordedAudioData ?? Data(), mediaType: .video))
+                        }
                     } catch {
                         print("Failed to read audio data: \(error)")
                     }
@@ -198,10 +254,104 @@ struct SpeakView: View {
         recordingTimer?.invalidate()
         recordingTimer = nil
     }
+
+    // MARK: - Swipe Gesture Functions
+
+    private func handleSwipeGesture(_ value: DragGesture.Value) {
+        guard let model = materialsModel else { return }
+
+        let verticalThreshold: CGFloat = 50
+        let horizontalThreshold: CGFloat = 100
+
+        // Determine swipe direction
+        if abs(value.translation.height) > abs(value.translation.width) {
+            // Vertical swipe
+            if value.translation.height > verticalThreshold {
+                // Swipe down - go to next material
+                handleSwipeDown()
+            } else if value.translation.height < -verticalThreshold {
+                // Swipe up - go to previous material
+                handleSwipeUp()
+            }
+        }
+    }
+
+    private func handleSwipeUp() {
+        guard let model = materialsModel else { return }
+
+        // Check if we can go to next material
+        if model.currentIndex < model.materials.count - 1 || model.hasMoreMaterials {
+            let newIndex = model.currentIndex + 1
+            model.setCurrentIndex(newIndex)
+            loadMaterialSynchronously(model.currentMaterial!)
+        }
+    }
+
+    private func handleSwipeDown() {
+        guard let model = materialsModel else { return }
+
+        // Check if we can go to previous material (index > 0)
+        if model.currentIndex > 0 {
+            let newIndex = model.currentIndex - 1
+            model.setCurrentIndex(newIndex)
+            loadMaterialSynchronously(model.currentMaterial!)
+        }
+    }
+
+    private func loadMaterialSynchronously(_ material: Material) {
+        guard let url = URL(string: material.materialUrl) else {
+            return
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+
+            if material.type == .image {
+                if let image = UIImage(data: data) {
+                    currentImage = image
+                    currentVideo = nil
+                    displayImage = image
+                }
+            } else if material.type == .video {
+                // For video, save to temp file and generate thumbnail
+                let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let videoName = "temp_video_\(Date().timeIntervalSince1970).mov"
+                let videoURL = documentsPath.appendingPathComponent(videoName)
+
+                do {
+                    try data.write(to: videoURL)
+                    let thumbnail = getFirstFrameFromVideo(videoURL)
+                    currentImage = nil
+                    currentVideo = videoURL
+                    displayImage = thumbnail
+                } catch {
+                    print("Error saving video data: \(error)")
+                }
+            }
+        } catch {
+            print("Error downloading data from URL: \(error)")
+        }
+    }
+
+    private func getFirstFrameFromVideo(_ video: URL) -> UIImage {
+        let asset = AVAsset(url: video)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+
+        do {
+            let time = CMTime(seconds: 0, preferredTimescale: 1)
+            let cgImage = try generator.copyCGImage(at: time, actualTime: nil)
+            return UIImage(cgImage: cgImage)
+        } catch {
+            print("Error generating thumbnail: \(error)")
+            // Return a placeholder image if thumbnail generation fails
+            return UIImage(systemName: "video") ?? UIImage()
+        }
+    }
 }
 
 #Preview {
     // Create a sample image for preview
     let sampleImage = UIImage(systemName: "photo") ?? UIImage()
-    SpeakView(selectedImage: sampleImage, mediaType: .image)
+    SpeakView(selectedImage: sampleImage)
 }

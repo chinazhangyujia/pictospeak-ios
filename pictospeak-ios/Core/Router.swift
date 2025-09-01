@@ -3,7 +3,9 @@ import SwiftUI
 enum AppRoute: Hashable {
     case home
     case capture
-    case speak(selectedImage: UIImage, mediaType: MediaType)
+    case speakFromImage(selectedImage: UIImage)
+    case speakFromVideo(selectedVideo: URL)
+    case speakFromMaterials(materialsModel: InternalUploadedMaterialsModel)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
     case feedbackFromSpeak(selectedImage: UIImage, audioData: Data, mediaType: MediaType)
     case onboardingTargetLanguage
@@ -15,10 +17,15 @@ enum AppRoute: Hashable {
             hasher.combine(0)
         case .capture:
             hasher.combine(1)
-        case let .speak(selectedImage, mediaType):
+        case let .speakFromImage(selectedImage):
             hasher.combine(2)
             hasher.combine(selectedImage.hashValue)
-            hasher.combine(mediaType)
+        case let .speakFromVideo(selectedVideo):
+            hasher.combine(3)
+            hasher.combine(selectedVideo.hashValue)
+        case let .speakFromMaterials(materialsModel):
+            hasher.combine(3)
+            hasher.combine(ObjectIdentifier(materialsModel))
         case let .feedbackFromSession(sessionId, pastSessionsViewModel):
             hasher.combine(3)
             hasher.combine(sessionId)
@@ -42,8 +49,12 @@ enum AppRoute: Hashable {
             return true
         case (.capture, .capture):
             return true
-        case let (.speak(lhsImage, lhsMediaType), .speak(rhsImage, rhsMediaType)):
-            return lhsImage.hashValue == rhsImage.hashValue && lhsMediaType == rhsMediaType
+        case let (.speakFromImage(lhsImage), .speakFromImage(rhsImage)):
+            return lhsImage.hashValue == rhsImage.hashValue
+        case let (.speakFromVideo(lhsVideo), .speakFromVideo(rhsVideo)):
+            return lhsVideo.hashValue == rhsVideo.hashValue
+        case let (.speakFromMaterials(lhsMaterialsModel), .speakFromMaterials(rhsMaterialsModel)):
+            return lhsMaterialsModel === rhsMaterialsModel
         case let (.feedbackFromSession(lhsSessionId, lhsPastSessionsViewModel), .feedbackFromSession(rhsSessionId, rhsPastSessionsViewModel)):
             return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
         case let (.feedbackFromSpeak(lhsImage, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsAudioData, rhsMediaType)):

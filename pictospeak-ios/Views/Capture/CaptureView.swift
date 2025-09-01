@@ -8,6 +8,12 @@
 import AVFoundation
 import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
+
+enum CaptureMode: String, CaseIterable {
+    case photo = "Photo"
+    case video = "Video"
+}
 
 struct CaptureView: View {
     @EnvironmentObject private var router: Router
@@ -18,11 +24,7 @@ struct CaptureView: View {
     @State private var isRecording = false
     @State private var recordingTime: TimeInterval = 0
     @State private var timer: Timer?
-
-    enum CaptureMode: String, CaseIterable {
-        case photo = "Photo"
-        case video = "Video"
-    }
+    @State private var selectedVideo: URL?
 
     var body: some View {
         ZStack {
@@ -43,21 +45,13 @@ struct CaptureView: View {
             }
         }
         .navigationBarHidden(true)
-        .onAppear {
-            cameraManager.checkPermissions()
-        }
-        .onChange(of: cameraManager.selectedImage) { _, newValue in
-            if newValue != nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    router.goTo(.speak(selectedImage: cameraManager.selectedImage ?? UIImage(), mediaType: selectedMode == .photo ? .image : .video))
-                }
-            }
-        }
-        .onDisappear {
-            timer?.invalidate()
-        }
+        .onAppear(perform: handleOnAppear)
+        .onChange(of: cameraManager.selectedImage, perform: handleImageChange)
+        .onChange(of: cameraManager.recordedVideoURL, perform: handleRecordedVideoChange)
+        .onChange(of: selectedVideo, perform: handleSelectedVideoChange)
+        .onDisappear(perform: handleOnDisappear)
         .sheet(isPresented: $showingPhotoLibrary) {
-            PhotoPicker(selectedImage: $cameraManager.selectedImage)
+            PhotoPicker(selectedImage: $cameraManager.selectedImage, selectedVideo: $selectedVideo, selectedMode: selectedMode)
         }
         .alert("Camera Access Required", isPresented: $cameraManager.showingPermissionAlert) {
             Button("Settings") {
@@ -117,6 +111,32 @@ struct CaptureView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
+                    .overlay(
+                        // Recording indicator
+                        VStack {
+                            if selectedMode == .video && isRecording {
+                                HStack {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 8, height: 8)
+                                        .scaleEffect(isRecording ? 1.2 : 1.0)
+                                        .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isRecording)
+
+                                    Text("REC")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.red)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.7))
+                                .clipShape(Capsule())
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 16)
+                        .padding(.leading, 16)
+                    )
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
             } else {
@@ -158,6 +178,9 @@ struct CaptureView: View {
                         } else {
                             cameraManager.prepareForPhoto()
                         }
+                        // Clear any selected media when switching modes
+                        cameraManager.selectedImage = nil
+                        selectedVideo = nil
                     }) {
                         Text(mode.rawValue)
                             .font(.body)
@@ -213,6 +236,10 @@ struct CaptureView: View {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Color.red)
                                 .frame(width: 32, height: 32)
+                        } else if selectedMode == .video {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 60, height: 60)
                         } else {
                             Circle()
                                 .fill(
@@ -235,9 +262,17 @@ struct CaptureView: View {
             }
             .padding(.horizontal, 40)
 
-            // Device Info
+            // Device Info and Recording Time
             HStack {
+                if selectedMode == .video && isRecording {
+                    Text(String(format: "%.1fs", recordingTime))
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.leading, 20)
+                }
+
                 Spacer()
+
                 Text("iPhone M")
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -257,7 +292,7 @@ struct CaptureView: View {
 
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             recordingTime += 0.1
-            if recordingTime >= 3.0 {
+            if recordingTime >= 5 { // Allow up to 30 seconds for video recording
                 stopRecording()
             }
         }
@@ -268,6 +303,12 @@ struct CaptureView: View {
         timer?.invalidate()
         timer = nil
         cameraManager.stopRecording()
+
+        // Clear the recorded video URL after a short delay to allow navigation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            cameraManager.recordedVideoURL = nil
+            selectedVideo = nil
+        }
     }
 }
 
@@ -296,11 +337,13 @@ struct CameraPreviewView: UIViewRepresentable {
 
 struct PhotoPicker: UIViewControllerRepresentable {
     @Binding var selectedImage: UIImage?
+    @Binding var selectedVideo: URL?
+    let selectedMode: CaptureMode
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
-        config.filter = .images
+        config.filter = selectedMode == .photo ? .images : .videos
         config.selectionLimit = 1
 
         let picker = PHPickerViewController(configuration: config)
@@ -326,12 +369,42 @@ struct PhotoPicker: UIViewControllerRepresentable {
 
             guard let provider = results.first?.itemProvider else { return }
 
-            if provider.canLoadObject(ofClass: UIImage.self) {
-                provider.loadObject(ofClass: UIImage.self) { image, _ in
-                    DispatchQueue.main.async {
-                        print("PhotoPicker: Setting selectedImage")
-                        self.parent.selectedImage = image as? UIImage
-                        print("PhotoPicker: selectedImage set to \(self.parent.selectedImage != nil)")
+            if parent.selectedMode == .photo {
+                // Handle image selection
+                if provider.canLoadObject(ofClass: UIImage.self) {
+                    provider.loadObject(ofClass: UIImage.self) { image, _ in
+                        DispatchQueue.main.async {
+                            print("PhotoPicker: Setting selectedImage")
+                            self.parent.selectedImage = image as? UIImage
+                            print("PhotoPicker: Setting selectedImage to \(self.parent.selectedImage != nil)")
+                        }
+                    }
+                }
+            } else {
+                // Handle video selection
+                if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                    provider.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
+                        if let error = error {
+                            print("Error loading video: \(error)")
+                            return
+                        }
+
+                        guard let url = url else { return }
+
+                        // Copy video to documents directory
+                        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                        let videoName = "selected_video_\(Date().timeIntervalSince1970).mov"
+                        let destinationURL = documentsPath.appendingPathComponent(videoName)
+
+                        do {
+                            try FileManager.default.copyItem(at: url, to: destinationURL)
+                            DispatchQueue.main.async {
+                                self.parent.selectedVideo = destinationURL
+                                print("PhotoPicker: Video selected and saved to \(destinationURL)")
+                            }
+                        } catch {
+                            print("Error copying video: \(error)")
+                        }
                     }
                 }
             }
@@ -345,6 +418,7 @@ class CameraManager: NSObject, ObservableObject {
     @Published var isCameraAuthorized = false
     @Published var showingPermissionAlert = false
     @Published var selectedImage: UIImage?
+    @Published var recordedVideoURL: URL?
 
     let session = AVCaptureSession()
     private var videoOutput = AVCaptureMovieFileOutput()
@@ -440,6 +514,7 @@ class CameraManager: NSObject, ObservableObject {
         guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         let videoName = "video_\(Date().timeIntervalSince1970).mov"
         let videoURL = documentsPath.appendingPathComponent(videoName)
+        recordedVideoURL = videoURL
         videoOutput.startRecording(to: videoURL, recordingDelegate: self)
     }
 
@@ -468,8 +543,66 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
     func fileOutput(_: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from _: [AVCaptureConnection], error: Error?) {
         if error == nil {
             // Handle successful video recording
-            print("Video saved to: \(outputFileURL)")
+            DispatchQueue.main.async {
+                self.recordedVideoURL = outputFileURL
+                print("Video saved to: \(outputFileURL)")
+            }
+        } else {
+            print("Video recording error: \(error?.localizedDescription ?? "Unknown error")")
         }
+    }
+}
+
+// MARK: - Event Handlers
+
+extension CaptureView {
+    private func handleOnAppear() {
+        cameraManager.checkPermissions()
+        // Reset recording state
+        isRecording = false
+        recordingTime = 0
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func handleImageChange(_ newValue: UIImage?) {
+        if let image = newValue {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                router.goTo(.speakFromImage(selectedImage: image))
+            }
+            // Clear the selected image after navigation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                cameraManager.selectedImage = nil
+            }
+        }
+    }
+
+    private func handleRecordedVideoChange(_ newValue: URL?) {
+        if let videoURL = newValue {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                router.goTo(.speakFromVideo(selectedVideo: videoURL))
+            }
+            // Clear the recorded video after navigation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                cameraManager.recordedVideoURL = nil
+            }
+        }
+    }
+
+    private func handleSelectedVideoChange(_ newValue: URL?) {
+        if let videoURL = newValue {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                router.goTo(.speakFromVideo(selectedVideo: videoURL))
+            }
+            // Clear the selected video after navigation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                selectedVideo = nil
+            }
+        }
+    }
+
+    private func handleOnDisappear() {
+        timer?.invalidate()
     }
 }
 

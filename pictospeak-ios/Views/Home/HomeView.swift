@@ -227,18 +227,10 @@ struct HomeView: View {
                     LazyHStack(spacing: 16) {
                         ForEach(Array(materialsModel.materials.enumerated()), id: \.element.id) { index, material in
                             Button(action: {
+                                // Set the current index to the selected material
                                 materialsModel.setCurrentIndex(index)
-                                // Handle material selection - navigate to speak view
-                                Task {
-                                    if let url = URL(string: material.materialUrl),
-                                       let imageData = try? Data(contentsOf: url),
-                                       let image = UIImage(data: imageData)
-                                    {
-                                        await MainActor.run {
-                                            router.goTo(.speak(selectedImage: image, mediaType: material.type))
-                                        }
-                                    }
-                                }
+                                // Navigate to speak view with the materials model
+                                router.goTo(.speakFromMaterials(materialsModel: materialsModel))
                             }) {
                                 MaterialPreviewCard(material: material)
                             }
