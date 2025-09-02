@@ -73,6 +73,7 @@ extension View {
 
 struct FeedbackView: View {
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var contentViewModel: ContentViewModel
     @StateObject private var viewModel: FeedbackViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
     @State private var expandedCards: Set<UUID> = []
@@ -104,9 +105,9 @@ struct FeedbackView: View {
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
-        _viewModel = StateObject(wrappedValue: FeedbackViewModel())
+        _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
         sessionId = nil
-        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel())
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
     }
 
     // Initializer for previews with fake data
@@ -114,19 +115,19 @@ struct FeedbackView: View {
         self.selectedImage = selectedImage
         self.audioData = audioData
         self.mediaType = mediaType
-        _viewModel = StateObject(wrappedValue: FeedbackViewModel(previewData: previewData))
+        _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel(), previewData: previewData))
         sessionId = nil
-        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel())
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
     }
 
     // Initializer for session viewing mode (without showFeedbackView binding)
-    init(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel) {
+    init(sessionId: UUID, pastSessionsViewModel _: PastSessionsViewModel) {
         self.sessionId = sessionId
         selectedImage = nil
         audioData = nil
         mediaType = nil
-        _viewModel = StateObject(wrappedValue: FeedbackViewModel())
-        _pastSessionsViewModel = ObservedObject(wrappedValue: pastSessionsViewModel)
+        _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
+        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
     }
 
     enum FeedbackTab {
@@ -190,6 +191,8 @@ struct FeedbackView: View {
             }
         }
         .onAppear {
+            viewModel.contentViewModel = contentViewModel
+            pastSessionsViewModel.contentViewModel = contentViewModel
             startThinkingAnimation()
 
             // Only load feedback if we don't already have preview data and we're in normal mode
@@ -404,6 +407,7 @@ struct FeedbackView: View {
                                 Task {
                                     do {
                                         try await FavoriteService.shared.updateKeyTermFavorite(
+                                            authToken: contentViewModel.authToken!,
                                             termId: termId.uuidString,
                                             favorite: isFavorite
                                         )
@@ -483,6 +487,7 @@ struct FeedbackView: View {
                                 Task {
                                     do {
                                         try await FavoriteService.shared.updateSuggestionFavorite(
+                                            authToken: contentViewModel.authToken!,
                                             suggestionId: suggestionId.uuidString,
                                             favorite: isFavorite
                                         )
@@ -634,6 +639,7 @@ struct FeedbackView: View {
                             Task {
                                 do {
                                     try await FavoriteService.shared.updateKeyTermFavorite(
+                                        authToken: contentViewModel.authToken!,
                                         termId: termId.uuidString,
                                         favorite: isFavorite
                                     )
@@ -675,6 +681,7 @@ struct FeedbackView: View {
                             Task {
                                 do {
                                     try await FavoriteService.shared.updateSuggestionFavorite(
+                                        authToken: contentViewModel.authToken!,
                                         suggestionId: suggestionId.uuidString,
                                         favorite: isFavorite
                                     )

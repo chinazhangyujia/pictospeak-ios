@@ -32,20 +32,9 @@ class UserSettingService {
     static let shared = UserSettingService()
     private init() {}
 
-    // MARK: - Helper Methods
-
-    private func generateRandomBearerToken() -> String {
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        let tokenLength = 32
-        let randomString = String((0 ..< tokenLength).map { _ in characters.randomElement()! })
-        return "Bearer \(randomString)"
-    }
-
-    // MARK: - Public Methods
-
     /// Fetches user settings from the backend
     /// - Returns: UserSetting containing native and target language information
-    func getUserSettings() async throws -> UserSetting {
+    func getUserSettings(authToken: String) async throws -> UserSetting {
         guard let url = URL(string: baseURL + "/user-setting") else {
             throw UserSettingError.invalidURL
         }
@@ -54,8 +43,8 @@ class UserSettingService {
         urlRequest.httpMethod = "GET"
         urlRequest.timeoutInterval = 30
 
-        // Add Authorization header with random Bearer token
-        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: urlRequest)
@@ -108,7 +97,7 @@ class UserSettingService {
 
     /// Updates user settings on the backend
     /// - Parameter userSetting: The UserSetting to update
-    func createUserSettings(_ userSetting: UserSetting) async throws {
+    func createUserSettings(authToken: String, userSetting: UserSetting) async throws {
         guard let url = URL(string: baseURL + "/user-setting") else {
             throw UserSettingError.invalidURL
         }
@@ -118,8 +107,8 @@ class UserSettingService {
         urlRequest.timeoutInterval = 30
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        // Add Authorization header with random Bearer token
-        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
         // Encode the userSetting as JSON for the request body
         let encoder = JSONEncoder()

@@ -1,5 +1,5 @@
 //
-//  InternalUploadedMaterialsModel.swift
+//  InternalUploadedMaterialsViewModel.swift
 //  pictospeak-ios
 //
 //  Created by AI Assistant.
@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class InternalUploadedMaterialsModel: ObservableObject {
+class InternalUploadedMaterialsViewModel: ObservableObject {
     // MARK: - Published Properties
 
     @Published var materials: [Material] = []
@@ -21,10 +21,12 @@ class InternalUploadedMaterialsModel: ObservableObject {
     // MARK: - Private Properties
 
     private let service = InternalUploadedMaterialService.shared
+    var contentViewModel: ContentViewModel
 
     // MARK: - Initialization
 
-    init() {
+    init(contentViewModel: ContentViewModel) {
+        self.contentViewModel = contentViewModel
         Task {
             await loadInitialMaterials()
         }
@@ -58,7 +60,7 @@ class InternalUploadedMaterialsModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let response = try await service.fetchInternalUploadedMaterials()
+            let response = try await service.fetchInternalUploadedMaterials(authToken: contentViewModel.authToken!)
             materials = response.items
             nextCursor = response.nextCursor
             currentIndex = 0
@@ -80,7 +82,7 @@ class InternalUploadedMaterialsModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let response = try await service.fetchInternalUploadedMaterials(cursor: cursor)
+            let response = try await service.fetchInternalUploadedMaterials(authToken: contentViewModel.authToken!, cursor: cursor)
 
             // Append new materials to existing list
             materials.append(contentsOf: response.items)

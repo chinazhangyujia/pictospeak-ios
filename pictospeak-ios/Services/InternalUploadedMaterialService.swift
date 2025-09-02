@@ -27,21 +27,10 @@ class InternalUploadedMaterialService {
     static let shared = InternalUploadedMaterialService()
     private init() {}
 
-    // MARK: - Helper Methods
-
-    private func generateRandomBearerToken() -> String {
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        let tokenLength = 32
-        let randomString = String((0 ..< tokenLength).map { _ in characters.randomElement()! })
-        return "Bearer \(randomString)"
-    }
-
-    // MARK: - Public Methods
-
     /// Fetches internal uploaded materials with pagination support
     /// - Parameter cursor: Optional cursor for pagination. Pass nil for the first page.
     /// - Returns: InternalUploadedMaterialsResponse containing materials and next cursor
-    func fetchInternalUploadedMaterials(cursor: String? = nil) async throws -> InternalUploadedMaterialsResponse {
+    func fetchInternalUploadedMaterials(authToken: String, cursor: String? = nil) async throws -> InternalUploadedMaterialsResponse {
         var urlComponents = URLComponents(string: baseURL + "/material/internal-uploaded")!
 
         // Add cursor as query parameter if provided
@@ -57,8 +46,8 @@ class InternalUploadedMaterialService {
         urlRequest.httpMethod = "GET"
         urlRequest.timeoutInterval = 30
 
-        // Add Authorization header with random Bearer token
-        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
         print("🌐 Making request to internal uploaded materials endpoint: \(url)")
 

@@ -18,26 +18,12 @@ class FeedbackService {
 
     // MARK: - Helper Methods
 
-    private func generateRandomBearerToken() -> String {
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        let tokenLength = 32
-        let randomString = String((0 ..< tokenLength).map { _ in characters.randomElement()! })
-        return "Bearer \(randomString)"
-    }
-
-    // MARK: - Public Methods
-
-    func getFeedbackForImage(image: UIImage, audioData: Data) async throws -> FeedbackResponse {
-        // Call actual FastAPI endpoint
-        return try await callImageAPI(image: image, audioData: audioData)
-    }
-
     // New streaming method that emits updates as they arrive
-    func getFeedbackStreamForImage(image: UIImage, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForImage(authToken: String, image: UIImage, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
-                    try await streamImageAPI(image: image, audioData: audioData) { feedbackResponse in
+                    try await streamImageAPI(authToken: authToken, image: image, audioData: audioData) { feedbackResponse in
                         continuation.yield(feedbackResponse)
                     }
                     continuation.finish()
@@ -48,37 +34,7 @@ class FeedbackService {
         }
     }
 
-    func getFeedbackForVideo(videoURL _: URL, audioData _: Data) async throws -> FeedbackResponse {
-        // TODO: Implement actual API call
-        // let videoData = try Data(contentsOf: videoURL)
-        // let request = FeedbackRequest(imageData: nil,
-        //                              videoData: videoData,
-        //                              audioData: audioData,
-        //                              mediaType: .video)
-        // return try await callAPI(endpoint: "/description/guidance/video", request: request)
-
-        // Mock response for now
-        return createMockFeedbackResponse()
-    }
-
-    // MARK: - Private Methods
-
-    private func callImageAPI(image: UIImage, audioData: Data) async throws -> FeedbackResponse {
-        // Use the streaming API but only return the last result
-        var lastResponse: FeedbackResponse?
-
-        for try await response in getFeedbackStreamForImage(image: image, audioData: audioData) {
-            lastResponse = response
-        }
-
-        guard let finalResponse = lastResponse else {
-            throw FeedbackError.serverError
-        }
-
-        return finalResponse
-    }
-
-    private func streamImageAPI(image: UIImage, audioData: Data, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
+    private func streamImageAPI(authToken: String, image: UIImage, audioData: Data, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
         guard let url = URL(string: baseURL + "/description/guidance/image") else {
             throw FeedbackError.invalidURL
         }
@@ -86,8 +42,8 @@ class FeedbackService {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
 
-        // Add Authorization header with random Bearer token
-        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
         // Create multipart form data
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -258,39 +214,6 @@ class FeedbackService {
         } catch {
             print("❌ Network error: \(error)")
             throw FeedbackError.networkError
-        }
-    }
-
-    private func callAPI<T: Codable>(endpoint: String, request: T) async throws -> FeedbackResponse {
-        guard let url = URL(string: baseURL + endpoint) else {
-            throw FeedbackError.invalidURL
-        }
-
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-
-        // Add Authorization header with random Bearer token
-        urlRequest.setValue(generateRandomBearerToken(), forHTTPHeaderField: "Authorization")
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        do {
-            urlRequest.httpBody = try JSONEncoder().encode(request)
-        } catch {
-            throw FeedbackError.encodingError
-        }
-
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200
-        else {
-            throw FeedbackError.serverError
-        }
-
-        do {
-            return try JSONDecoder().decode(FeedbackResponse.self, from: data)
-        } catch {
-            throw FeedbackError.decodingError
         }
     }
 

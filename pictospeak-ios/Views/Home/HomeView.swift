@@ -9,8 +9,9 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var router: Router
-    @StateObject private var sessionsViewModel = PastSessionsViewModel()
-    @StateObject private var materialsModel = InternalUploadedMaterialsModel()
+    @EnvironmentObject private var contentViewModel: ContentViewModel
+    @StateObject private var sessionsViewModel: PastSessionsViewModel = .init(contentViewModel: ContentViewModel())
+    @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init(contentViewModel: ContentViewModel())
     @State private var selectedMode: NavigationMode = .home
 
     enum NavigationMode {
@@ -128,6 +129,8 @@ struct HomeView: View {
             }
         }
         .task {
+            sessionsViewModel.contentViewModel = contentViewModel
+            materialsModel.contentViewModel = contentViewModel
             sessionsViewModel.clearError() // Clear any stale errors
             await sessionsViewModel.loadInitialSessions()
         }
