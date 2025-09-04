@@ -121,13 +121,13 @@ struct FeedbackView: View {
     }
 
     // Initializer for session viewing mode (without showFeedbackView binding)
-    init(sessionId: UUID, pastSessionsViewModel _: PastSessionsViewModel) {
+    init(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel) {
         self.sessionId = sessionId
         selectedImage = nil
         audioData = nil
         mediaType = nil
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
-        _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
+        _pastSessionsViewModel = ObservedObject(wrappedValue: pastSessionsViewModel)
     }
 
     enum FeedbackTab {
@@ -193,10 +193,10 @@ struct FeedbackView: View {
         .onAppear {
             viewModel.contentViewModel = contentViewModel
             pastSessionsViewModel.contentViewModel = contentViewModel
-            startThinkingAnimation()
 
             // Only load feedback if we don't already have preview data and we're in normal mode
             if session == nil && viewModel.feedbackResponse == nil {
+                startThinkingAnimation()
                 guard let selectedImage = selectedImage, let audioData = audioData, let mediaType = mediaType else { return }
                 viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
             }

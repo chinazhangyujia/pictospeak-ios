@@ -22,14 +22,13 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
 
     private let service = InternalUploadedMaterialService.shared
     var contentViewModel: ContentViewModel
+    private var loadingTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
     init(contentViewModel: ContentViewModel) {
         self.contentViewModel = contentViewModel
-        Task {
-            await loadInitialMaterials()
-        }
+        // Don't auto-load in init - let the view control when to load
     }
 
     // MARK: - Public Methods
@@ -49,24 +48,55 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
 
     /// Manually refresh the materials list
     func refresh() async {
-        await loadInitialMaterials()
+        // Cancel any existing loading task
+        loadingTask?.cancel()
+
+        // Create new loading task
+        loadingTask = Task {
+            await loadInitialMaterials()
+        }
+
+        await loadingTask?.value
+    }
+
+    /// Load initial materials (public method for view to call)
+    func loadInitialMaterials() async {
+        // Cancel any existing loading task
+        loadingTask?.cancel()
+
+        // Create new loading task
+        loadingTask = Task {
+            await loadInitialMaterialsInternal()
+        }
+
+        await loadingTask?.value
     }
 
     // MARK: - Private Methods
 
-    /// Loads the initial page of materials
-    private func loadInitialMaterials() async {
+    /// Loads the initial page of materials (internal implementation)
+    private func loadInitialMaterialsInternal() async {
         isLoading = true
         errorMessage = nil
 
         do {
+            // Check if task was cancelled
+            if Task.isCancelled { return }
+
             let response = try await service.fetchInternalUploadedMaterials(authToken: contentViewModel.authToken!)
+
+            // Check if task was cancelled after the request
+            if Task.isCancelled { return }
+
             materials = response.items
             nextCursor = response.nextCursor
             currentIndex = 0
 
             print("✅ Loaded initial materials: \(materials.count) items")
         } catch {
+            // Check if task was cancelled
+            if Task.isCancelled { return }
+
             errorMessage = "Failed to load materials: \(error.localizedDescription)"
             print("❌ Error loading initial materials: \(error)")
         }
@@ -126,5 +156,9 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
     /// Returns whether the current index is valid
     var isCurrentIndexValid: Bool {
         return currentIndex >= 0 && currentIndex < materials.count
+    }
+
+    deinit {
+        loadingTask?.cancel()
     }
 }

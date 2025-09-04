@@ -133,6 +133,7 @@ struct HomeView: View {
             materialsModel.contentViewModel = contentViewModel
             sessionsViewModel.clearError() // Clear any stale errors
             await sessionsViewModel.loadInitialSessions()
+            await materialsModel.loadInitialMaterials()
         }
         .navigationBarBackButtonHidden(true)
         .refreshable {
