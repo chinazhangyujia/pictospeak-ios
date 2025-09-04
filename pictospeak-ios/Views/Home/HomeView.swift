@@ -128,17 +128,44 @@ struct HomeView: View {
                 .padding(.bottom, 34) // Account for safe area
             }
         }
-        .task {
+        .onAppear {
             sessionsViewModel.contentViewModel = contentViewModel
             materialsModel.contentViewModel = contentViewModel
-            sessionsViewModel.clearError() // Clear any stale errors
-            await sessionsViewModel.loadInitialSessions()
-            await materialsModel.loadInitialMaterials()
+
+            // Check if auth token is nil on initial load and redirect to auth
+            if contentViewModel.authToken == nil {
+                print("🔐 No auth token on initial load, navigating to auth view")
+                router.goTo(.auth)
+            }
+        }
+        .task {
+            // Only load data if we have an auth token
+            if contentViewModel.authToken != nil {
+                sessionsViewModel.clearError() // Clear any stale errors
+                await sessionsViewModel.loadInitialSessions()
+                await materialsModel.loadInitialMaterials()
+            }
         }
         .navigationBarBackButtonHidden(true)
         .refreshable {
             await sessionsViewModel.refreshSessions()
             await materialsModel.refresh()
+        }
+        .onChange(of: contentViewModel.authToken) { oldValue, newValue in
+            // Auto-route to auth when token becomes null
+            if oldValue != nil && newValue == nil {
+                print("🔐 Auth token became null, navigating to auth view")
+                router.goTo(.auth)
+            }
+            // When token becomes available, load data
+            else if oldValue == nil && newValue != nil {
+                print("🔐 Auth token became available, loading data")
+                Task {
+                    sessionsViewModel.clearError()
+                    await sessionsViewModel.loadInitialSessions()
+                    await materialsModel.loadInitialMaterials()
+                }
+            }
         }
         .alert("Error Loading Sessions", isPresented: .constant(sessionsViewModel.errorMessage != nil)) {
             Button("OK") {
@@ -181,7 +208,7 @@ struct HomeView: View {
                 Spacer()
 
                 Button(action: {
-                    // Settings action
+                    contentViewModel.signOut()
                 }) {
                     Image(systemName: "gearshape.fill")
                         .font(.title2)

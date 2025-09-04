@@ -10,6 +10,7 @@ import SwiftUI
 struct AuthView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
+    @EnvironmentObject private var router: Router
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var isPasswordVisible: Bool = false
@@ -21,18 +22,21 @@ struct AuthView: View {
         VStack(spacing: 0) {
             // Top navigation
             HStack {
-                Button(action: {
-                    onboardingRouter.goBack()
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 40, height: 40)
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                // Only show back button if onboarding is not completed
+                if !contentViewModel.hasOnboardingCompleted {
+                    Button(action: {
+                        onboardingRouter.goBack()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 40, height: 40)
+                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
 
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.black)
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.black)
+                        }
                     }
                 }
                 Spacer()
@@ -262,7 +266,11 @@ struct AuthView: View {
             // Update ContentViewModel with auth token
             await MainActor.run {
                 isLoading = false
+                UserDefaultManager.shared.saveValue(true, forKey: UserDefaultKeys.hasOnboardingCompleted)
                 contentViewModel.hasOnboardingCompleted = true
+
+                // Reset navigation to home after successful sign-up
+                router.resetToHome()
             }
 
         } catch {
@@ -282,10 +290,16 @@ struct AuthView: View {
 
             await contentViewModel.readAuthTokenFromKeychain()
             await contentViewModel.loadUserSettings()
+            print("✅ auth token: \(contentViewModel.authToken)")
 
             await MainActor.run {
+                print("✅ auth token: \(contentViewModel.authToken)")
                 isLoading = false
+                UserDefaultManager.shared.saveValue(true, forKey: UserDefaultKeys.hasOnboardingCompleted)
                 contentViewModel.hasOnboardingCompleted = true
+
+                // Reset navigation to home after successful sign-in
+                router.resetToHome()
             }
 
         } catch {

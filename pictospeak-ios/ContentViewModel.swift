@@ -17,12 +17,13 @@ class ContentViewModel: ObservableObject {
     @Published var error: String?
 
     private let userSettingService = UserSettingService.shared
+    private let authService = AuthService.shared
 
     init() {
         Task {
             await readAuthTokenFromKeychain()
             await loadUserSettings()
-            await loadOnboardingCompleted()
+            loadOnboardingCompleted()
         }
     }
 
@@ -30,9 +31,12 @@ class ContentViewModel: ObservableObject {
         if authToken != nil {
             hasOnboardingCompleted = true
             print("✅ Onboarding completed because auth token is not nil")
+
+            let hasOnboardingCompletedTmp = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
+            print("✅ Got onboarding completed from UserDefaults when auth token is not nil \(hasOnboardingCompletedTmp)")
         } else {
             hasOnboardingCompleted = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
-            print("✅ Got onboarding completed from UserDefaults")
+            print("✅ Got onboarding completed from UserDefaults \(hasOnboardingCompleted)")
         }
     }
 
@@ -65,6 +69,14 @@ class ContentViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    func signOut() {
+        authToken = nil
+        userSetting = nil
+        authService.signOut()
+        let hasOnboardingCompletedTmp = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
+        print("✅ Got onboarding completed from UserDefaults when sign out \(hasOnboardingCompletedTmp)")
     }
 
     /// Sets the user setting (called when user completes onboarding)

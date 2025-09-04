@@ -107,7 +107,7 @@ class AuthService {
         urlRequest.timeoutInterval = 30
 
         // Create form data for FastAPI
-        let formData = "email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&password=\(password.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        let formData = "username=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&password=\(password.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         urlRequest.httpBody = formData.data(using: .utf8)
 
         print("🌐 Making sign in request to: \(url)")

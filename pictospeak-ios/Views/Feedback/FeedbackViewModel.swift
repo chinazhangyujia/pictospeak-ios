@@ -36,7 +36,15 @@ class FeedbackViewModel: ObservableObject {
                 switch mediaType {
                 case .image:
                     // Use streaming API for real-time updates
-                    for try await response in feedbackService.getFeedbackStreamForImage(authToken: contentViewModel.authToken!, image: image, audioData: audioData) {
+                    guard let authToken = contentViewModel.authToken else {
+                        await MainActor.run {
+                            self.errorMessage = "Authentication required"
+                            self.isLoading = false
+                        }
+                        return
+                    }
+
+                    for try await response in feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData) {
                         await MainActor.run {
                             self.feedbackResponse = response
                             self.isLoading = false
@@ -45,7 +53,15 @@ class FeedbackViewModel: ObservableObject {
                 case .video:
                     // For video, we would need the video URL from CaptureView
                     // For now, we'll use the image method as a fallback
-                    for try await response in feedbackService.getFeedbackStreamForImage(authToken: contentViewModel.authToken!, image: image, audioData: audioData) {
+                    guard let authToken = contentViewModel.authToken else {
+                        await MainActor.run {
+                            self.errorMessage = "Authentication required"
+                            self.isLoading = false
+                        }
+                        return
+                    }
+
+                    for try await response in feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData) {
                         await MainActor.run {
                             self.feedbackResponse = response
                             self.isLoading = false

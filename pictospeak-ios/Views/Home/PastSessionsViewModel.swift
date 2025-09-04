@@ -37,7 +37,14 @@ class PastSessionsViewModel: ObservableObject {
             errorMessage = nil
 
             do {
-                let response = try await sessionService.getPastSessions(authToken: contentViewModel.authToken!)
+                guard let authToken = contentViewModel.authToken else {
+                    print("❌ No auth token available for loading sessions")
+                    errorMessage = "Authentication required"
+                    isLoading = false
+                    return
+                }
+
+                let response = try await sessionService.getPastSessions(authToken: authToken)
 
                 // Check if task was cancelled
                 if Task.isCancelled { return }
@@ -91,7 +98,14 @@ class PastSessionsViewModel: ObservableObject {
             isLoading = true
 
             do {
-                let response = try await sessionService.getPastSessions(authToken: contentViewModel.authToken!, cursor: cursor)
+                guard let authToken = contentViewModel.authToken else {
+                    print("❌ No auth token available for loading more sessions")
+                    errorMessage = "Authentication required"
+                    isLoading = false
+                    return
+                }
+
+                let response = try await sessionService.getPastSessions(authToken: authToken, cursor: cursor)
 
                 // Check if task was cancelled
                 if Task.isCancelled { return }

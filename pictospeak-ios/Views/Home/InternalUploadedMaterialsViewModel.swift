@@ -83,7 +83,14 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
             // Check if task was cancelled
             if Task.isCancelled { return }
 
-            let response = try await service.fetchInternalUploadedMaterials(authToken: contentViewModel.authToken!)
+            guard let authToken = contentViewModel.authToken else {
+                print("❌ No auth token available for loading materials")
+                errorMessage = "Authentication required"
+                isLoading = false
+                return
+            }
+
+            let response = try await service.fetchInternalUploadedMaterials(authToken: authToken)
 
             // Check if task was cancelled after the request
             if Task.isCancelled { return }
@@ -112,7 +119,14 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let response = try await service.fetchInternalUploadedMaterials(authToken: contentViewModel.authToken!, cursor: cursor)
+            guard let authToken = contentViewModel.authToken else {
+                print("❌ No auth token available for loading next page")
+                errorMessage = "Authentication required"
+                isLoading = false
+                return
+            }
+
+            let response = try await service.fetchInternalUploadedMaterials(authToken: authToken, cursor: cursor)
 
             // Append new materials to existing list
             materials.append(contentsOf: response.items)
