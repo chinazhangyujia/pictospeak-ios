@@ -42,7 +42,7 @@ struct HomeView: View {
             .background(Color(.systemBackground))
 
             // Loading overlay for refresh
-            if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
+            if sessionsViewModel.isLoading {
                 VStack {
                     ProgressView()
                         .scaleEffect(1.2)

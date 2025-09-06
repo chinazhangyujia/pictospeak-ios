@@ -31,9 +31,6 @@ class ContentViewModel: ObservableObject {
         if authToken != nil {
             hasOnboardingCompleted = true
             print("✅ Onboarding completed because auth token is not nil")
-
-            let hasOnboardingCompletedTmp = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
-            print("✅ Got onboarding completed from UserDefaults when auth token is not nil \(hasOnboardingCompletedTmp)")
         } else {
             hasOnboardingCompleted = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
             print("✅ Got onboarding completed from UserDefaults \(hasOnboardingCompleted)")

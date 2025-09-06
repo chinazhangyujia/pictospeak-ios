@@ -191,15 +191,6 @@ struct AuthView: View {
                 }
                 .disabled(isLoading || email.isEmpty || password.isEmpty)
                 .opacity((isLoading || email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
-
-                // Skip button
-                Button(action: {
-                    handleSkip()
-                }) {
-                    Text("Skip for now")
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
-                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
@@ -308,12 +299,6 @@ struct AuthView: View {
                 self.isLoading = false
             }
         }
-    }
-
-    private func handleSkip() {
-        // Skip authentication and continue with onboarding
-        UserDefaultManager.shared.saveValue(true, forKey: UserDefaultKeys.hasOnboardingCompleted)
-        contentViewModel.hasOnboardingCompleted = true
     }
 }
 
