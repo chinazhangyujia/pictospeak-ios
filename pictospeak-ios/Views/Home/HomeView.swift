@@ -9,8 +9,9 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var router: Router
-    @StateObject private var sessionsViewModel = PastSessionsViewModel()
-    @StateObject private var materialsModel = InternalUploadedMaterialsModel()
+    @EnvironmentObject private var contentViewModel: ContentViewModel
+    @StateObject private var sessionsViewModel: PastSessionsViewModel = .init(contentViewModel: ContentViewModel())
+    @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init(contentViewModel: ContentViewModel())
     @State private var selectedMode: NavigationMode = .home
 
     enum NavigationMode {
@@ -41,7 +42,7 @@ struct HomeView: View {
             .background(Color(.systemBackground))
 
             // Loading overlay for refresh
-            if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
+            if sessionsViewModel.isLoading {
                 VStack {
                     ProgressView()
                         .scaleEffect(1.2)
@@ -127,14 +128,44 @@ struct HomeView: View {
                 .padding(.bottom, 34) // Account for safe area
             }
         }
+        .onAppear {
+            sessionsViewModel.contentViewModel = contentViewModel
+            materialsModel.contentViewModel = contentViewModel
+
+            // Check if auth token is nil on initial load and redirect to auth
+            if contentViewModel.authToken == nil {
+                print("🔐 No auth token on initial load, navigating to auth view")
+                router.goTo(.auth)
+            }
+        }
         .task {
-            sessionsViewModel.clearError() // Clear any stale errors
-            await sessionsViewModel.loadInitialSessions()
+            // Only load data if we have an auth token
+            if contentViewModel.authToken != nil {
+                sessionsViewModel.clearError() // Clear any stale errors
+                await sessionsViewModel.loadInitialSessions()
+                await materialsModel.loadInitialMaterials()
+            }
         }
         .navigationBarBackButtonHidden(true)
         .refreshable {
             await sessionsViewModel.refreshSessions()
             await materialsModel.refresh()
+        }
+        .onChange(of: contentViewModel.authToken) { oldValue, newValue in
+            // Auto-route to auth when token becomes null
+            if oldValue != nil && newValue == nil {
+                print("🔐 Auth token became null, navigating to auth view")
+                router.goTo(.auth)
+            }
+            // When token becomes available, load data
+            else if oldValue == nil && newValue != nil {
+                print("🔐 Auth token became available, loading data")
+                Task {
+                    sessionsViewModel.clearError()
+                    await sessionsViewModel.loadInitialSessions()
+                    await materialsModel.loadInitialMaterials()
+                }
+            }
         }
         .alert("Error Loading Sessions", isPresented: .constant(sessionsViewModel.errorMessage != nil)) {
             Button("OK") {
@@ -177,7 +208,7 @@ struct HomeView: View {
                 Spacer()
 
                 Button(action: {
-                    // Settings action
+                    contentViewModel.signOut()
                 }) {
                     Image(systemName: "gearshape.fill")
                         .font(.title2)

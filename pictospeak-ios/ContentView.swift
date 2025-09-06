@@ -16,7 +16,7 @@ struct ContentView: View {
         Group {
             if contentViewModel.isLoading {
                 LoadingView()
-            } else if contentViewModel.hasUserSettings {
+            } else if contentViewModel.hasOnboardingCompleted {
                 NavigationStack(path: $router.path) {
                     HomeView()
                         .navigationDestination(for: AppRoute.self) { route in
@@ -35,10 +35,10 @@ struct ContentView: View {
                                 FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                             case let .feedbackFromSpeak(selectedImage, audioData, mediaType):
                                 FeedbackView(selectedImage: selectedImage, audioData: audioData, mediaType: mediaType)
-                            case .onboardingTargetLanguage:
-                                OnboardingTargetLanguageView()
-                            case let .onboardingNativeLanguage(selectedTargetLanguage):
-                                OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
+                            case .auth:
+                                AuthView()
+                            default:
+                                EmptyView()
                             }
                         }
                 }
@@ -51,6 +51,8 @@ struct ContentView: View {
                                 OnboardingTargetLanguageView()
                             case let .onboardingNativeLanguage(selectedTargetLanguage):
                                 OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
+                            case .auth:
+                                AuthView()
                             default:
                                 EmptyView()
                             }

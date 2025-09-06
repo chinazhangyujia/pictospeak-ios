@@ -87,7 +87,8 @@ struct OnboardingNativeLanguageView: View {
 
             // Get Started button
             Button(action: {
-                completeOnboarding()
+                completeUserSetting()
+                onboardingRouter.goTo(.auth)
             }) {
                 Text("Get Started")
                     .font(.system(size: 18, weight: .semibold))
@@ -112,21 +113,32 @@ struct OnboardingNativeLanguageView: View {
         .navigationBarHidden(true)
     }
 
-    private func completeOnboarding() {
+    private func completeUserSetting() {
         // Create user setting from selected languages
         let userSetting = UserSetting(
             targetLanguage: selectedTargetLanguage.uppercased(),
             nativeLanguage: selectedNativeLanguage.uppercased()
         )
 
-        // Update user settings on the backend
-        Task {
-            do {
-                try await UserSettingService.shared.createUserSettings(userSetting)
-                print("✅ User settings updated successfully on backend")
-            } catch {
-                print("❌ Failed to update user settings on backend: \(error)")
-                // Continue with onboarding even if backend update fails
+        // Check if user is authenticated
+        if contentViewModel.authToken == nil {
+            // User is not authenticated, save to UserDefaults for later use during signup
+            let saved = UserDefaultManager.shared.savePreSignUpUserSetting(userSetting)
+            if saved {
+                print("✅ User settings saved to UserDefaults (pre-signup)")
+            } else {
+                print("❌ Failed to save user settings to UserDefaults")
+            }
+        } else {
+            // User is authenticated, update user settings on the backend
+            Task {
+                do {
+                    try await UserSettingService.shared.createUserSettings(authToken: contentViewModel.authToken!, userSetting: userSetting)
+                    print("✅ User settings updated successfully on backend")
+                } catch {
+                    print("❌ Failed to update user settings on backend: \(error)")
+                    // Continue with onboarding even if backend update fails
+                }
             }
         }
 

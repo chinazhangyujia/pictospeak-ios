@@ -1,5 +1,5 @@
 //
-//  InternalUploadedMaterialsModel.swift
+//  InternalUploadedMaterialsViewModel.swift
 //  pictospeak-ios
 //
 //  Created by AI Assistant.
@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class InternalUploadedMaterialsModel: ObservableObject {
+class InternalUploadedMaterialsViewModel: ObservableObject {
     // MARK: - Published Properties
 
     @Published var materials: [Material] = []
@@ -21,13 +21,14 @@ class InternalUploadedMaterialsModel: ObservableObject {
     // MARK: - Private Properties
 
     private let service = InternalUploadedMaterialService.shared
+    var contentViewModel: ContentViewModel
+    private var loadingTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
-    init() {
-        Task {
-            await loadInitialMaterials()
-        }
+    init(contentViewModel: ContentViewModel) {
+        self.contentViewModel = contentViewModel
+        // Don't auto-load in init - let the view control when to load
     }
 
     // MARK: - Public Methods
@@ -47,24 +48,62 @@ class InternalUploadedMaterialsModel: ObservableObject {
 
     /// Manually refresh the materials list
     func refresh() async {
-        await loadInitialMaterials()
+        // Cancel any existing loading task
+        loadingTask?.cancel()
+
+        // Create new loading task
+        loadingTask = Task {
+            await loadInitialMaterials()
+        }
+
+        await loadingTask?.value
+    }
+
+    /// Load initial materials (public method for view to call)
+    func loadInitialMaterials() async {
+        // Cancel any existing loading task
+        loadingTask?.cancel()
+
+        // Create new loading task
+        loadingTask = Task {
+            await loadInitialMaterialsInternal()
+        }
+
+        await loadingTask?.value
     }
 
     // MARK: - Private Methods
 
-    /// Loads the initial page of materials
-    private func loadInitialMaterials() async {
+    /// Loads the initial page of materials (internal implementation)
+    private func loadInitialMaterialsInternal() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let response = try await service.fetchInternalUploadedMaterials()
+            // Check if task was cancelled
+            if Task.isCancelled { return }
+
+            guard let authToken = contentViewModel.authToken else {
+                print("❌ No auth token available for loading materials")
+                errorMessage = "Authentication required"
+                isLoading = false
+                return
+            }
+
+            let response = try await service.fetchInternalUploadedMaterials(authToken: authToken)
+
+            // Check if task was cancelled after the request
+            if Task.isCancelled { return }
+
             materials = response.items
             nextCursor = response.nextCursor
             currentIndex = 0
 
             print("✅ Loaded initial materials: \(materials.count) items")
         } catch {
+            // Check if task was cancelled
+            if Task.isCancelled { return }
+
             errorMessage = "Failed to load materials: \(error.localizedDescription)"
             print("❌ Error loading initial materials: \(error)")
         }
@@ -80,7 +119,14 @@ class InternalUploadedMaterialsModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let response = try await service.fetchInternalUploadedMaterials(cursor: cursor)
+            guard let authToken = contentViewModel.authToken else {
+                print("❌ No auth token available for loading next page")
+                errorMessage = "Authentication required"
+                isLoading = false
+                return
+            }
+
+            let response = try await service.fetchInternalUploadedMaterials(authToken: authToken, cursor: cursor)
 
             // Append new materials to existing list
             materials.append(contentsOf: response.items)
@@ -124,5 +170,9 @@ class InternalUploadedMaterialsModel: ObservableObject {
     /// Returns whether the current index is valid
     var isCurrentIndexValid: Bool {
         return currentIndex >= 0 && currentIndex < materials.count
+    }
+
+    deinit {
+        loadingTask?.cancel()
     }
 }

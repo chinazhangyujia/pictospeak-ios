@@ -18,15 +18,11 @@ class PastSessionsViewModel: ObservableObject {
     private var currentCursor: String?
     private let sessionService = SessionService.shared
     private var loadingTask: Task<Void, Never>?
+    var contentViewModel: ContentViewModel
 
-    // MARK: - Computed Properties
-
-    /// Convert sessions to display items on-the-fly
-    // var displaySessions: [SessionDisplayItem] {
-    //     return sessionService.convertToDisplayItems(sessions)
-    // }
-
-    // MARK: - Public Methods
+    init(contentViewModel: ContentViewModel) {
+        self.contentViewModel = contentViewModel
+    }
 
     /// Loads the first page of past sessions
     func loadInitialSessions() async {
@@ -41,7 +37,14 @@ class PastSessionsViewModel: ObservableObject {
             errorMessage = nil
 
             do {
-                let response = try await sessionService.getPastSessions()
+                guard let authToken = contentViewModel.authToken else {
+                    print("❌ No auth token available for loading sessions")
+                    errorMessage = "Authentication required"
+                    isLoading = false
+                    return
+                }
+
+                let response = try await sessionService.getPastSessions(authToken: authToken)
 
                 // Check if task was cancelled
                 if Task.isCancelled { return }
@@ -95,7 +98,14 @@ class PastSessionsViewModel: ObservableObject {
             isLoading = true
 
             do {
-                let response = try await sessionService.getPastSessions(cursor: cursor)
+                guard let authToken = contentViewModel.authToken else {
+                    print("❌ No auth token available for loading more sessions")
+                    errorMessage = "Authentication required"
+                    isLoading = false
+                    return
+                }
+
+                let response = try await sessionService.getPastSessions(authToken: authToken, cursor: cursor)
 
                 // Check if task was cancelled
                 if Task.isCancelled { return }

@@ -12,7 +12,7 @@ struct SpeakView: View {
     @EnvironmentObject private var router: Router
     let selectedImage: UIImage?
     let selectedVideo: URL?
-    let materialsModel: InternalUploadedMaterialsModel?
+    let materialsModel: InternalUploadedMaterialsViewModel?
     @State private var isRecording = false
     @State private var audioRecorder: AVAudioRecorder?
     @State private var recordingURL: URL?
@@ -42,7 +42,7 @@ struct SpeakView: View {
         _displayImage = State(initialValue: UIImage())
     }
 
-    init(materialsModel: InternalUploadedMaterialsModel) {
+    init(materialsModel: InternalUploadedMaterialsViewModel) {
         selectedImage = nil
         selectedVideo = nil
         self.materialsModel = materialsModel

@@ -5,11 +5,12 @@ enum AppRoute: Hashable {
     case capture
     case speakFromImage(selectedImage: UIImage)
     case speakFromVideo(selectedVideo: URL)
-    case speakFromMaterials(materialsModel: InternalUploadedMaterialsModel)
+    case speakFromMaterials(materialsModel: InternalUploadedMaterialsViewModel)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
     case feedbackFromSpeak(selectedImage: UIImage, audioData: Data, mediaType: MediaType)
     case onboardingTargetLanguage
     case onboardingNativeLanguage(selectedTargetLanguage: String)
+    case auth
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -40,6 +41,8 @@ enum AppRoute: Hashable {
         case let .onboardingNativeLanguage(selectedTargetLanguage):
             hasher.combine(6)
             hasher.combine(selectedTargetLanguage)
+        case .auth:
+            hasher.combine(7)
         }
     }
 
@@ -63,6 +66,8 @@ enum AppRoute: Hashable {
             return true
         case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage), .onboardingNativeLanguage(rhsSelectedTargetLanguage)):
             return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
+        case (.auth, .auth):
+            return true
         default:
             return false
         }
