@@ -4,11 +4,13 @@ struct Material: Codable, Identifiable {
     let id: UUID
     let materialUrl: String
     let type: MediaType
+    let thumbnailUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id
         case materialUrl = "material_url"
         case type
+        case thumbnailUrl = "thumbnail_url"
     }
 }
 

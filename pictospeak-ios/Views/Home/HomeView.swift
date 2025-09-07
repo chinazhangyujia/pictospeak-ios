@@ -478,21 +478,46 @@ struct MaterialPreviewCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     // Video or Audio content - show thumbnail with play button
-                    Rectangle()
-                        .fill(Color(.systemGray5))
+                    if let thumbnailUrl = material.thumbnailUrl, !thumbnailUrl.isEmpty {
+                        // Use thumbnail if available
+                        AsyncImage(url: URL(string: thumbnailUrl)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color(.systemGray5))
+                                .overlay(
+                                    Image(systemName: material.type.systemIconName)
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.gray)
+                                )
+                        }
                         .frame(width: 120, height: 80)
                         .overlay(
-                            VStack(spacing: 8) {
-                                Image(systemName: material.type.systemIconName)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.gray)
-
-                                Image(systemName: "play.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.white)
-                            }
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        // Fallback to placeholder if no thumbnail, this should never happen because every video should have a thumbnail generated on backend
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .frame(width: 120, height: 80)
+                            .overlay(
+                                VStack(spacing: 8) {
+                                    Image(systemName: material.type.systemIconName)
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.gray)
+
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
                 }
             }
         }
