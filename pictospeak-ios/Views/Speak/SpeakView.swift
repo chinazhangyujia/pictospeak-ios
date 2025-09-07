@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import AVKit
 import SwiftUI
 
 struct SpeakView: View {
@@ -22,7 +23,7 @@ struct SpeakView: View {
     @State private var recordedAudioData: Data?
     @State private var currentImage: UIImage?
     @State private var currentVideo: URL?
-    @State private var displayImage: UIImage
+    @State private var videoPlayer: AVPlayer?
 
     init(selectedImage: UIImage) {
         self.selectedImage = selectedImage
@@ -30,7 +31,7 @@ struct SpeakView: View {
         materialsModel = nil
         _currentImage = State(initialValue: selectedImage)
         _currentVideo = State(initialValue: nil)
-        _displayImage = State(initialValue: selectedImage)
+        _videoPlayer = State(initialValue: nil)
     }
 
     init(selectedVideo: URL) {
@@ -39,7 +40,9 @@ struct SpeakView: View {
         materialsModel = nil
         _currentImage = State(initialValue: nil)
         _currentVideo = State(initialValue: selectedVideo)
-        _displayImage = State(initialValue: UIImage())
+        let player = AVPlayer(url: selectedVideo)
+        player.actionAtItemEnd = .none
+        _videoPlayer = State(initialValue: player)
     }
 
     init(materialsModel: InternalUploadedMaterialsViewModel) {
@@ -48,20 +51,39 @@ struct SpeakView: View {
         self.materialsModel = materialsModel
         _currentImage = State(initialValue: nil)
         _currentVideo = State(initialValue: nil)
-        _displayImage = State(initialValue: UIImage())
+        _videoPlayer = State(initialValue: nil)
     }
 
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
-                // Background Image
-                if displayImage != UIImage() {
-                    Image(uiImage: displayImage)
+                // Background Media
+                if let currentImage = currentImage {
+                    // Show image as background
+                    Image(uiImage: currentImage)
                         .resizable()
                         .scaledToFill()
                         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
                         .clipped()
                         .ignoresSafeArea()
+                        .gesture(
+                            // Only enable gestures if we have a materialsModel
+                            materialsModel != nil ?
+                                DragGesture()
+                                .onEnded { value in
+                                    handleSwipeGesture(value)
+                                } : nil
+                        )
+                } else if let videoPlayer = videoPlayer {
+                    // Show video player as background
+                    VideoPlayer(player: videoPlayer)
+                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                        .onAppear {
+                            videoPlayer.play()
+                            setupVideoLooping()
+                        }
                         .gesture(
                             // Only enable gestures if we have a materialsModel
                             materialsModel != nil ?
@@ -96,6 +118,8 @@ struct SpeakView: View {
         }
         .onDisappear {
             stopRecording()
+            // Stop video playback when leaving the view
+            videoPlayer?.pause()
         }
         .onChange(of: isRecording) { _, newValue in
             if !newValue {
@@ -109,9 +133,9 @@ struct SpeakView: View {
                     do {
                         recordedAudioData = try Data(contentsOf: url)
                         if let currentImage = currentImage {
-                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, audioData: recordedAudioData ?? Data(), mediaType: .image))
+                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: recordedAudioData ?? Data(), mediaType: .image))
                         } else if let currentVideo = currentVideo {
-                            router.goTo(.feedbackFromSpeak(selectedImage: displayImage, audioData: recordedAudioData ?? Data(), mediaType: .video))
+                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: recordedAudioData ?? Data(), mediaType: .video))
                         }
                     } catch {
                         print("Failed to read audio data: \(error)")
@@ -308,22 +332,27 @@ struct SpeakView: View {
 
             if material.type == .image {
                 if let image = UIImage(data: data) {
+                    // Stop any existing video
+                    videoPlayer?.pause()
                     currentImage = image
                     currentVideo = nil
-                    displayImage = image
+                    videoPlayer = nil
                 }
             } else if material.type == .video {
-                // For video, save to temp file and generate thumbnail
+                // For video, save to temp file and create player
                 let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                 let videoName = "temp_video_\(Date().timeIntervalSince1970).mov"
                 let videoURL = documentsPath.appendingPathComponent(videoName)
 
                 do {
                     try data.write(to: videoURL)
-                    let thumbnail = getFirstFrameFromVideo(videoURL)
+                    // Stop any existing video
+                    videoPlayer?.pause()
                     currentImage = nil
                     currentVideo = videoURL
-                    displayImage = thumbnail
+                    let player = AVPlayer(url: videoURL)
+                    player.actionAtItemEnd = .none
+                    videoPlayer = player
                 } catch {
                     print("Error saving video data: \(error)")
                 }
@@ -333,19 +362,19 @@ struct SpeakView: View {
         }
     }
 
-    private func getFirstFrameFromVideo(_ video: URL) -> UIImage {
-        let asset = AVAsset(url: video)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
+    private func setupVideoLooping() {
+        guard let videoPlayer = videoPlayer else { return }
 
-        do {
-            let time = CMTime(seconds: 0, preferredTimescale: 1)
-            let cgImage = try generator.copyCGImage(at: time, actualTime: nil)
-            return UIImage(cgImage: cgImage)
-        } catch {
-            print("Error generating thumbnail: \(error)")
-            // Return a placeholder image if thumbnail generation fails
-            return UIImage(systemName: "video") ?? UIImage()
+        // Remove any existing observers first
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: videoPlayer.currentItem,
+            queue: .main
+        ) { _ in
+            videoPlayer.seek(to: .zero)
+            videoPlayer.play()
         }
     }
 }

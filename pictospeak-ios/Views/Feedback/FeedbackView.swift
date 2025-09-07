@@ -97,12 +97,14 @@ struct FeedbackView: View {
 
     // For normal feedback mode
     let selectedImage: UIImage?
+    let selectedVideo: URL?
     let audioData: Data?
     let mediaType: MediaType?
 
     // Default initializer for normal use
-    init(selectedImage: UIImage, audioData: Data, mediaType: MediaType) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType) {
         self.selectedImage = selectedImage
+        self.selectedVideo = selectedVideo
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
@@ -111,8 +113,9 @@ struct FeedbackView: View {
     }
 
     // Initializer for previews with fake data
-    init(selectedImage: UIImage, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
         self.selectedImage = selectedImage
+        self.selectedVideo = selectedVideo
         self.audioData = audioData
         self.mediaType = mediaType
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel(), previewData: previewData))
@@ -124,6 +127,7 @@ struct FeedbackView: View {
     init(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel) {
         self.sessionId = sessionId
         selectedImage = nil
+        selectedVideo = nil
         audioData = nil
         mediaType = nil
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
@@ -1286,6 +1290,7 @@ struct FeedbackView: View {
     NavigationView {
         FeedbackView(
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
+            selectedVideo: nil,
             audioData: Data(),
             mediaType: .image,
             previewData: FeedbackResponse(
@@ -1305,6 +1310,7 @@ struct FeedbackView: View {
     NavigationView {
         FeedbackView(
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
+            selectedVideo: nil,
             audioData: Data(),
             mediaType: .image,
             previewData: FeedbackResponse(
@@ -1324,6 +1330,7 @@ struct FeedbackView: View {
     NavigationView {
         FeedbackView(
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
+            selectedVideo: nil,
             audioData: Data(),
             mediaType: .image,
             previewData: FeedbackResponse(
@@ -1343,6 +1350,7 @@ struct FeedbackView: View {
     NavigationView {
         FeedbackView(
             selectedImage: UIImage(systemName: "photo") ?? UIImage(),
+            selectedVideo: nil,
             audioData: Data(),
             mediaType: .image,
             previewData: FeedbackResponse(
