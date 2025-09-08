@@ -113,7 +113,7 @@ struct SpeakView: View {
 
             // Load material if we have a materials model
             if let model = materialsModel, let material = model.currentMaterial {
-                loadMaterialSynchronously(material)
+                loadMaterial(material)
             }
         }
         .onDisappear {
@@ -307,7 +307,7 @@ struct SpeakView: View {
         if model.currentIndex < model.materials.count - 1 || model.hasMoreMaterials {
             let newIndex = model.currentIndex + 1
             model.setCurrentIndex(newIndex)
-            loadMaterialSynchronously(model.currentMaterial!)
+            loadMaterial(model.currentMaterial!)
         }
     }
 
@@ -318,48 +318,57 @@ struct SpeakView: View {
         if model.currentIndex > 0 {
             let newIndex = model.currentIndex - 1
             model.setCurrentIndex(newIndex)
-            loadMaterialSynchronously(model.currentMaterial!)
+            loadMaterial(model.currentMaterial!)
         }
     }
 
-    private func loadMaterialSynchronously(_ material: Material) {
+    private func loadMaterial(_ material: Material) {
         guard let url = URL(string: material.materialUrl) else {
             return
         }
 
-        do {
-            let data = try Data(contentsOf: url)
-
-            if material.type == .image {
-                if let image = UIImage(data: data) {
-                    // Stop any existing video
-                    videoPlayer?.pause()
-                    currentImage = image
-                    currentVideo = nil
-                    videoPlayer = nil
+        // Use URLSession for asynchronous loading
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error downloading data from URL: \(error)")
+                    return
                 }
-            } else if material.type == .video {
-                // For video, save to temp file and create player
-                let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let videoName = "temp_video_\(Date().timeIntervalSince1970).mov"
-                let videoURL = documentsPath.appendingPathComponent(videoName)
 
-                do {
-                    try data.write(to: videoURL)
-                    // Stop any existing video
-                    videoPlayer?.pause()
-                    currentImage = nil
-                    currentVideo = videoURL
-                    let player = AVPlayer(url: videoURL)
-                    player.actionAtItemEnd = .none
-                    videoPlayer = player
-                } catch {
-                    print("Error saving video data: \(error)")
+                guard let data = data else {
+                    print("No data received from URL")
+                    return
+                }
+
+                if material.type == .image {
+                    if let image = UIImage(data: data) {
+                        // Stop any existing video
+                        videoPlayer?.pause()
+                        currentImage = image
+                        currentVideo = nil
+                        videoPlayer = nil
+                    }
+                } else if material.type == .video {
+                    // For video, save to temp file and create player
+                    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                    let videoName = "temp_video_\(Date().timeIntervalSince1970).mov"
+                    let videoURL = documentsPath.appendingPathComponent(videoName)
+
+                    do {
+                        try data.write(to: videoURL)
+                        // Stop any existing video
+                        videoPlayer?.pause()
+                        currentImage = nil
+                        currentVideo = videoURL
+                        let player = AVPlayer(url: videoURL)
+                        player.actionAtItemEnd = .none
+                        videoPlayer = player
+                    } catch {
+                        print("Error saving video data: \(error)")
+                    }
                 }
             }
-        } catch {
-            print("Error downloading data from URL: \(error)")
-        }
+        }.resume()
     }
 
     private func setupVideoLooping() {
