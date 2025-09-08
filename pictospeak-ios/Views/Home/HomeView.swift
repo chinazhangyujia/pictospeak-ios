@@ -234,10 +234,29 @@ struct HomeView: View {
 
     private var startTalkingSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Start Talking")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+            HStack {
+                Text("Start Talking")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                Button(action: {
+                    materialsModel.setCurrentIndex(0)
+                    router.goTo(.speakFromMaterials(materialsModel: materialsModel))
+                }) {
+                    HStack(spacing: 4) {
+                        Text("See All")
+                            .font(.body)
+                            .foregroundColor(.blue)
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
 
             Text("Tap a video to start speaking")
                 .font(.body)
