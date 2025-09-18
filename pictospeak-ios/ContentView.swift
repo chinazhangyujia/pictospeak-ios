@@ -46,7 +46,7 @@ struct ContentView: View {
                         }
                     }
 
-                    Tab("Review", systemImage: "house", value: NavTab.review) {
+                    Tab("Review", systemImage: "book", value: NavTab.review) {
                         NavigationStack(path: $router.reviewPath) {
                             ReviewView()
                                 .navigationDestination(for: AppRoute.self) { route in
@@ -74,6 +74,7 @@ struct ContentView: View {
                         }
                     }
                 }
+                .tint(Color(red: 0.247, green: 0.388, blue: 0.910))
             } else {
                 NavigationStack(path: $onboardingRouter.path) {
                     OnboardingTargetLanguageView()
