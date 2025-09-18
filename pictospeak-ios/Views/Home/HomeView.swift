@@ -22,12 +22,9 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Header Section
-                    headerSection
-
-                    // Start Talking Section
-                    startTalkingSection
+                VStack(spacing: 32) {
+                    // Internal Materials Section
+                    internalMaterialsSection
 
                     // Review Section
                     reviewSection
@@ -35,11 +32,11 @@ struct HomeView: View {
                     // Recent Sessions Section
                     recentSessionsSection
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
                 .padding(.bottom, 120) // Add bottom padding for navigation overlay
             }
-            .background(Color(.systemBackground))
+            .background(Color(red: 0.965, green: 0.969, blue: 0.984))
 
             // Loading overlay for refresh
             if sessionsViewModel.isLoading {
@@ -53,79 +50,6 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemBackground).opacity(0.8))
-            }
-
-            // Custom bottom navigation overlay
-            VStack {
-                Spacer()
-
-                HStack(spacing: 0) {
-                    // Home/Review switch button
-                    HStack(spacing: 0) {
-                        // Home button
-                        Button(action: {
-                            selectedMode = .home
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "house.fill")
-                                    .font(.system(size: 16))
-                                Text("Home")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
-                            .foregroundColor(selectedMode == .home ? .blue : .gray)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(selectedMode == .home ? .white : .clear)
-                            )
-                        }
-
-                        // Review button
-                        Button(action: {
-                            selectedMode = .review
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "book")
-                                    .font(.system(size: 16))
-                                Text("Review")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
-                            .foregroundColor(selectedMode == .review ? .blue : .gray)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(selectedMode == .review ? .white : .clear)
-                            )
-                        }
-                    }
-                    .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(Color(.systemGray6))
-                    )
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-
-                    Spacer()
-
-                    // Record button
-                    Button(action: {
-                        // Navigate to capture view
-                        router.goTo(.capture)
-                    }) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.gray)
-                            .frame(width: 50, height: 50)
-                            .background(
-                                Circle()
-                                    .fill(Color(.systemGray5))
-                            )
-                    }
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 34) // Account for safe area
             }
         }
         .onAppear {
@@ -147,6 +71,30 @@ struct HomeView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbarRole(.browser)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Good evening!")
+                    .font(.system(size: 34, weight: .bold, design: .default))
+                    .kerning(0.4)
+                    .foregroundColor(.primary)
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    // contentViewModel.signOut()
+                }) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.primary)
+                        .frame(width: 36, height: 36)
+                        .clipShape(Circle())
+                        .blendMode(.plusDarker)
+                }
+            }
+        }
         .refreshable {
             await sessionsViewModel.refreshSessions()
             await materialsModel.refresh()
@@ -195,49 +143,12 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Header Section
-
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("PicTalk")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-
-                Spacer()
-
-                Button(action: {
-                    contentViewModel.signOut()
-                }) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.title2)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
-                        .background(Color(.systemGray6))
-                        .clipShape(Circle())
-                }
-            }
-
-            Text("Good evening!")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-
-            Text("Ready to practice with real scenarios?")
-                .font(.body)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    // MARK: - Start Talking Section
-
-    private var startTalkingSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    private var internalMaterialsSection: some View {
+        VStack(alignment: .leading, spacing: 1) {
             HStack {
                 Text("Start Talking")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 20, weight: .semibold, design: .default))
+                    .kerning(-0.45)
                     .foregroundColor(.primary)
 
                 Spacer()
@@ -248,19 +159,17 @@ struct HomeView: View {
                 }) {
                     HStack(spacing: 4) {
                         Text("See All")
-                            .font(.body)
-                            .foregroundColor(.blue)
+                            .font(.system(size: 17, weight: .regular, design: .default))
+                            .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
 
                         Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                            .font(.system(size: 19, weight: .semibold, design: .default))
+                            .foregroundColor(Color(red: 0.0, green: 0.533, blue: 1.0))
                     }
                 }
             }
-
-            Text("Tap a video to start speaking")
-                .font(.body)
-                .foregroundColor(.secondary)
+            .padding(.top, 5)
+            .padding(.bottom, 10)
 
             if materialsModel.isLoading {
                 HStack {
@@ -274,8 +183,8 @@ struct HomeView: View {
                 .padding(.vertical, 20)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 16) {
-                        ForEach(Array(materialsModel.materials.enumerated()), id: \.element.id) { index, material in
+                    LazyHStack(spacing: 12) {
+                        ForEach(Array(materialsModel.materials.prefix(10).enumerated()), id: \.element.id) { index, material in
                             Button(action: {
                                 // Set the current index to the selected material
                                 materialsModel.setCurrentIndex(index)
@@ -286,30 +195,7 @@ struct HomeView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
-
-                        // Show loading indicator if there are more materials to load
-                        if materialsModel.hasMoreMaterials && !materialsModel.isLoading {
-                            Button(action: {
-                                Task {
-                                    await materialsModel.refresh()
-                                }
-                            }) {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "plus.circle")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.blue)
-
-                                    Text("Load More")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                }
-                                .frame(width: 120, height: 80)
-                                .background(Color(.systemGray6))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
                     }
-                    .padding(.horizontal, 4)
                 }
             }
         }
@@ -318,34 +204,47 @@ struct HomeView: View {
     // MARK: - Review Section
 
     private var reviewSection: some View {
-        HStack {
+        HStack(spacing: 10) {
             Image(systemName: "book")
-                .font(.title2)
+                .font(.system(size: 24, weight: .regular))
                 .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+                .opacity(1)
+                .blendMode(.plusDarker)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Review today · 5 due")
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Review today")
+                        .font(.system(size: 17, weight: .regular, design: .default))
+                        .foregroundColor(.black)
+                        .kerning(-0.4)
+
+                    Text("5 Due")
+                        .font(.system(size: 13, weight: .regular, design: .default))
+                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                        .kerning(-0.1)
+                }
+
+                Spacer()
+
+                Button("Start review") {
+                    // Handle review action
+                }
+                .font(.system(size: 15, weight: .semibold, design: .default))
+                .kerning(-0.23)
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .frame(width: 115, height: 34)
+                .background(Color(red: 0.247, green: 0.388, blue: 0.910))
+                .clipShape(RoundedRectangle(cornerRadius: 1000))
             }
-
-            Spacer()
-
-            Button("Start review") {
-                // Handle review action
-            }
-            .font(.body)
-            .fontWeight(.semibold)
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.blue)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .padding(16)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 26))
+        .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.05), radius: 16, x: 0, y: 1)
     }
 
     // MARK: - Recent Sessions Section
@@ -365,63 +264,62 @@ struct HomeView: View {
                 }) {
                     HStack(spacing: 4) {
                         Text("See All")
-                            .font(.body)
-                            .foregroundColor(.blue)
+                            .font(.system(size: 17, weight: .regular, design: .default))
+                            .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
 
                         Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                            .font(.system(size: 19, weight: .semibold, design: .default))
+                            .foregroundColor(Color(red: 0.0, green: 0.533, blue: 1.0))
                     }
                 }
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
-                    ForEach(Array(sessionsViewModel.sessions.prefix(10))) { session in
-                        Button(action: {
-                            router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
-                        }) {
-                            SessionCard(session: session)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+            LazyVStack(spacing: 12) {
+                ForEach(Array(sessionsViewModel.sessions.prefix(10))) { session in
+                    Button(action: {
+                        router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
+                    }) {
+                        SessionCard(session: session)
                     }
-
-                    // Show loading indicator if there are more sessions to load
-                    if sessionsViewModel.hasMorePages && !sessionsViewModel.isLoading {
-                        Button(action: {
-                            Task {
-                                await sessionsViewModel.loadMoreSessions()
-                            }
-                        }) {
-                            VStack(spacing: 8) {
-                                Image(systemName: "plus.circle")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.blue)
-
-                                Text("Load More")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
-                            .frame(width: 140, height: 80)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                    } else if sessionsViewModel.isLoading {
-                        // Show loading indicator when loading
-                        VStack(spacing: 8) {
-                            ProgressView()
-                                .scaleEffect(0.8)
-
-                            Text("Loading...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(width: 140, height: 80)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.horizontal, 4)
+
+                // Show loading indicator if there are more sessions to load
+                if sessionsViewModel.hasMorePages && !sessionsViewModel.isLoading {
+                    Button(action: {
+                        Task {
+                            await sessionsViewModel.loadMoreSessions()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle")
+                                .font(.system(size: 24))
+                                .foregroundColor(.blue)
+
+                            Text("Load More")
+                                .font(.body)
+                                .foregroundColor(.blue)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                } else if sessionsViewModel.isLoading {
+                    // Show loading indicator when loading
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+
+                        Text("Loading...")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
         }
     }
@@ -433,7 +331,7 @@ struct SessionCard: View {
     let session: SessionItem
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 10) {
             // AsyncImage for loading actual session image
             AsyncImage(url: URL(string: session.materialUrl)) { image in
                 image
@@ -447,24 +345,27 @@ struct SessionCard: View {
                             .foregroundColor(.secondary)
                     )
             }
-            .frame(width: 140, height: 80)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(width: 64, height: 64)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(String(session.standardDescription.prefix(50)))
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-
+            VStack(alignment: .leading, spacing: 1) {
                 Text(session.standardDescription)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 17, weight: .regular, design: .default))
+                    .foregroundColor(.black)
                     .lineLimit(2)
-                    .frame(height: 32, alignment: .top)
+                    .multilineTextAlignment(.leading)
+                    .kerning(-0.4)
+
+                Text("Today")
+                    .font(.system(size: 13, weight: .regular, design: .default))
+                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                    .kerning(-0.1)
             }
         }
-        .frame(width: 140)
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 26))
+        .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.02), radius: 16, x: 0, y: 1)
     }
 }
 
@@ -493,8 +394,8 @@ struct MaterialPreviewCard: View {
                                     .foregroundColor(.gray)
                             )
                     }
-                    .frame(width: 120, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: 172, height: 306)
+                    .clipShape(RoundedRectangle(cornerRadius: 26))
                 } else {
                     // Video or Audio content - show thumbnail with play button
                     if let thumbnailUrl = material.thumbnailUrl, !thumbnailUrl.isEmpty {
@@ -512,18 +413,18 @@ struct MaterialPreviewCard: View {
                                         .foregroundColor(.gray)
                                 )
                         }
-                        .frame(width: 120, height: 80)
+                        .frame(width: 172, height: 306)
                         .overlay(
                             Image(systemName: "play.circle.fill")
                                 .font(.system(size: 20))
                                 .foregroundColor(.white)
                         )
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: 26))
                     } else {
                         // Fallback to placeholder if no thumbnail, this should never happen because every video should have a thumbnail generated on backend
                         Rectangle()
                             .fill(Color(.systemGray5))
-                            .frame(width: 120, height: 80)
+                            .frame(width: 172, height: 306)
                             .overlay(
                                 VStack(spacing: 8) {
                                     Image(systemName: material.type.systemIconName)
@@ -535,12 +436,12 @@ struct MaterialPreviewCard: View {
                                         .foregroundColor(.white)
                                 }
                             )
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: 26))
                     }
                 }
             }
         }
-        .frame(width: 120)
+        .frame(width: 172, height: 306)
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }

@@ -1,7 +1,14 @@
 import SwiftUI
 
+enum NavTab: Hashable {
+    case home
+    case review
+    case capture
+}
+
 enum AppRoute: Hashable {
     case home
+    case review
     case capture
     case speakFromImage(selectedImage: UIImage)
     case speakFromVideo(selectedVideo: URL)
@@ -16,40 +23,44 @@ enum AppRoute: Hashable {
         switch self {
         case .home:
             hasher.combine(0)
-        case .capture:
+        case .review:
             hasher.combine(1)
-        case let .speakFromImage(selectedImage):
+        case .capture:
             hasher.combine(2)
+        case let .speakFromImage(selectedImage):
+            hasher.combine(3)
             hasher.combine(selectedImage.hashValue)
         case let .speakFromVideo(selectedVideo):
-            hasher.combine(3)
+            hasher.combine(4)
             hasher.combine(selectedVideo.hashValue)
         case let .speakFromMaterials(materialsModel):
-            hasher.combine(3)
+            hasher.combine(5)
             hasher.combine(ObjectIdentifier(materialsModel))
         case let .feedbackFromSession(sessionId, pastSessionsViewModel):
-            hasher.combine(3)
+            hasher.combine(6)
             hasher.combine(sessionId)
             hasher.combine(ObjectIdentifier(pastSessionsViewModel))
         case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
-            hasher.combine(4)
+            hasher.combine(7)
             hasher.combine(selectedImage?.hashValue ?? 0)
             hasher.combine(selectedVideo?.hashValue ?? 0)
             hasher.combine(audioData.hashValue)
             hasher.combine(mediaType)
         case .onboardingTargetLanguage:
-            hasher.combine(5)
+            hasher.combine(8)
         case let .onboardingNativeLanguage(selectedTargetLanguage):
-            hasher.combine(6)
+            hasher.combine(9)
             hasher.combine(selectedTargetLanguage)
         case .auth:
-            hasher.combine(7)
+            hasher.combine(10)
         }
     }
 
     static func == (lhs: AppRoute, rhs: AppRoute) -> Bool {
         switch (lhs, rhs) {
         case (.home, .home):
+            return true
+        case (.review, .review):
             return true
         case (.capture, .capture):
             return true
@@ -76,18 +87,27 @@ enum AppRoute: Hashable {
 }
 
 final class Router: ObservableObject {
-    @Published var path = NavigationPath() {
+    @Published var selectedTab: NavTab = .home {
+        didSet {
+            print("🏠 Selected tab changed:")
+            print("   Previous tab: \(oldValue)")
+            print("   New tab: \(selectedTab)")
+            print("---")
+        }
+    }
+
+    @Published var homePath = NavigationPath() {
         didSet {
             print("🧭 Navigation stack changed:")
             print("   Previous count: \(oldValue.count)")
-            print("   New count: \(path.count)")
+            print("   New count: \(homePath.count)")
 
             // Log the current routes in the stack
-            if path.count > 0 {
+            if homePath.count > 0 {
                 print("   Current routes:")
                 // Note: NavigationPath doesn't expose individual routes easily
                 // We can only see the count, but this is still useful for debugging
-                print("     Stack contains \(path.count) route(s)")
+                print("     Stack contains \(homePath.count) route(s)")
             } else {
                 print("   Stack is empty")
             }
@@ -95,16 +115,53 @@ final class Router: ObservableObject {
         }
     }
 
+    @Published var reviewPath = NavigationPath() {
+        didSet {
+            print("🧭 Navigation stack changed:")
+            print("   Previous count: \(oldValue.count)")
+            print("   New count: \(reviewPath.count)")
+        }
+    }
+
+    @Published var capturePath = NavigationPath() {
+        didSet {
+            print("🧭 Navigation stack changed:")
+            print("   Previous count: \(oldValue.count)")
+            print("   New count: \(capturePath.count)")
+        }
+    }
+
     func resetToHome() {
-        path = NavigationPath() // Pops everything to HomeView
+        switch selectedTab {
+        case .home:
+            homePath = NavigationPath()
+        case .review:
+            reviewPath = NavigationPath()
+        case .capture:
+            capturePath = NavigationPath()
+        }
     }
 
     func goTo(_ route: AppRoute) {
-        path.append(route)
+        switch selectedTab {
+        case .home:
+            homePath.append(route)
+        case .review:
+            reviewPath.append(route)
+        case .capture:
+            capturePath.append(route)
+        }
     }
 
     func goBack() {
-        path.removeLast()
+        switch selectedTab {
+        case .home:
+            homePath.removeLast()
+        case .review:
+            reviewPath.removeLast()
+        case .capture:
+            capturePath.removeLast()
+        }
     }
 }
 
