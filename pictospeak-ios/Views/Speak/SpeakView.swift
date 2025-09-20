@@ -27,6 +27,7 @@ struct SpeakView: View {
 
     init(selectedImage: UIImage) {
         self.selectedImage = selectedImage
+        print("SpeakView: init: selectedImage: \(selectedImage)")
         selectedVideo = nil
         materialsModel = nil
         _currentImage = State(initialValue: selectedImage)

@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import Photos
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
@@ -25,33 +26,72 @@ struct CaptureView: View {
     @State private var recordingTime: TimeInterval = 0
     @State private var timer: Timer?
     @State private var selectedVideo: URL?
+    @State private var latestGalleryImage: UIImage?
 
     var body: some View {
         ZStack {
             // Background
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Top Section with Title and Back Button
-                topSection
+            cameraViewSection
 
-                // Camera View Area
-                cameraViewSection
-
+            // Floating Capture Button
+            VStack {
                 Spacer()
 
-                // Bottom Control Bar
-                bottomControlBar
+                Button(action: {
+                    if selectedMode == .photo {
+                        cameraManager.capturePhoto()
+                    } else {
+                        if isRecording {
+                            stopRecording()
+                        } else {
+                            startRecording()
+                        }
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.gray.opacity(0.4))
+                            .frame(width: 72, height: 72)
+                            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                        if selectedMode == .video && isRecording {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 60, height: 60)
+                        } else if selectedMode == .video {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 60, height: 60)
+                        } else {
+                            Circle()
+                                .fill(
+                                    Color.white
+                                )
+                                .frame(width: 60, height: 60)
+                        }
+                    }
+                }
+                .padding(.bottom, 10)
             }
         }
-        .navigationBarHidden(true)
-        .onAppear(perform: handleOnAppear)
-        .onChange(of: cameraManager.selectedImage, perform: handleImageChange)
-        .onChange(of: cameraManager.recordedVideoURL, perform: handleRecordedVideoChange)
-        .onChange(of: selectedVideo, perform: handleSelectedVideoChange)
+        .onAppear(perform: {
+            handleOnAppear()
+            fetchLatestImageFromGallery()
+        })
+        .onChange(of: cameraManager.selectedImage) { _, newValue in
+            handleImageChange(newValue)
+        }
+        .onChange(of: cameraManager.recordedVideoURL) { _, newValue in
+            handleRecordedVideoChange(newValue)
+        }
+        .onChange(of: selectedVideo) { _, newValue in
+            handleSelectedVideoChange(newValue)
+        }
         .onDisappear(perform: handleOnDisappear)
         .sheet(isPresented: $showingPhotoLibrary) {
-            PhotoPicker(selectedImage: $cameraManager.selectedImage, selectedVideo: $selectedVideo, selectedMode: selectedMode)
+            PhotoPicker(selectedImage: $cameraManager.selectedImage, selectedVideo: $selectedVideo, latestGalleryImage: $latestGalleryImage, selectedMode: selectedMode)
         }
         .alert("Camera Access Required", isPresented: $cameraManager.showingPermissionAlert) {
             Button("Settings") {
@@ -65,83 +105,101 @@ struct CaptureView: View {
         }
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: {
+                    router.resetToHome()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 40, height: 40)
+                        .background(Color.black.opacity(0.6))
+                        .clipShape(Circle())
+                }
+            }
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: {
+                    showingPhotoLibrary = true
+                }) {
+                    if let latestImage = latestGalleryImage {
+                        Image(uiImage: latestImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 44, height: 44)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.4))
+                            .frame(width: 44, height: 44)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 18))
+                            )
+                    }
+                }
+            }
+            ToolbarItem(placement: .status) {
+                HStack(spacing: -20) {
+                    Button(action: {
+                        selectedMode = .photo
+                        cameraManager.prepareForPhoto()
+                        // Clear any selected media when switching modes
+                        cameraManager.selectedImage = nil
+                        selectedVideo = nil
+                    }) {
+                        Text("PHOTO")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(selectedMode == .photo ? Color(red: 0.247, green: 0.388, blue: 0.910) : .black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(selectedMode == .photo ? Color(red: 0.929, green: 0.929, blue: 0.929) : Color.clear)
+                            .clipShape(Capsule())
+                            .frame(width: 90, height: 36)
+                    }
+
+                    Button(action: {
+                        selectedMode = .video
+                        cameraManager.prepareForVideo()
+                        // Clear any selected media when switching modes
+                        cameraManager.selectedImage = nil
+                        selectedVideo = nil
+                    }) {
+                        Text("VIDEO")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(selectedMode == .video ? Color(red: 0.247, green: 0.388, blue: 0.910) : .black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(selectedMode == .video ? Color(red: 0.929, green: 0.929, blue: 0.929) : Color.clear)
+                            .clipShape(Capsule())
+                            .frame(width: 90, height: 36)
+                    }
+                }
+            }
             ToolbarItem(placement: .bottomBar) {
                 Button(action: {}) {
                     Circle()
                         .fill(Color.gray.opacity(0.4))
                         .frame(width: 44, height: 44)
-                }
-            }
-            ToolbarItem(placement: .status) {
-                Button(action: {}) {
-                    Circle()
-                        .fill(Color.gray.opacity(0.4))
-                        .frame(width: 44, height: 44)
-                }
-            }
-            ToolbarItem(placement: .status) {
-                Button(action: {}) {
-                    Circle()
-                        .fill(Color.gray.opacity(0.4))
-                        .frame(width: 44, height: 44)
-                }
-            }
-            ToolbarItem(placement: .bottomBar) {
-                Button(action: {}) {
-                    Circle()
-                        .fill(Color.gray.opacity(0.4))
-                        .frame(width: 44, height: 44)
+                        .overlay(
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .foregroundColor(.white)
+                                .font(.system(size: 22))
+                        )
                 }
             }
         }
-    }
-
-    // MARK: - Top Section
-
-    private var topSection: some View {
-        HStack {
-            Button(action: {
-                router.resetToHome()
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
-                    .background(Color.gray.opacity(0.3))
-                    .clipShape(Circle())
-            }
-
-            Spacer()
-
-            Text("Capture")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-
-            Spacer()
-
-            // Invisible placeholder to balance the layout
-            Color.clear
-                .frame(width: 40, height: 40)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
     }
 
     // MARK: - Camera View Section
 
     private var cameraViewSection: some View {
-        VStack {
+        ZStack {
             if cameraManager.isCameraAuthorized {
                 CameraPreviewView(session: cameraManager.session)
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(4 / 3, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea(.all, edges: .horizontal)
                     .overlay(
                         // Recording indicator
                         VStack {
@@ -168,8 +226,6 @@ struct CaptureView: View {
                         .padding(.top, 16)
                         .padding(.leading, 16)
                     )
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
             } else {
                 // Camera placeholder when not authorized
                 VStack(spacing: 16) {
@@ -177,141 +233,14 @@ struct CaptureView: View {
                         .font(.system(size: 48))
                         .foregroundColor(.gray)
 
-                    Text("Camera view would appear here")
+                    Text("Access camera permission to use this feature")
                         .font(.body)
                         .foregroundColor(.white)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: UIScreen.main.bounds.width * 0.7) // 4:3 ratio accounting for padding
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
             }
         }
-    }
-
-    // MARK: - Bottom Control Bar
-
-    private var bottomControlBar: some View {
-        VStack(spacing: 20) {
-            // Mode Selector
-            HStack(spacing: 0) {
-                ForEach(CaptureMode.allCases, id: \.self) { mode in
-                    Button(action: {
-                        selectedMode = mode
-                        if mode == .video {
-                            cameraManager.prepareForVideo()
-                        } else {
-                            cameraManager.prepareForPhoto()
-                        }
-                        // Clear any selected media when switching modes
-                        cameraManager.selectedImage = nil
-                        selectedVideo = nil
-                    }) {
-                        Text(mode.rawValue)
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(selectedMode == mode ? .white : .gray)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(
-                                selectedMode == mode ?
-                                    Color.gray.opacity(0.3) : Color.clear
-                            )
-                    }
-                }
-            }
-            .background(Color.gray.opacity(0.2))
-            .clipShape(Capsule())
-            .padding(.horizontal, 40)
-
-            // Capture Controls
-            HStack {
-                // Gallery Button
-                Button(action: {
-                    showingPhotoLibrary = true
-                }) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 50, height: 50)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-
-                Spacer()
-
-                // Capture Button
-                Button(action: {
-                    if selectedMode == .photo {
-                        cameraManager.capturePhoto()
-                    } else {
-                        if isRecording {
-                            stopRecording()
-                        } else {
-                            startRecording()
-                        }
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 80, height: 80)
-
-                        if selectedMode == .video && isRecording {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.red)
-                                .frame(width: 32, height: 32)
-                        } else if selectedMode == .video {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 60, height: 60)
-                        } else {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [.purple, .blue],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 60, height: 60)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                // Placeholder for balance
-                Color.clear
-                    .frame(width: 50, height: 50)
-            }
-            .padding(.horizontal, 40)
-
-            // Device Info and Recording Time
-            HStack {
-                if selectedMode == .video && isRecording {
-                    Text(String(format: "%.1fs", recordingTime))
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.leading, 20)
-                }
-
-                Spacer()
-
-                Text("iPhone M")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                    .padding(.trailing, 20)
-            }
-        }
-        .padding(.bottom, 30)
-        .background(Color.black)
     }
 
     // MARK: - Recording Functions
@@ -369,6 +298,7 @@ struct CameraPreviewView: UIViewRepresentable {
 struct PhotoPicker: UIViewControllerRepresentable {
     @Binding var selectedImage: UIImage?
     @Binding var selectedVideo: URL?
+    @Binding var latestGalleryImage: UIImage?
     let selectedMode: CaptureMode
     @Environment(\.dismiss) private var dismiss
 
@@ -407,6 +337,7 @@ struct PhotoPicker: UIViewControllerRepresentable {
                         DispatchQueue.main.async {
                             print("PhotoPicker: Setting selectedImage")
                             self.parent.selectedImage = image as? UIImage
+                            self.parent.latestGalleryImage = image as? UIImage
                             print("PhotoPicker: Setting selectedImage to \(self.parent.selectedImage != nil)")
                         }
                     }
@@ -634,6 +565,36 @@ extension CaptureView {
 
     private func handleOnDisappear() {
         timer?.invalidate()
+    }
+
+    private func fetchLatestImageFromGallery() {
+        // Check if we already have a latest image
+        guard latestGalleryImage == nil else { return }
+
+        // Request photo library access
+        PHPhotoLibrary.requestAuthorization { status in
+            guard status == .authorized else { return }
+
+            // Fetch the most recent image
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            fetchOptions.fetchLimit = 1
+
+            let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+
+            guard let asset = fetchResult.firstObject else { return }
+
+            let imageManager = PHImageManager.default()
+            let requestOptions = PHImageRequestOptions()
+            requestOptions.isSynchronous = false
+            requestOptions.deliveryMode = .highQualityFormat
+
+            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: requestOptions) { image, _ in
+                DispatchQueue.main.async {
+                    self.latestGalleryImage = image
+                }
+            }
+        }
     }
 }
 
