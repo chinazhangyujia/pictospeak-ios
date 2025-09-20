@@ -63,6 +63,37 @@ struct CaptureView: View {
         } message: {
             Text("Please enable camera access in Settings to use this feature.")
         }
+        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: {}) {
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 44, height: 44)
+                }
+            }
+            ToolbarItem(placement: .status) {
+                Button(action: {}) {
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 44, height: 44)
+                }
+            }
+            ToolbarItem(placement: .status) {
+                Button(action: {}) {
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 44, height: 44)
+                }
+            }
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: {}) {
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 44, height: 44)
+                }
+            }
+        }
     }
 
     // MARK: - Top Section
