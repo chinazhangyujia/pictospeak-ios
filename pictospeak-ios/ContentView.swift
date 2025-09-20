@@ -67,6 +67,12 @@ struct ContentView: View {
                                     switch route {
                                     case .capture:
                                         CaptureView()
+                                    case let .speakFromImage(selectedImage):
+                                        SpeakView(selectedImage: selectedImage)
+                                    case let .speakFromVideo(selectedVideo):
+                                        SpeakView(selectedVideo: selectedVideo)
+                                    case let .speakFromMaterials(materialsModel):
+                                        SpeakView(materialsModel: materialsModel)
                                     default:
                                         EmptyView()
                                     }

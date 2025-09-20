@@ -220,7 +220,7 @@ struct HomeView: View {
                         .foregroundColor(.black)
                         .kerning(-0.4)
 
-                    Text("5 Due")
+                    Text("Your saved vocabulary")
                         .font(.system(size: 13, weight: .regular, design: .default))
                         .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
                         .kerning(-0.1)
