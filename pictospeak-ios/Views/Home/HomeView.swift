@@ -89,7 +89,8 @@ struct HomeView: View {
                     Image(systemName: "gearshape")
                         .font(.system(size: 18, weight: .regular))
                         .foregroundColor(.primary)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 24, height: 24)
+                        .background(Color.white)
                         .clipShape(Circle())
                         .blendMode(.plusDarker)
                 }
@@ -194,6 +195,7 @@ struct HomeView: View {
                                 MaterialPreviewCard(material: material)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contentShape(Rectangle()) // Ensures the entire area is tappable
                         }
                     }
                 }

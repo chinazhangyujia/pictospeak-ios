@@ -64,7 +64,7 @@ struct SpeakView: View {
                     Image(uiImage: currentImage)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
                         .ignoresSafeArea()
                         .gesture(
@@ -78,7 +78,7 @@ struct SpeakView: View {
                 } else if let videoPlayer = videoPlayer {
                     // Show video player as background
                     VideoPlayer(player: videoPlayer)
-                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
                         .ignoresSafeArea()
                         .onAppear {
@@ -97,18 +97,76 @@ struct SpeakView: View {
                     // Placeholder while loading
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
-                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                         .ignoresSafeArea()
                 }
 
                 VStack {
-                    topSection
                     Spacer()
-                    bottomSection
-                }.frame(width: geometry.size.width, height: geometry.size.height)
+
+                    // Timer display (only shown when recording)
+                    if isRecording {
+                        Text(String(format: "%02d:%02d", Int(recordingTime) / 60, Int(recordingTime) % 60))
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black.opacity(0.6))
+                            )
+                            .padding(.bottom, 16)
+                            .transition(.opacity.combined(with: .scale))
+                            .animation(.easeInOut(duration: 0.3), value: isRecording)
+                    }
+
+                    Button(action: {
+                        // This will be handled by the gesture
+                    }) {
+                        ZStack {
+                            if isRecording {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.4))
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.red)
+                                    .frame(width: 32, height: 32)
+
+                            } else {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.4))
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 60, height: 60)
+
+                                Image(systemName: "mic")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                if !isRecording {
+                                    startRecording()
+                                }
+                            }
+                            .onEnded { _ in
+                                stopRecording()
+                            }
+                    )
+                    .padding(.bottom, 90)
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
         }
-        .navigationBarHidden(true)
         .onAppear {
             setupAudioRecorder()
 
@@ -144,97 +202,22 @@ struct SpeakView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Top Section
-
-    private var topSection: some View {
-        HStack {
-            Button(action: {
-                router.resetToHome()
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
-                    .background(Color.gray.opacity(0.3))
-                    .clipShape(Circle())
-            }
-
-            Spacer()
-
-            Text("Speak")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-
-            Spacer()
-
-            Color.clear
-                .frame(width: 40, height: 40)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-    }
-
-    // MARK: - Bottom Section
-
-    private var bottomSection: some View {
-        VStack(spacing: 20) {
-            // Voice Input Overlay
-            VStack(spacing: 16) {
-                // Microphone Button
+        .navigationBarBackButtonHidden(true)
+        .ignoresSafeArea()
+        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
                 Button(action: {
-                    // This will be handled by the gesture
+                    router.goBack()
                 }) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: isRecording ? [.red, .orange] : [.purple, .blue],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
-                            .scaleEffect(isRecording ? 1.1 : 1.0)
-                            .animation(.easeInOut(duration: 0.2), value: isRecording)
-
-                        Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.white)
-                            .scaleEffect(isRecording ? 1.2 : 1.0)
-                            .animation(isRecording ? .easeInOut(duration: 0.5).repeatForever(autoreverses: true) : .default, value: isRecording)
-                    }
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.black)
+                        .frame(width: 24, height: 24)
+                        .clipShape(Circle())
+                        .blendMode(.multiply)
                 }
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in
-                            if !isRecording {
-                                startRecording()
-                            }
-                        }
-                        .onEnded { _ in
-                            stopRecording()
-                        }
-                )
-
-                Text(isRecording ? "Recording... \(String(format: "%.1f", 10 - recordingTime))s" : "Hold to record (max 10s)")
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
             }
-            .padding(.vertical, 32)
-            .padding(.horizontal, 40)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-            )
-            .padding(.horizontal, 20)
         }
-        .padding(.bottom, 50)
     }
 
     // MARK: - Audio Recording Functions
@@ -283,10 +266,9 @@ struct SpeakView: View {
     // MARK: - Swipe Gesture Functions
 
     private func handleSwipeGesture(_ value: DragGesture.Value) {
-        guard let model = materialsModel else { return }
+        guard materialsModel != nil else { return }
 
         let verticalThreshold: CGFloat = 50
-        let horizontalThreshold: CGFloat = 100
 
         // Determine swipe direction
         if abs(value.translation.height) > abs(value.translation.width) {

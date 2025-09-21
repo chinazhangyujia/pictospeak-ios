@@ -73,7 +73,7 @@ struct CaptureView: View {
                         }
                     }
                 }
-                .padding(.bottom, 10)
+                .padding(.bottom, 90)
             }
         }
         .onAppear(perform: {
@@ -103,18 +103,16 @@ struct CaptureView: View {
         } message: {
             Text("Please enable camera access in Settings to use this feature.")
         }
+        .ignoresSafeArea()
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: {
                     router.resetToHome()
                 }) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: 40)
-                        .background(Color.black.opacity(0.6))
+                    Image(systemName: "xmark")
+                        .foregroundColor(.black)
+                        .frame(width: 24, height: 24)
                         .clipShape(Circle())
                 }
             }
@@ -126,12 +124,16 @@ struct CaptureView: View {
                         Image(uiImage: latestImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 40, height: 40)
                             .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 1)
+                            )
                     } else {
                         Circle()
                             .fill(Color.gray.opacity(0.4))
-                            .frame(width: 44, height: 44)
+                            .frame(width: 24, height: 24)
                             .overlay(
                                 Image(systemName: "photo")
                                     .foregroundColor(.white)
@@ -180,8 +182,8 @@ struct CaptureView: View {
             ToolbarItem(placement: .bottomBar) {
                 Button(action: {}) {
                     Circle()
-                        .fill(Color.gray.opacity(0.4))
-                        .frame(width: 44, height: 44)
+                        .fill(Color.clear)
+                        .frame(width: 24, height: 24)
                         .overlay(
                             Image(systemName: "arrow.triangle.2.circlepath")
                                 .foregroundColor(.white)
