@@ -239,7 +239,7 @@ struct HomeView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .frame(width: 115, height: 34)
-                .background(Color(red: 0.247, green: 0.388, blue: 0.910))
+                .background(AppTheme.primaryBlue)
                 .clipShape(RoundedRectangle(cornerRadius: 1000))
             }
         }

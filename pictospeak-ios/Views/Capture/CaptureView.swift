@@ -153,7 +153,7 @@ struct CaptureView: View {
                     }) {
                         Text("PHOTO")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(selectedMode == .photo ? Color(red: 0.247, green: 0.388, blue: 0.910) : .black)
+                            .foregroundColor(selectedMode == .photo ? AppTheme.primaryBlue : .black)
                             .padding(.horizontal, 18)
                             .padding(.vertical, 8)
                             .background(selectedMode == .photo ? Color(red: 0.929, green: 0.929, blue: 0.929) : Color.clear)
@@ -170,7 +170,7 @@ struct CaptureView: View {
                     }) {
                         Text("VIDEO")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(selectedMode == .video ? Color(red: 0.247, green: 0.388, blue: 0.910) : .black)
+                            .foregroundColor(selectedMode == .video ? AppTheme.primaryBlue : .black)
                             .padding(.horizontal, 18)
                             .padding(.vertical, 8)
                             .background(selectedMode == .video ? Color(red: 0.929, green: 0.929, blue: 0.929) : Color.clear)

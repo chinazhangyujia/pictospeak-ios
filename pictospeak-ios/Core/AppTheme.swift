@@ -10,6 +10,10 @@ import SwiftUI
 // MARK: - Global App Theme Configuration
 
 enum AppTheme {
+    // MARK: - Colors
+    
+    static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
+    
     // MARK: - Letter Spacing (Kerning)
 
     static let defaultKerning: CGFloat = 0.3

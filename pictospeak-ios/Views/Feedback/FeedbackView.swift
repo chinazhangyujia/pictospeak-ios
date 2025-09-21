@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVKit
 
 // MARK: - Skeleton Loading Components
 
@@ -137,62 +138,160 @@ struct FeedbackView: View {
     enum FeedbackTab {
         case mine, aiRefined
     }
+    
+    @State private var showSheet = true
+    @State private var selectedDetent: PresentationDetent = .large
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Custom Header
-            customHeader
-
-            ZStack {
-                Color(.systemGray6)
-                    .ignoresSafeArea()
-
-                if let session = session {
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            VStack(spacing: 30) {
-                                textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
-                                suggestionsAndKeyTermsSectionForSession(session)
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 20)
-                            .padding(.bottom, 40)
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                // Background Media
+                if let selectedImage = selectedImage {
+                    // Show directly passed image as background
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                } else if let selectedVideo = selectedVideo {
+                    // Show directly passed video as background
+                    VideoPlayer(player: AVPlayer(url: selectedVideo))
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                } else if let session = session, let materialUrl = URL(string: session.materialUrl) {
+                    // Show session's material as background - detect type from URL
+                    let materialType = detectMaterialType(from: materialUrl)
+                    
+                    if materialType == .image {
+                        // Load session image asynchronously
+                        AsyncImage(url: materialUrl) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .clipped()
+                                .ignoresSafeArea()
+                        } placeholder: {
+                            // Placeholder while loading
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .ignoresSafeArea()
                         }
-                        .background(Color(.systemGray6))
+                    } else if materialType == .video {
+                        // Show session video as background
+                        VideoPlayer(player: AVPlayer(url: materialUrl))
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .ignoresSafeArea()
+                    } else {
+                        // Unknown material type - show placeholder
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .ignoresSafeArea()
                     }
                 } else {
-                    // Normal feedback mode - always show content with progressive skeleton loading
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            VStack(spacing: 30) {
-                                // Always show the sections - they will handle their own skeleton loading
-                                if let feedback = viewModel.feedbackResponse {
-                                    textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
-                                    suggestionsAndKeyTermsSection(feedback)
-                                } else {
-                                    // Create empty feedback response for skeleton loading
-                                    let emptyFeedback = FeedbackResponse(
-                                        originalText: "",
-                                        refinedText: "",
-                                        suggestions: [],
-                                        keyTerms: [],
-                                        chosenKeyTerms: nil,
-                                        chosenRefinements: nil,
-                                        chosenItemsGenerated: false,
-                                        pronunciationUrl: nil
-                                    )
-                                    textComparisonSection(emptyFeedback, scrollProxy: proxy.scrollTo)
-                                    suggestionsAndKeyTermsSection(emptyFeedback)
+                    // No media available - show placeholder
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .ignoresSafeArea()
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .sheet(isPresented: $showSheet) {
+            NavigationView {
+                VStack(spacing: 0) {
+                    // Sheet Content
+                    if let session = session {
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                VStack(spacing: 30) {
+                                    textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
+                                    suggestionsAndKeyTermsSectionForSession(session)
                                 }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 20)
+                                .padding(.bottom, 40)
                             }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 20)
-                            .padding(.bottom, 40)
+                            .background(Color(.systemGray6).opacity(0.95))
                         }
-                        .background(Color(.systemGray6))
+
+                    } else {
+                        // Normal feedback mode - always show content with progressive skeleton loading
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                VStack(spacing: 30) {
+                                    // Always show the sections - they will handle their own skeleton loading
+                                    if let feedback = viewModel.feedbackResponse {
+                                        textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
+                                        suggestionsAndKeyTermsSection(feedback)
+                                    } else {
+                                        // Create empty feedback response for skeleton loading
+                                        let emptyFeedback = FeedbackResponse(
+                                            originalText: "",
+                                            refinedText: "",
+                                            suggestions: [],
+                                            keyTerms: [],
+                                            chosenKeyTerms: nil,
+                                            chosenRefinements: nil,
+                                            chosenItemsGenerated: false,
+                                            pronunciationUrl: nil
+                                        )
+                                        textComparisonSection(emptyFeedback, scrollProxy: proxy.scrollTo)
+                                        suggestionsAndKeyTermsSection(emptyFeedback)
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 20)
+                                .padding(.bottom, 40)
+                            }
+                                .background(Color(.systemGray6).opacity(0.95))
+                        }
+                    }
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar{
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: {
+                            router.goBack()
+                        }) {
+                            Image(systemName: "xmark")
+                                .foregroundColor(.black)
+                                .frame(width: 24, height: 24)
+                                .clipShape(Circle())
+                                .blendMode(.multiply)
+                        }
+                    }
+
+                    // Text AI feedback
+                    ToolbarItem(placement: .principal) {
+                        Text("AI feedback")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                    }
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Image(systemName: "checkmark")
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .clipShape(Circle())
+                                .glassEffect(.clear.tint(AppTheme.primaryBlue))
+                                .onTapGesture {
+                                    print("checkmark tapped")
+                                }
+
                     }
                 }
             }
+            .presentationDetents([.fraction(0.15), .fraction(0.5), .large], selection: $selectedDetent)
+            .presentationDragIndicator(.visible)
+            .interactiveDismissDisabled()
         }
         .onAppear {
             viewModel.contentViewModel = contentViewModel
@@ -223,7 +322,7 @@ struct FeedbackView: View {
     private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
         VStack(spacing: 20) {
             // Tab Selector
-            HStack(spacing: 5) {
+            HStack(spacing: 0) {
                 Button(action: {
                     selectedTab = .mine
                 }) {
@@ -241,9 +340,9 @@ struct FeedbackView: View {
                     }
                     .padding(.vertical, 16)
                     .background(
-                        selectedTab == .mine ? Color(.systemGray6) : Color(.systemGray5)
+                        selectedTab == .mine ? Color.white : Color.clear
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 40))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
 
                 Button(action: {
@@ -263,11 +362,19 @@ struct FeedbackView: View {
                     }
                     .padding(.vertical, 16)
                     .background(
-                        selectedTab == .aiRefined ? Color(.systemGray6) : Color(.systemGray5)
+                        selectedTab == .aiRefined ? Color.white : Color.clear
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 40))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                
+                // Speaker icon
+                if let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
+                    AudioPlayerButton(audioUrl: pronunciationUrl)
+                        .padding(.leading, 12)
                 }
             }
+                            .background(Color(.systemGray6).opacity(0.95))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
 
             // Text Content
             VStack(alignment: .leading, spacing: 12) {
@@ -361,7 +468,7 @@ struct FeedbackView: View {
             } else if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements, chosenKeyTerms.isEmpty && chosenRefinements.isEmpty {
                 // don't show anything
             } else {
-                Text("Key Expressions")
+                Text("Vocabulary")
                     .appTitle()
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
@@ -566,7 +673,7 @@ struct FeedbackView: View {
                         )
                 }
             }
-            .background(Color(.systemGray6))
+                            .background(Color(.systemGray6).opacity(0.95))
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             // Text Content - always show actual data from session
@@ -608,7 +715,7 @@ struct FeedbackView: View {
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             // Section title - always show since session data is already loaded
-            Text("Key Expressions")
+            Text("Vocabulary")
                 .appTitle()
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 20)
@@ -702,48 +809,24 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: - Custom Header
-
-    private var customHeader: some View {
-        HStack {
-            Button(action: {
-                router.resetToHome()
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .frame(width: 40, height: 40)
-                    .background(Color(.systemGray5))
-                    .clipShape(Circle())
-            }
-
-            Spacer()
-
-            Text("AI Feedback")
-                .appTitle()
-
-            Spacer()
-
-            Button(action: {
-                // Save or share feedback
-            }) {
-                Image(systemName: "checkmark")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
-                    .background(Color.green)
-                    .clipShape(Circle())
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 40)
-        .padding(.bottom, 20)
-        .background(Color(.systemGray6))
-    }
-
     // MARK: - Helper Methods
+    
+    private func detectMaterialType(from url: URL) -> MediaType {
+        let pathExtension = url.pathExtension.lowercased()
+        
+        // Common image extensions
+        let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp", "heic", "heif"]
+        // Common video extensions
+        let videoExtensions = ["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "3gp"]
+        
+        if imageExtensions.contains(pathExtension) {
+            return .image
+        } else if videoExtensions.contains(pathExtension) {
+            return .video
+        } else {
+            return .image // Default to image if unknown
+        }
+    }
 
     private func getClickableMatches(from feedback: FeedbackResponse) -> [ClickableTextMatch] {
         var matches: [ClickableTextMatch] = []
