@@ -71,8 +71,8 @@ struct ContentView: View {
                                         SpeakView(selectedImage: selectedImage)
                                     case let .speakFromVideo(selectedVideo):
                                         SpeakView(selectedVideo: selectedVideo)
-                                    case let .speakFromMaterials(materialsModel):
-                                        SpeakView(materialsModel: materialsModel)
+                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
+                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType)
                                     default:
                                         EmptyView()
                                     }
