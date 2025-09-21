@@ -195,6 +195,7 @@ struct HomeView: View {
                                 MaterialPreviewCard(material: material)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contentShape(Rectangle()) // Ensures the entire area is tappable
                         }
                     }
                 }

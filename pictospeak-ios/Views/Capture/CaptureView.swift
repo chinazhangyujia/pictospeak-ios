@@ -51,27 +51,28 @@ struct CaptureView: View {
                     }
                 }) {
                     ZStack {
+                        Circle()
+                            .fill(Color.gray.opacity(0.4))
+                            .frame(width: 72, height: 72)
+                            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
                         if selectedMode == .video && isRecording {
                             Circle()
                                 .fill(Color.red)
-                                .frame(width: 60, height: 70)
-                                .padding(-5)
+                                .frame(width: 60, height: 60)
                         } else if selectedMode == .video {
                             Circle()
                                 .fill(Color.red)
-                                .frame(width: 60, height: 70)
-                                .padding(-5)
+                                .frame(width: 60, height: 60)
                         } else {
                             Circle()
                                 .fill(
                                     Color.white
                                 )
-                                .frame(width: 60, height: 70)
-                                .padding(-5)
+                                .frame(width: 60, height: 60)
                         }
                     }
                 }
-                .buttonStyle(GlassButtonStyle())
                 .padding(.bottom, 90)
             }
         }
@@ -109,7 +110,7 @@ struct CaptureView: View {
                 Button(action: {
                     router.resetToHome()
                 }) {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: "xmark")
                         .foregroundColor(.black)
                         .frame(width: 24, height: 24)
                         .clipShape(Circle())

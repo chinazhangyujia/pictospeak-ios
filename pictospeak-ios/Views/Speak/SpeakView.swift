@@ -125,17 +125,24 @@ struct SpeakView: View {
                     }) {
                         ZStack {
                             if isRecording {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.4))
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.red)
                                     .frame(width: 32, height: 32)
-                                    .padding(.horizontal, 3)
-                                    .padding(.vertical, 8)
 
                             } else {
                                 Circle()
+                                    .fill(Color.gray.opacity(0.4))
+                                    .frame(width: 72, height: 72)
+                                    .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                                Circle()
                                     .fill(Color.red)
-                                    .frame(width: 60, height: 70)
-                                    .padding(-5)
+                                    .frame(width: 60, height: 60)
 
                                 Image(systemName: "mic")
                                     .font(.system(size: 24))
@@ -143,7 +150,7 @@ struct SpeakView: View {
                             }
                         }
                     }
-                    .buttonStyle(GlassButtonStyle())
+                    .buttonStyle(PlainButtonStyle())
                     .simultaneousGesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { _ in
@@ -197,10 +204,11 @@ struct SpeakView: View {
         }
         .navigationBarBackButtonHidden(true)
         .ignoresSafeArea()
+        .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: {
-                    router.resetToHome()
+                    router.goBack()
                 }) {
                     Image(systemName: "chevron.left")
                         .foregroundColor(.black)
