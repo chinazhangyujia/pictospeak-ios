@@ -612,73 +612,79 @@ struct FeedbackView: View {
     // MARK: - Session Viewing Mode Methods
 
     private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy _: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 20) {
-            // Tab Selector
-            HStack(spacing: 0) {
-                Button(action: {
-                    selectedTab = .mine
-                }) {
-                    Text("Mine")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedTab == .mine ? .primary : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            selectedTab == .mine ? Color(.systemGray5) : Color.clear
-                        )
-                }
+        VStack(spacing: 8) {            
+            HStack(spacing: 12) {
+                ZStack {
+                    // Background pill always full width
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(red: 0.463, green: 0.463, blue: 0.502, opacity: 0.12))
 
-                Button(action: {
-                    selectedTab = .aiRefined
-                }) {
-                    Text("AI Refined")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            selectedTab == .aiRefined ? Color(.systemGray5) : Color.clear
-                        )
+                    // Content sits inside with padding
+                    HStack(spacing: 0) {
+                        Text("Mine")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(selectedTab == .mine ? Color.white : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 100))
+                            .onTapGesture { selectedTab = .mine }
+
+                        Text("AI Refined")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(selectedTab == .aiRefined ? Color.white : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 100))
+                            .onTapGesture { selectedTab = .aiRefined }
+                    }
+                    .padding(4)
+                }
+                .frame(maxWidth: .infinity) 
+                                
+                // Speaker Icon
+                if selectedTab == .aiRefined, let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
+                    AudioPlayerButton(
+                        audioUrl: pronunciationUrl,
+                        foregroundColorPlaying: AppTheme.primaryBlue,
+                        foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
+                        backgroundColorPlaying: Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6), // #E9EEFF 60%
+                        backgroundColorNotPlaying: .clear
+                    )
                 }
             }
-                            .background(Color(.systemGray6).opacity(0.95))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(maxWidth: .infinity)
 
             // Text Content - always show actual data from session
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 if selectedTab == .mine {
                     Text(session.userDescription)
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(Color(.label))
-                        .lineSpacing(2)
+                        .foregroundColor(.black)
+                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .kerning(-0.43) // Letter spacing -0.43px
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    // AI Refined text with pronunciation button if available
-                    HStack(alignment: .top, spacing: 8) {
-                        if let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
-                            AudioPlayerButton(audioUrl: pronunciationUrl)
-                        }
-
-                        Text(session.standardDescription)
-                            .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(Color(.label))
-                            .lineSpacing(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    Text(session.standardDescription)
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.black)
+                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .kerning(-0.43) // Letter spacing -0.43px
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(16)
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 24)
-        .background(Color(.systemGray5))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(Color(red: 0.961, green: 0.961, blue: 0.961, opacity: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
