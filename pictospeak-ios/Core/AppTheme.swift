@@ -13,6 +13,7 @@ enum AppTheme {
     // MARK: - Colors
     
     static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
+    static let backButtonGray = Color(red: 0.471, green: 0.471, blue: 0.502).opacity(0.16)
     
     // MARK: - Letter Spacing (Kerning)
 

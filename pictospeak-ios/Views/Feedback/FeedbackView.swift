@@ -140,7 +140,7 @@ struct FeedbackView: View {
     }
     
     @State private var showSheet = true
-    @State private var selectedDetent: PresentationDetent = .large
+    @State private var selectedDetent: PresentationDetent = .fraction(0.5)
 
     var body: some View {
         GeometryReader { geometry in
@@ -204,94 +204,64 @@ struct FeedbackView: View {
         }
         .ignoresSafeArea()
         .sheet(isPresented: $showSheet) {
-            NavigationView {
-                VStack(spacing: 0) {
-                    // Sheet Content
-                    if let session = session {
-                        ScrollViewReader { proxy in
-                            ScrollView {
-                                VStack(spacing: 30) {
-                                    textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
-                                    suggestionsAndKeyTermsSectionForSession(session)
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.top, 20)
-                                .padding(.bottom, 40)
+            VStack(spacing: 0) {
+                customHeader
+                // Sheet Content
+                if let session = session {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 30) {
+                                textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
+                                suggestionsAndKeyTermsSectionForSession(session)
                             }
-                            .background(Color(.systemGray6).opacity(0.95))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
+                            .padding(.bottom, 40)
                         }
+                        // .background(Color(.systemGray6).opacity(0.95))
+                    }
 
-                    } else {
-                        // Normal feedback mode - always show content with progressive skeleton loading
-                        ScrollViewReader { proxy in
-                            ScrollView {
-                                VStack(spacing: 30) {
-                                    // Always show the sections - they will handle their own skeleton loading
-                                    if let feedback = viewModel.feedbackResponse {
-                                        textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
-                                        suggestionsAndKeyTermsSection(feedback)
-                                    } else {
-                                        // Create empty feedback response for skeleton loading
-                                        let emptyFeedback = FeedbackResponse(
-                                            originalText: "",
-                                            refinedText: "",
-                                            suggestions: [],
-                                            keyTerms: [],
-                                            chosenKeyTerms: nil,
-                                            chosenRefinements: nil,
-                                            chosenItemsGenerated: false,
-                                            pronunciationUrl: nil
-                                        )
-                                        textComparisonSection(emptyFeedback, scrollProxy: proxy.scrollTo)
-                                        suggestionsAndKeyTermsSection(emptyFeedback)
-                                    }
+                } else {
+                    // Normal feedback mode - always show content with progressive skeleton loading
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 30) {
+                                // Always show the sections - they will handle their own skeleton loading
+                                if let feedback = viewModel.feedbackResponse {
+                                    textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
+                                    suggestionsAndKeyTermsSection(feedback)
+                                } else {
+                                    // Create empty feedback response for skeleton loading
+                                    let emptyFeedback = FeedbackResponse(
+                                        originalText: "",
+                                        refinedText: "",
+                                        suggestions: [],
+                                        keyTerms: [],
+                                        chosenKeyTerms: nil,
+                                        chosenRefinements: nil,
+                                        chosenItemsGenerated: false,
+                                        pronunciationUrl: nil
+                                    )
+                                    textComparisonSection(emptyFeedback, scrollProxy: proxy.scrollTo)
+                                    suggestionsAndKeyTermsSection(emptyFeedback)
                                 }
-                                .padding(.horizontal, 24)
-                                .padding(.top, 20)
-                                .padding(.bottom, 40)
                             }
-                                .background(Color(.systemGray6).opacity(0.95))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
+                            .padding(.bottom, 40)
                         }
-                    }
-                }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar{
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: {
-                            router.goBack()
-                        }) {
-                            Image(systemName: "xmark")
-                                .foregroundColor(.black)
-                                .frame(width: 24, height: 24)
-                                .clipShape(Circle())
-                                .blendMode(.multiply)
-                        }
-                    }
-
-                    // Text AI feedback
-                    ToolbarItem(placement: .principal) {
-                        Text("AI feedback")
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                    }
-
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Image(systemName: "checkmark")
-                                .foregroundColor(.white)
-                                .frame(width: 36, height: 36)
-                                .clipShape(Circle())
-                                .glassEffect(.clear.tint(AppTheme.primaryBlue))
-                                .onTapGesture {
-                                    print("checkmark tapped")
-                                }
-
+                            // .background(Color(.systemGray6).opacity(0.95))
                     }
                 }
             }
-            .presentationDetents([.fraction(0.15), .fraction(0.5), .large], selection: $selectedDetent)
+            .navigationBarTitleDisplayMode(.inline)
+            .presentationDetents([.fraction(0.15), .fraction(0.5), .fraction(0.95)], selection: $selectedDetent)
             .presentationDragIndicator(.visible)
             .interactiveDismissDisabled()
+
+            // test a long paragraph
+            // Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            // .presentationDetents([.fraction(0.15), .fraction(0.5), .large], selection: $selectedDetent)
         }
         .onAppear {
             viewModel.contentViewModel = contentViewModel
@@ -710,6 +680,44 @@ struct FeedbackView: View {
         .background(Color(.systemGray5))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    }
+
+    private var customHeader: some View {
+        HStack {
+            
+            Image(systemName: "xmark")
+                .foregroundColor(.black)
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+                .glassEffect(.clear.tint(AppTheme.backButtonGray))
+                .blendMode(.multiply)
+                .onTapGesture {
+                    router.goBack()
+                }
+
+            Spacer()
+
+            Text("AI feedback")
+                .font(.headline)
+                .fontWeight(.regular)
+                .foregroundColor(.primary)
+                .glassEffect(.clear)
+
+            Spacer()
+
+            
+            Image(systemName: "checkmark")
+                .foregroundColor(.white)
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+                .glassEffect(.clear.tint(AppTheme.primaryBlue))
+                .onTapGesture {
+                    print("checkmark tapped")
+                }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 40)
+        .padding(.bottom, 20)
     }
 
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
