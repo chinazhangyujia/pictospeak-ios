@@ -614,7 +614,7 @@ struct FeedbackView: View {
 
     // MARK: - Session Viewing Mode Methods
 
-    private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy _: @escaping (UUID, UnitPoint?) -> Void) -> some View {
+    private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
         VStack(spacing: 8) {            
             HStack(spacing: 12) {
                 ZStack {
@@ -661,6 +661,8 @@ struct FeedbackView: View {
             }
             .frame(maxWidth: .infinity)
 
+            let clickableMatches = getClickableMatches(from: session)
+
             // Text Content - always show actual data from session
             VStack(alignment: .leading, spacing: 0) {
                 if selectedTab == .mine {
@@ -672,7 +674,12 @@ struct FeedbackView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    Text(session.standardDescription)
+                    ClickableHighlightedTextView(
+                                text: session.standardDescription,
+                                clickableMatches: clickableMatches
+                            ) { match in
+                                handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                            }
                         .font(.system(size: 17, weight: .regular))
                         .foregroundColor(.black)
                         .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
@@ -913,6 +920,68 @@ struct FeedbackView: View {
         return matches.sorted { $0.range.location < $1.range.location }
     }
 
+    private func getClickableMatches(from session: SessionItem) -> [ClickableTextMatch] {
+        var matches: [ClickableTextMatch] = []
+        let refinedText = session.standardDescription
+        let nsString = NSString(string: refinedText)
+
+
+        // Only use chosen key terms for highlighting when they are generated
+        for chosenTerm in session.keyTerms {
+            var searchRange = NSRange(location: 0, length: nsString.length)
+
+            while searchRange.location < nsString.length {
+                let foundRange = nsString.range(of: chosenTerm.term, options: [.caseInsensitive], range: searchRange)
+                if foundRange.location != NSNotFound {
+                    // Find the corresponding keyTerm to get its ID
+                    if let keyTerm = session.keyTerms.first(where: { $0.term == chosenTerm.term }) {
+                        matches.append(ClickableTextMatch(
+                            range: foundRange,
+                            text: chosenTerm.term,
+                            cardType: .keyTerm,
+                            cardId: keyTerm.id
+                        ))
+                    }
+
+                    // Move search range past this match
+                    searchRange.location = foundRange.location + foundRange.length
+                    searchRange.length = nsString.length - searchRange.location
+                } else {
+                    break
+                }
+            }
+        }
+
+        // Only use chosen refinements for highlighting when they are generated
+        for chosenSuggestion in session.suggestions {
+            var searchRange = NSRange(location: 0, length: nsString.length)
+
+            while searchRange.location < nsString.length {
+                let foundRange = nsString.range(of: chosenSuggestion.refinement, options: [.caseInsensitive], range: searchRange)
+                if foundRange.location != NSNotFound {
+                    // Find the corresponding suggestion to get its ID
+                    if let suggestion = session.suggestions.first(where: { $0.refinement == chosenSuggestion.refinement }) {
+                        matches.append(ClickableTextMatch(
+                            range: foundRange,
+                            text: chosenSuggestion.refinement,
+                            cardType: .suggestion,
+                            cardId: suggestion.id
+                        ))
+                    }
+
+                    // Move search range past this match
+                    searchRange.location = foundRange.location + foundRange.length
+                    searchRange.length = nsString.length - searchRange.location
+                } else {
+                    break
+                }
+            }
+        }
+
+        // Sort matches by their position in the text to handle overlaps properly
+        return matches.sorted { $0.range.location < $1.range.location }
+    }
+
     private func handleTextTap(match: ClickableTextMatch, feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
         // Verify that the corresponding card actually exists
         let cardExists: Bool
@@ -921,6 +990,30 @@ struct FeedbackView: View {
             cardExists = feedback.keyTerms.contains { $0.id == match.cardId }
         case .suggestion:
             cardExists = feedback.suggestions.contains { $0.id == match.cardId }
+        }
+
+        // Only respond if the card exists
+        guard cardExists else {
+            return
+        }
+
+        // Expand the corresponding card
+        expandedCards.insert(match.cardId)
+
+        // Scroll to the card with animation
+        withAnimation(.easeInOut(duration: 0.5)) {
+            scrollProxy(match.cardId, UnitPoint.center)
+        }
+    }
+
+    private func handleTextTap(match: ClickableTextMatch, session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+        // Verify that the corresponding card actually exists
+        let cardExists: Bool
+        switch match.cardType {
+        case .keyTerm:
+            cardExists = session.keyTerms.contains { $0.id == match.cardId }
+        case .suggestion:
+            cardExists = session.suggestions.contains { $0.id == match.cardId }
         }
 
         // Only respond if the card exists
@@ -1052,13 +1145,13 @@ struct FeedbackView: View {
 
                 // Add underline with vertical gap
                 attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
-                attributedString.addAttribute(.underlineColor, value: UIColor.systemGreen, range: range)
+                attributedString.addAttribute(.underlineColor, value: UIColor(AppTheme.primaryBlue), range: range)
 
                 // Add small vertical gap between text and underline
                 attributedString.addAttribute(.baselineOffset, value: 2, range: range)
 
                 // Make it look clickable
-                attributedString.addAttribute(.foregroundColor, value: UIColor.systemGreen, range: range)
+                attributedString.addAttribute(.foregroundColor, value: UIColor(AppTheme.primaryBlue), range: range)
             }
 
             return attributedString
@@ -1119,94 +1212,129 @@ struct FeedbackView: View {
         let onToggle: () -> Void
         let onFavoriteToggle: (UUID, Bool) -> Void
 
+        @State private var speechSynthesizer = AVSpeechSynthesizer()
+        
+        private func speakText(_ text: String) {
+            let utterance = AVSpeechUtterance(string: text)
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+            speechSynthesizer.speak(utterance)
+        }
+
         var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Header - always visible
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        onToggle()
-                    }
-                }) {
+                VStack(spacing: 10) {
+                    // Top row: Term/Refinement + star
                     HStack(alignment: .top, spacing: 12) {
-                        // Left side: Content (Term/Refinement + Translation)
-                        VStack(alignment: .leading, spacing: 10) {
-                            // Row 1: Term/Refinement
+                        // Left side: Term/Refinement with blue background
+                        HStack(alignment: .top, spacing: 8) {
+                            // Term/Refinement
                             if suggestion.refinement.isEmpty {
-                                SkeletonPlaceholder(width: 100, height: 16)
+                                SkeletonPlaceholder(width: 100, height: 18)
                             } else {
-                                HighlightedSuggestionText(
-                                    term: isExpanded ? suggestion.term : nil,
-                                    refinement: suggestion.refinement
-                                )
+                                Text(suggestion.refinement)
+                                    .font(.body.weight(.medium))
+                                    .foregroundColor(AppTheme.primaryBlue)
                             }
 
-                            // Row 2: Translation
-                            if suggestion.translation.isEmpty {
-                                SkeletonPlaceholder(width: 150, height: 14)
-                            } else {
-                                Text(suggestion.translation)
-                                    .appCardText()
-                            }
-                        }
-
-                        // Right side: Controls (Star + Chevron)
-                        VStack(spacing: 10) {
-                            // Star button with waving effect when refinement is empty
+                            // Speaker icon
                             if suggestion.refinement.isEmpty {
                                 SkeletonPlaceholder(width: 16, height: 16)
                                     .modifier(ShimmerEffect())
                             } else {
                                 Button(action: {
-                                    onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                                    speakText(suggestion.refinement)
                                 }) {
-                                    Image(systemName: suggestion.favorite ? "star.fill" : "star")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(suggestion.favorite ? .yellow : .gray)
+                                    Image(systemName: "speaker.wave.2")
+                                        .font(.body.weight(.medium))
+                                        .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .frame(width: 20, height: 20)
-                                .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty)
-                            }
-
-                            // Chevron
-                            if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
-                                SkeletonPlaceholder(width: 20, height: 16)
-                            } else {
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
                             }
                         }
+                        .padding(.horizontal, 6)
+                        .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        
+                        Spacer()
+                        
+                        // Right side: Star button
+                        if suggestion.refinement.isEmpty {
+                            SkeletonPlaceholder(width: 16, height: 16)
+                                .modifier(ShimmerEffect())
+                        } else {
+                            Button(action: {
+                                onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                            }) {
+                                Image(systemName: suggestion.favorite ? "star.fill" : "star")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                            .disabled(suggestion.refinement.isEmpty)
+                        }
                     }
-                    .padding(16)
+                    
+                    // Bottom row: Translation + chevron
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left side: Translation
+                        if suggestion.translation.isEmpty {
+                            SkeletonPlaceholder(width: 150, height: 14)
+                        } else {
+                            Text(suggestion.translation)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(AppTheme.feedbackCardTextColor)
+                        }
+                        
+                        Spacer()
+                        
+                        // Right side: Chevron
+                        if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
+                            SkeletonPlaceholder(width: 20, height: 16)
+                        } else {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    onToggle()
+                                }
+                            }) {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(AppTheme.feedbackCardTextColor)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                        }
+                    }
                 }
+                .padding(.top, 16)
+                .padding(.bottom, isExpanded ? 0 : 16)
+                .padding(.horizontal, 22)
                 .buttonStyle(PlainButtonStyle())
-                .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty) // Disable if no full data
 
                 // Expanded content
                 if isExpanded {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Divider()
-                            .padding(.horizontal, 16)
 
                         if suggestion.reason.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
                                 SkeletonPlaceholder(width: .infinity, height: 14)
                                 SkeletonPlaceholder(width: 280, height: 14)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
                         } else {
                             Text(suggestion.reason)
-                                .appCardText(fontSize: 14)
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 16)
+                                .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
                         }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 16)
                 }
             }
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(AppTheme.feedbackCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 26))
         }
     }
 
@@ -1361,6 +1489,7 @@ struct FeedbackView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             .frame(width: 22, height: 22)
+                            .disabled(keyTerm.term.isEmpty)
                         }
                     }
                     
