@@ -290,64 +290,68 @@ struct FeedbackView: View {
     // MARK: - Text Comparison Section
 
     private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 20) {
-            // Tab Selector
-            HStack(spacing: 0) {
-                Button(action: {
-                    selectedTab = .mine
-                }) {
-                    Group {
-                        if feedback.refinedText.isEmpty {
-                            SkeletonPlaceholder(width: 60, height: 20)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text("Mine")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(selectedTab == .mine ? .primary : .gray)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .padding(.vertical, 16)
-                    .background(
-                        selectedTab == .mine ? Color.white : Color.clear
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
+        VStack(spacing: 8) {            
+            HStack(spacing: 12) {
+                ZStack {
+                    // Background pill always full width
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(red: 0.463, green: 0.463, blue: 0.502, opacity: 0.12))
 
-                Button(action: {
-                    selectedTab = .aiRefined
-                }) {
-                    Group {
-                        if feedback.refinedText.isEmpty {
-                            SkeletonPlaceholder(width: 80, height: 20)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text("AI Refined")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
-                                .frame(maxWidth: .infinity)
+                    // Content sits inside with padding
+                    HStack(spacing: 0) {
+                        Group {
+                            if feedback.refinedText.isEmpty {
+                                SkeletonPlaceholder(width: 60, height: 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("Mine")
+                                    .font(.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                            }
                         }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(selectedTab == .mine ? Color.white : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 100))
+                        .onTapGesture { selectedTab = .mine }
+
+                        Group {
+                            if feedback.refinedText.isEmpty {
+                                SkeletonPlaceholder(width: 80, height: 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("AI Refined")
+                                    .font(.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(selectedTab == .aiRefined ? Color.white : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 100))
+                        .onTapGesture { selectedTab = .aiRefined }
                     }
-                    .padding(.vertical, 16)
-                    .background(
-                        selectedTab == .aiRefined ? Color.white : Color.clear
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(4)
                 }
-                
-                // Speaker icon
-                if let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
-                    AudioPlayerButton(audioUrl: pronunciationUrl)
-                        .padding(.leading, 12)
+                .frame(maxWidth: .infinity) 
+                                
+                // Speaker Icon
+                if selectedTab == .aiRefined, let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
+                    AudioPlayerButton(
+                        audioUrl: pronunciationUrl,
+                        foregroundColorPlaying: AppTheme.primaryBlue,
+                        foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
+                        backgroundColorPlaying: Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6), // #E9EEFF 60%
+                        backgroundColorNotPlaying: .clear
+                    )
                 }
             }
-                            .background(Color(.systemGray6).opacity(0.95))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(maxWidth: .infinity)
 
             // Text Content
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 if selectedTab == .mine {
                     if feedback.refinedText.isEmpty {
                         // Show animated thinking process and skeleton placeholders when refinedText is empty
@@ -369,8 +373,9 @@ struct FeedbackView: View {
                     } else {
                         Text(feedback.originalText)
                             .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(Color(.label))
-                            .lineSpacing(2)
+                            .foregroundColor(.black)
+                            .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                            .kerning(-0.43) // Letter spacing -0.43px
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -378,50 +383,46 @@ struct FeedbackView: View {
                     // AI Refined text with clickable matches
                     let clickableMatches = getClickableMatches(from: feedback)
 
-                    HStack(alignment: .top, spacing: 2) {
-                        // Speaker icon at the beginning of the text block
-                        if let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
-                            AudioPlayerButton(audioUrl: pronunciationUrl)
-                        }
+                    if feedback.refinedText.isEmpty {
+                        // Show animated thinking process and skeleton placeholders when refinedText is empty
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Animated thinking process step
+                            ThinkingProcessView(
+                                currentStep: currentThinkingStep,
+                                thinkingSteps: thinkingSteps
+                            )
+                            .padding(.bottom, 8)
 
-                        if feedback.refinedText.isEmpty {
-                            // Show animated thinking process and skeleton placeholders when refinedText is empty
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Animated thinking process step
-                                ThinkingProcessView(
-                                    currentStep: currentThinkingStep,
-                                    thinkingSteps: thinkingSteps
-                                )
-                                .padding(.bottom, 8)
-
-                                // Skeleton placeholders
-                                VStack(alignment: .leading, spacing: 8) {
-                                    SkeletonPlaceholder(width: 200, height: 16)
-                                    SkeletonPlaceholder(width: 230, height: 16)
-                                    SkeletonPlaceholder(width: 180, height: 16)
-                                }
+                            // Skeleton placeholders
+                            VStack(alignment: .leading, spacing: 8) {
+                                SkeletonPlaceholder(width: 200, height: 16)
+                                SkeletonPlaceholder(width: 230, height: 16)
+                                SkeletonPlaceholder(width: 180, height: 16)
                             }
-                        } else {
-                            ClickableHighlightedTextView(
-                                text: feedback.refinedText,
-                                clickableMatches: clickableMatches
-                            ) { match in
-                                handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
                         }
+                    } else {
+                        ClickableHighlightedTextView(
+                            text: feedback.refinedText,
+                            clickableMatches: clickableMatches
+                        ) { match in
+                            handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                        }
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.black)
+                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .kerning(-0.43) // Letter spacing -0.43px
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
-            .padding(16)
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 24)
-        .background(Color(.systemGray5))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(Color(red: 0.961, green: 0.961, blue: 0.961, opacity: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
@@ -693,7 +694,7 @@ struct FeedbackView: View {
             
             Image(systemName: "xmark")
                 .foregroundColor(.black)
-                .frame(width: 36, height: 36)
+                .frame(width: 44, height: 44)
                 .clipShape(Circle())
                 .glassEffect(.clear.tint(AppTheme.backButtonGray))
                 .blendMode(.multiply)
@@ -714,16 +715,15 @@ struct FeedbackView: View {
             
             Image(systemName: "checkmark")
                 .foregroundColor(.white)
-                .frame(width: 36, height: 36)
+                .frame(width: 44, height: 44)
                 .clipShape(Circle())
                 .glassEffect(.clear.tint(AppTheme.primaryBlue))
                 .onTapGesture {
                     print("checkmark tapped")
                 }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 40)
-        .padding(.bottom, 20)
+        .padding(.horizontal, 16)
+        .padding(.top, 30)
     }
 
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
