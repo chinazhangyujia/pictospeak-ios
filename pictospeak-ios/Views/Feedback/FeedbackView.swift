@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVKit
+import AVFoundation
 
 // MARK: - Skeleton Loading Components
 
@@ -210,7 +211,7 @@ struct FeedbackView: View {
                 if let session = session {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 30) {
+                            VStack(spacing: 20) {
                                 textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
                                 suggestionsAndKeyTermsSectionForSession(session)
                             }
@@ -225,7 +226,7 @@ struct FeedbackView: View {
                     // Normal feedback mode - always show content with progressive skeleton loading
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 30) {
+                            VStack(spacing: 20) {
                                 // Always show the sections - they will handle their own skeleton loading
                                 if let feedback = viewModel.feedbackResponse {
                                     textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
@@ -429,7 +430,7 @@ struct FeedbackView: View {
     // MARK: - Suggestions and Key Terms Section
 
     private func suggestionsAndKeyTermsSection(_ feedback: FeedbackResponse) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             // Section title - show waving placeholder if no chosen items loaded yet
             let chosenItemsGenerated = feedback.chosenItemsGenerated
             if !chosenItemsGenerated {
@@ -440,13 +441,14 @@ struct FeedbackView: View {
                 // don't show anything
             } else {
                 Text("Vocabulary")
-                    .appTitle()
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 20)
+                    .font(.system(size: 20, weight: .semibold))
+                    .padding(.horizontal, 22)
+                    .padding(.top, 5)
+                    .padding(.bottom, 10)
             }
 
             // Combined section with key terms and suggestions
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Check if chosen items are generated
                 let chosenItemsGenerated = feedback.chosenItemsGenerated
 
@@ -684,7 +686,7 @@ struct FeedbackView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
-        .background(Color(red: 0.961, green: 0.961, blue: 0.961, opacity: 0.6))
+        .background(AppTheme.feedbackCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -727,15 +729,16 @@ struct FeedbackView: View {
     }
 
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             // Section title - always show since session data is already loaded
             Text("Vocabulary")
-                .appTitle()
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
+                .font(.system(size: 20, weight: .semibold))
+                .padding(.horizontal, 22)
+                .padding(.top, 5)
+                .padding(.bottom, 10)
 
             // Combined section with key terms and suggestions
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Key Terms - always show actual data from session
                 ForEach(session.keyTerms) { keyTerm in
                     KeyTermCard(
@@ -1295,90 +1298,129 @@ struct FeedbackView: View {
         let isExpanded: Bool
         let onToggle: () -> Void
         let onFavoriteToggle: (UUID, Bool) -> Void
+        
+        @State private var speechSynthesizer = AVSpeechSynthesizer()
+        
+        private func speakText(_ text: String) {
+            let utterance = AVSpeechUtterance(string: text)
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+            speechSynthesizer.speak(utterance)
+        }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Header - always visible
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        onToggle()
-                    }
-                }) {
+                VStack(spacing: 10) {
+                    // Top row: English word + speaker icon + star
                     HStack(alignment: .top, spacing: 12) {
-                        // Left side: Content (Term + Translation)
-                        VStack(alignment: .leading, spacing: 10) {
-                            // Row 1: Term
+                        // Left side: English word + speaker icon
+                        HStack(alignment: .top, spacing: 8) {
+                            // English word
                             if keyTerm.term.isEmpty {
-                                SkeletonPlaceholder(width: 100, height: 16)
+                                SkeletonPlaceholder(width: 100, height: 18)
                             } else {
-                                HighlightedKeyTermText(term: keyTerm.term)
+                                Text(keyTerm.term)
+                                    .font(.body.weight(.medium))
+                                    .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
                             }
-
-                            // Row 2: Translation
-                            if keyTerm.translation.isEmpty {
-                                SkeletonPlaceholder(width: 150, height: 14)
-                            } else {
-                                Text(keyTerm.translation)
-                                    .appCardText()
-                            }
-                        }
-
-                        // Right side: Controls (Star + Chevron)
-                        VStack(spacing: 10) {
-                            // Star button with waving effect when term is empty
+                            
+                            // Speaker icon
                             if keyTerm.term.isEmpty {
                                 SkeletonPlaceholder(width: 16, height: 16)
                                     .modifier(ShimmerEffect())
                             } else {
                                 Button(action: {
-                                    onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
+                                    speakText(keyTerm.term)
                                 }) {
-                                    Image(systemName: keyTerm.favorite ? "star.fill" : "star")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(keyTerm.favorite ? .yellow : .gray)
+                                    Image(systemName: "speaker.wave.2")
+                                        .font(.body.weight(.medium))
+                                        .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .frame(width: 20, height: 20)
                             }
-
-                            // Chevron
-                            if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
-                                SkeletonPlaceholder(width: 20, height: 16)
-                            } else {
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal, 6)
+                        .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        
+                        Spacer()
+                        
+                        // Right side: Star button
+                        if keyTerm.term.isEmpty {
+                            SkeletonPlaceholder(width: 16, height: 16)
+                                .modifier(ShimmerEffect())
+                        } else {
+                            Button(action: {
+                                onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
+                            }) {
+                                Image(systemName: keyTerm.favorite ? "star.fill" : "star")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
                         }
                     }
-                    .padding(16)
+                    
+                    // Bottom row: Chinese translation + chevron
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left side: Chinese translation
+                        if keyTerm.translation.isEmpty {
+                            SkeletonPlaceholder(width: 150, height: 14)
+                        } else {
+                            Text(keyTerm.translation)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(AppTheme.feedbackCardTextColor)
+                        }
+                        
+                        Spacer()
+                        
+                        // Right side: Chevron
+                        if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
+                            SkeletonPlaceholder(width: 20, height: 16)
+                        } else {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    onToggle()
+                                }
+                            }) {
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(AppTheme.feedbackCardTextColor)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                        }
+                    }
                 }
+                .padding(.top, 16)
+                .padding(.bottom, isExpanded ? 0 : 16)
+                .padding(.horizontal, 22)
                 .buttonStyle(PlainButtonStyle())
 
                 // Expanded content
                 if isExpanded {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Divider()
-                            .padding(.horizontal, 16)
 
                         if keyTerm.example.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
                                 SkeletonPlaceholder(width: .infinity, height: 14)
                                 SkeletonPlaceholder(width: 250, height: 14)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
                         } else {
                             Text(keyTerm.example)
-                                .appCardText(fontSize: 14)
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 16)
+                                .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
                         }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 16)
                 }
             }
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(AppTheme.feedbackCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 26))
         }
     }
 }
