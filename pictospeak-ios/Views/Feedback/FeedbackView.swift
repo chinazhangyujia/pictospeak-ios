@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import AVKit
+import AVFoundation
 
 // MARK: - Skeleton Loading Components
 
@@ -137,20 +139,79 @@ struct FeedbackView: View {
     enum FeedbackTab {
         case mine, aiRefined
     }
+    
+    @State private var showSheet = true
+    @State private var selectedDetent: PresentationDetent = .fraction(0.5)
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Custom Header
-            customHeader
-
-            ZStack {
-                Color(.systemGray6)
-                    .ignoresSafeArea()
-
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                // Background Media
+                if let selectedImage = selectedImage {
+                    // Show directly passed image as background
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                } else if let selectedVideo = selectedVideo {
+                    // Show directly passed video as background
+                    VideoPlayer(player: AVPlayer(url: selectedVideo))
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                } else if let session = session, let materialUrl = URL(string: session.materialUrl) {
+                    // Show session's material as background - detect type from URL
+                    let materialType = detectMaterialType(from: materialUrl)
+                    
+                    if materialType == .image {
+                        // Load session image asynchronously
+                        AsyncImage(url: materialUrl) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .clipped()
+                                .ignoresSafeArea()
+                        } placeholder: {
+                            // Placeholder while loading
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .ignoresSafeArea()
+                        }
+                    } else if materialType == .video {
+                        // Show session video as background
+                        VideoPlayer(player: AVPlayer(url: materialUrl))
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .ignoresSafeArea()
+                    } else {
+                        // Unknown material type - show placeholder
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .ignoresSafeArea()
+                    }
+                } else {
+                    // No media available - show placeholder
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .ignoresSafeArea()
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .sheet(isPresented: $showSheet) {
+            VStack(spacing: 0) {
+                customHeader
+                // Sheet Content
                 if let session = session {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 30) {
+                            VStack(spacing: 20) {
                                 textComparisonSectionForSession(session, scrollProxy: proxy.scrollTo)
                                 suggestionsAndKeyTermsSectionForSession(session)
                             }
@@ -158,13 +219,14 @@ struct FeedbackView: View {
                             .padding(.top, 20)
                             .padding(.bottom, 40)
                         }
-                        .background(Color(.systemGray6))
+                        // .background(Color(.systemGray6).opacity(0.95))
                     }
+
                 } else {
                     // Normal feedback mode - always show content with progressive skeleton loading
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 30) {
+                            VStack(spacing: 20) {
                                 // Always show the sections - they will handle their own skeleton loading
                                 if let feedback = viewModel.feedbackResponse {
                                     textComparisonSection(feedback, scrollProxy: proxy.scrollTo)
@@ -189,10 +251,18 @@ struct FeedbackView: View {
                             .padding(.top, 20)
                             .padding(.bottom, 40)
                         }
-                        .background(Color(.systemGray6))
+                            // .background(Color(.systemGray6).opacity(0.95))
                     }
                 }
             }
+            .navigationBarTitleDisplayMode(.inline)
+            .presentationDetents([.fraction(0.15), .fraction(0.5), .fraction(0.95)], selection: $selectedDetent)
+            .presentationDragIndicator(.visible)
+            .interactiveDismissDisabled()
+
+            // test a long paragraph
+            // Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            // .presentationDetents([.fraction(0.15), .fraction(0.5), .large], selection: $selectedDetent)
         }
         .onAppear {
             viewModel.contentViewModel = contentViewModel
@@ -221,56 +291,68 @@ struct FeedbackView: View {
     // MARK: - Text Comparison Section
 
     private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 20) {
-            // Tab Selector
-            HStack(spacing: 5) {
-                Button(action: {
-                    selectedTab = .mine
-                }) {
-                    Group {
-                        if feedback.refinedText.isEmpty {
-                            SkeletonPlaceholder(width: 60, height: 20)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text("Mine")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(selectedTab == .mine ? .primary : .gray)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .padding(.vertical, 16)
-                    .background(
-                        selectedTab == .mine ? Color(.systemGray6) : Color(.systemGray5)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 40))
-                }
+        VStack(spacing: 8) {            
+            HStack(spacing: 12) {
+                ZStack {
+                    // Background pill always full width
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(red: 0.463, green: 0.463, blue: 0.502, opacity: 0.12))
 
-                Button(action: {
-                    selectedTab = .aiRefined
-                }) {
-                    Group {
-                        if feedback.refinedText.isEmpty {
-                            SkeletonPlaceholder(width: 80, height: 20)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text("AI Refined")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
-                                .frame(maxWidth: .infinity)
+                    // Content sits inside with padding
+                    HStack(spacing: 0) {
+                        Group {
+                            if feedback.refinedText.isEmpty {
+                                SkeletonPlaceholder(width: 60, height: 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("Mine")
+                                    .font(.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                            }
                         }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(selectedTab == .mine ? Color.white : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 100))
+                        .onTapGesture { selectedTab = .mine }
+
+                        Group {
+                            if feedback.refinedText.isEmpty {
+                                SkeletonPlaceholder(width: 80, height: 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                Text("AI Refined")
+                                    .font(.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(selectedTab == .aiRefined ? Color.white : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 100))
+                        .onTapGesture { selectedTab = .aiRefined }
                     }
-                    .padding(.vertical, 16)
-                    .background(
-                        selectedTab == .aiRefined ? Color(.systemGray6) : Color(.systemGray5)
+                    .padding(4)
+                }
+                .frame(maxWidth: .infinity) 
+                                
+                // Speaker Icon
+                if selectedTab == .aiRefined, let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
+                    AudioPlayerButton(
+                        audioUrl: pronunciationUrl,
+                        foregroundColorPlaying: AppTheme.primaryBlue,
+                        foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
+                        backgroundColorPlaying: Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6), // #E9EEFF 60%
+                        backgroundColorNotPlaying: .clear
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 40))
                 }
             }
+            .frame(maxWidth: .infinity)
 
             // Text Content
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 if selectedTab == .mine {
                     if feedback.refinedText.isEmpty {
                         // Show animated thinking process and skeleton placeholders when refinedText is empty
@@ -292,8 +374,9 @@ struct FeedbackView: View {
                     } else {
                         Text(feedback.originalText)
                             .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(Color(.label))
-                            .lineSpacing(2)
+                            .foregroundColor(.black)
+                            .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                            .kerning(-0.43) // Letter spacing -0.43px
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -301,57 +384,53 @@ struct FeedbackView: View {
                     // AI Refined text with clickable matches
                     let clickableMatches = getClickableMatches(from: feedback)
 
-                    HStack(alignment: .top, spacing: 2) {
-                        // Speaker icon at the beginning of the text block
-                        if let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
-                            AudioPlayerButton(audioUrl: pronunciationUrl)
-                        }
+                    if feedback.refinedText.isEmpty {
+                        // Show animated thinking process and skeleton placeholders when refinedText is empty
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Animated thinking process step
+                            ThinkingProcessView(
+                                currentStep: currentThinkingStep,
+                                thinkingSteps: thinkingSteps
+                            )
+                            .padding(.bottom, 8)
 
-                        if feedback.refinedText.isEmpty {
-                            // Show animated thinking process and skeleton placeholders when refinedText is empty
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Animated thinking process step
-                                ThinkingProcessView(
-                                    currentStep: currentThinkingStep,
-                                    thinkingSteps: thinkingSteps
-                                )
-                                .padding(.bottom, 8)
-
-                                // Skeleton placeholders
-                                VStack(alignment: .leading, spacing: 8) {
-                                    SkeletonPlaceholder(width: 200, height: 16)
-                                    SkeletonPlaceholder(width: 230, height: 16)
-                                    SkeletonPlaceholder(width: 180, height: 16)
-                                }
+                            // Skeleton placeholders
+                            VStack(alignment: .leading, spacing: 8) {
+                                SkeletonPlaceholder(width: 200, height: 16)
+                                SkeletonPlaceholder(width: 230, height: 16)
+                                SkeletonPlaceholder(width: 180, height: 16)
                             }
-                        } else {
-                            ClickableHighlightedTextView(
-                                text: feedback.refinedText,
-                                clickableMatches: clickableMatches
-                            ) { match in
-                                handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
                         }
+                    } else {
+                        ClickableHighlightedTextView(
+                            text: feedback.refinedText,
+                            clickableMatches: clickableMatches
+                        ) { match in
+                            handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                        }
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.black)
+                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .kerning(-0.43) // Letter spacing -0.43px
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
-            .padding(16)
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 24)
-        .background(Color(.systemGray5))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(Color(red: 0.961, green: 0.961, blue: 0.961, opacity: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
     // MARK: - Suggestions and Key Terms Section
 
     private func suggestionsAndKeyTermsSection(_ feedback: FeedbackResponse) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             // Section title - show waving placeholder if no chosen items loaded yet
             let chosenItemsGenerated = feedback.chosenItemsGenerated
             if !chosenItemsGenerated {
@@ -361,14 +440,15 @@ struct FeedbackView: View {
             } else if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements, chosenKeyTerms.isEmpty && chosenRefinements.isEmpty {
                 // don't show anything
             } else {
-                Text("Key Expressions")
-                    .appTitle()
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 20)
+                Text("Vocabulary")
+                    .font(.system(size: 20, weight: .semibold))
+                    .padding(.horizontal, 22)
+                    .padding(.top, 5)
+                    .padding(.bottom, 10)
             }
 
             // Combined section with key terms and suggestions
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Check if chosen items are generated
                 let chosenItemsGenerated = feedback.chosenItemsGenerated
 
@@ -534,87 +614,138 @@ struct FeedbackView: View {
 
     // MARK: - Session Viewing Mode Methods
 
-    private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy _: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 20) {
-            // Tab Selector
-            HStack(spacing: 0) {
-                Button(action: {
-                    selectedTab = .mine
-                }) {
-                    Text("Mine")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedTab == .mine ? .primary : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            selectedTab == .mine ? Color(.systemGray5) : Color.clear
-                        )
-                }
+    private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
+        VStack(spacing: 8) {            
+            HStack(spacing: 12) {
+                ZStack {
+                    // Background pill always full width
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(red: 0.463, green: 0.463, blue: 0.502, opacity: 0.12))
 
-                Button(action: {
-                    selectedTab = .aiRefined
-                }) {
-                    Text("AI Refined")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedTab == .aiRefined ? .primary : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            selectedTab == .aiRefined ? Color(.systemGray5) : Color.clear
-                        )
+                    // Content sits inside with padding
+                    HStack(spacing: 0) {
+                        Text("Mine")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(selectedTab == .mine ? Color.white : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 100))
+                            .onTapGesture { selectedTab = .mine }
+
+                        Text("AI Refined")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(selectedTab == .aiRefined ? Color.white : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 100))
+                            .onTapGesture { selectedTab = .aiRefined }
+                    }
+                    .padding(4)
+                }
+                .frame(maxWidth: .infinity) 
+                                
+                // Speaker Icon
+                if selectedTab == .aiRefined, let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
+                    AudioPlayerButton(
+                        audioUrl: pronunciationUrl,
+                        foregroundColorPlaying: AppTheme.primaryBlue,
+                        foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
+                        backgroundColorPlaying: Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6), // #E9EEFF 60%
+                        backgroundColorNotPlaying: .clear
+                    )
                 }
             }
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(maxWidth: .infinity)
+
+            let clickableMatches = getClickableMatches(from: session)
 
             // Text Content - always show actual data from session
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 if selectedTab == .mine {
                     Text(session.userDescription)
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(Color(.label))
-                        .lineSpacing(2)
+                        .foregroundColor(.black)
+                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .kerning(-0.43) // Letter spacing -0.43px
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    // AI Refined text with pronunciation button if available
-                    HStack(alignment: .top, spacing: 8) {
-                        if let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
-                            AudioPlayerButton(audioUrl: pronunciationUrl)
-                        }
-
-                        Text(session.standardDescription)
-                            .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(Color(.label))
-                            .lineSpacing(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    ClickableHighlightedTextView(
+                                text: session.standardDescription,
+                                clickableMatches: clickableMatches
+                            ) { match in
+                                handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                            }
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.black)
+                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .kerning(-0.43) // Letter spacing -0.43px
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(16)
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 24)
-        .background(Color(.systemGray5))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(AppTheme.feedbackCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
+    private var customHeader: some View {
+        HStack {
+            
+            Image(systemName: "xmark")
+                .foregroundColor(.black)
+                .frame(width: 44, height: 44)
+                .clipShape(Circle())
+                .glassEffect(.clear.tint(AppTheme.backButtonGray))
+                .blendMode(.multiply)
+                .onTapGesture {
+                    router.goBack()
+                }
+
+            Spacer()
+
+            Text("AI feedback")
+                .font(.headline)
+                .fontWeight(.regular)
+                .foregroundColor(.primary)
+                .glassEffect(.clear)
+
+            Spacer()
+
+            
+            Image(systemName: "checkmark")
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .clipShape(Circle())
+                .glassEffect(.clear.tint(AppTheme.primaryBlue))
+                .onTapGesture {
+                    print("checkmark tapped")
+                }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 30)
+    }
+
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             // Section title - always show since session data is already loaded
-            Text("Key Expressions")
-                .appTitle()
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
+            Text("Vocabulary")
+                .font(.system(size: 20, weight: .semibold))
+                .padding(.horizontal, 22)
+                .padding(.top, 5)
+                .padding(.bottom, 10)
 
             // Combined section with key terms and suggestions
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Key Terms - always show actual data from session
                 ForEach(session.keyTerms) { keyTerm in
                     KeyTermCard(
@@ -702,48 +833,24 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: - Custom Header
-
-    private var customHeader: some View {
-        HStack {
-            Button(action: {
-                router.resetToHome()
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .frame(width: 40, height: 40)
-                    .background(Color(.systemGray5))
-                    .clipShape(Circle())
-            }
-
-            Spacer()
-
-            Text("AI Feedback")
-                .appTitle()
-
-            Spacer()
-
-            Button(action: {
-                // Save or share feedback
-            }) {
-                Image(systemName: "checkmark")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
-                    .background(Color.green)
-                    .clipShape(Circle())
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 40)
-        .padding(.bottom, 20)
-        .background(Color(.systemGray6))
-    }
-
     // MARK: - Helper Methods
+    
+    private func detectMaterialType(from url: URL) -> MediaType {
+        let pathExtension = url.pathExtension.lowercased()
+        
+        // Common image extensions
+        let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp", "heic", "heif"]
+        // Common video extensions
+        let videoExtensions = ["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "3gp"]
+        
+        if imageExtensions.contains(pathExtension) {
+            return .image
+        } else if videoExtensions.contains(pathExtension) {
+            return .video
+        } else {
+            return .image // Default to image if unknown
+        }
+    }
 
     private func getClickableMatches(from feedback: FeedbackResponse) -> [ClickableTextMatch] {
         var matches: [ClickableTextMatch] = []
@@ -813,6 +920,68 @@ struct FeedbackView: View {
         return matches.sorted { $0.range.location < $1.range.location }
     }
 
+    private func getClickableMatches(from session: SessionItem) -> [ClickableTextMatch] {
+        var matches: [ClickableTextMatch] = []
+        let refinedText = session.standardDescription
+        let nsString = NSString(string: refinedText)
+
+
+        // Only use chosen key terms for highlighting when they are generated
+        for chosenTerm in session.keyTerms {
+            var searchRange = NSRange(location: 0, length: nsString.length)
+
+            while searchRange.location < nsString.length {
+                let foundRange = nsString.range(of: chosenTerm.term, options: [.caseInsensitive], range: searchRange)
+                if foundRange.location != NSNotFound {
+                    // Find the corresponding keyTerm to get its ID
+                    if let keyTerm = session.keyTerms.first(where: { $0.term == chosenTerm.term }) {
+                        matches.append(ClickableTextMatch(
+                            range: foundRange,
+                            text: chosenTerm.term,
+                            cardType: .keyTerm,
+                            cardId: keyTerm.id
+                        ))
+                    }
+
+                    // Move search range past this match
+                    searchRange.location = foundRange.location + foundRange.length
+                    searchRange.length = nsString.length - searchRange.location
+                } else {
+                    break
+                }
+            }
+        }
+
+        // Only use chosen refinements for highlighting when they are generated
+        for chosenSuggestion in session.suggestions {
+            var searchRange = NSRange(location: 0, length: nsString.length)
+
+            while searchRange.location < nsString.length {
+                let foundRange = nsString.range(of: chosenSuggestion.refinement, options: [.caseInsensitive], range: searchRange)
+                if foundRange.location != NSNotFound {
+                    // Find the corresponding suggestion to get its ID
+                    if let suggestion = session.suggestions.first(where: { $0.refinement == chosenSuggestion.refinement }) {
+                        matches.append(ClickableTextMatch(
+                            range: foundRange,
+                            text: chosenSuggestion.refinement,
+                            cardType: .suggestion,
+                            cardId: suggestion.id
+                        ))
+                    }
+
+                    // Move search range past this match
+                    searchRange.location = foundRange.location + foundRange.length
+                    searchRange.length = nsString.length - searchRange.location
+                } else {
+                    break
+                }
+            }
+        }
+
+        // Sort matches by their position in the text to handle overlaps properly
+        return matches.sorted { $0.range.location < $1.range.location }
+    }
+
     private func handleTextTap(match: ClickableTextMatch, feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
         // Verify that the corresponding card actually exists
         let cardExists: Bool
@@ -821,6 +990,30 @@ struct FeedbackView: View {
             cardExists = feedback.keyTerms.contains { $0.id == match.cardId }
         case .suggestion:
             cardExists = feedback.suggestions.contains { $0.id == match.cardId }
+        }
+
+        // Only respond if the card exists
+        guard cardExists else {
+            return
+        }
+
+        // Expand the corresponding card
+        expandedCards.insert(match.cardId)
+
+        // Scroll to the card with animation
+        withAnimation(.easeInOut(duration: 0.5)) {
+            scrollProxy(match.cardId, UnitPoint.center)
+        }
+    }
+
+    private func handleTextTap(match: ClickableTextMatch, session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+        // Verify that the corresponding card actually exists
+        let cardExists: Bool
+        switch match.cardType {
+        case .keyTerm:
+            cardExists = session.keyTerms.contains { $0.id == match.cardId }
+        case .suggestion:
+            cardExists = session.suggestions.contains { $0.id == match.cardId }
         }
 
         // Only respond if the card exists
@@ -952,13 +1145,13 @@ struct FeedbackView: View {
 
                 // Add underline with vertical gap
                 attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
-                attributedString.addAttribute(.underlineColor, value: UIColor.systemGreen, range: range)
+                attributedString.addAttribute(.underlineColor, value: UIColor(AppTheme.primaryBlue), range: range)
 
                 // Add small vertical gap between text and underline
                 attributedString.addAttribute(.baselineOffset, value: 2, range: range)
 
                 // Make it look clickable
-                attributedString.addAttribute(.foregroundColor, value: UIColor.systemGreen, range: range)
+                attributedString.addAttribute(.foregroundColor, value: UIColor(AppTheme.primaryBlue), range: range)
             }
 
             return attributedString
@@ -1019,94 +1212,129 @@ struct FeedbackView: View {
         let onToggle: () -> Void
         let onFavoriteToggle: (UUID, Bool) -> Void
 
+        @State private var speechSynthesizer = AVSpeechSynthesizer()
+        
+        private func speakText(_ text: String) {
+            let utterance = AVSpeechUtterance(string: text)
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+            speechSynthesizer.speak(utterance)
+        }
+
         var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Header - always visible
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        onToggle()
-                    }
-                }) {
+                VStack(spacing: 10) {
+                    // Top row: Term/Refinement + star
                     HStack(alignment: .top, spacing: 12) {
-                        // Left side: Content (Term/Refinement + Translation)
-                        VStack(alignment: .leading, spacing: 10) {
-                            // Row 1: Term/Refinement
+                        // Left side: Term/Refinement with blue background
+                        HStack(alignment: .top, spacing: 8) {
+                            // Term/Refinement
                             if suggestion.refinement.isEmpty {
-                                SkeletonPlaceholder(width: 100, height: 16)
+                                SkeletonPlaceholder(width: 100, height: 18)
                             } else {
-                                HighlightedSuggestionText(
-                                    term: isExpanded ? suggestion.term : nil,
-                                    refinement: suggestion.refinement
-                                )
+                                Text(suggestion.refinement)
+                                    .font(.body.weight(.medium))
+                                    .foregroundColor(AppTheme.primaryBlue)
                             }
 
-                            // Row 2: Translation
-                            if suggestion.translation.isEmpty {
-                                SkeletonPlaceholder(width: 150, height: 14)
-                            } else {
-                                Text(suggestion.translation)
-                                    .appCardText()
-                            }
-                        }
-
-                        // Right side: Controls (Star + Chevron)
-                        VStack(spacing: 10) {
-                            // Star button with waving effect when refinement is empty
+                            // Speaker icon
                             if suggestion.refinement.isEmpty {
                                 SkeletonPlaceholder(width: 16, height: 16)
                                     .modifier(ShimmerEffect())
                             } else {
                                 Button(action: {
-                                    onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                                    speakText(suggestion.refinement)
                                 }) {
-                                    Image(systemName: suggestion.favorite ? "star.fill" : "star")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(suggestion.favorite ? .yellow : .gray)
+                                    Image(systemName: "speaker.wave.2")
+                                        .font(.body.weight(.medium))
+                                        .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .frame(width: 20, height: 20)
-                                .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty)
-                            }
-
-                            // Chevron
-                            if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
-                                SkeletonPlaceholder(width: 20, height: 16)
-                            } else {
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
                             }
                         }
+                        .padding(.horizontal, 6)
+                        .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        
+                        Spacer()
+                        
+                        // Right side: Star button
+                        if suggestion.refinement.isEmpty {
+                            SkeletonPlaceholder(width: 16, height: 16)
+                                .modifier(ShimmerEffect())
+                        } else {
+                            Button(action: {
+                                onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                            }) {
+                                Image(systemName: suggestion.favorite ? "star.fill" : "star")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                            .disabled(suggestion.refinement.isEmpty)
+                        }
                     }
-                    .padding(16)
+                    
+                    // Bottom row: Translation + chevron
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left side: Translation
+                        if suggestion.translation.isEmpty {
+                            SkeletonPlaceholder(width: 150, height: 14)
+                        } else {
+                            Text(suggestion.translation)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(AppTheme.feedbackCardTextColor)
+                        }
+                        
+                        Spacer()
+                        
+                        // Right side: Chevron
+                        if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
+                            SkeletonPlaceholder(width: 20, height: 16)
+                        } else {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    onToggle()
+                                }
+                            }) {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(AppTheme.feedbackCardTextColor)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                        }
+                    }
                 }
+                .padding(.top, 16)
+                .padding(.bottom, isExpanded ? 0 : 16)
+                .padding(.horizontal, 22)
                 .buttonStyle(PlainButtonStyle())
-                .disabled(suggestion.term.isEmpty || suggestion.reason.isEmpty) // Disable if no full data
 
                 // Expanded content
                 if isExpanded {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Divider()
-                            .padding(.horizontal, 16)
 
                         if suggestion.reason.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
                                 SkeletonPlaceholder(width: .infinity, height: 14)
                                 SkeletonPlaceholder(width: 280, height: 14)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
                         } else {
                             Text(suggestion.reason)
-                                .appCardText(fontSize: 14)
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 16)
+                                .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
                         }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 16)
                 }
             }
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(AppTheme.feedbackCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 26))
         }
     }
 
@@ -1198,90 +1426,130 @@ struct FeedbackView: View {
         let isExpanded: Bool
         let onToggle: () -> Void
         let onFavoriteToggle: (UUID, Bool) -> Void
+        
+        @State private var speechSynthesizer = AVSpeechSynthesizer()
+        
+        private func speakText(_ text: String) {
+            let utterance = AVSpeechUtterance(string: text)
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+            speechSynthesizer.speak(utterance)
+        }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Header - always visible
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        onToggle()
-                    }
-                }) {
+                VStack(spacing: 10) {
+                    // Top row: English word + speaker icon + star
                     HStack(alignment: .top, spacing: 12) {
-                        // Left side: Content (Term + Translation)
-                        VStack(alignment: .leading, spacing: 10) {
-                            // Row 1: Term
+                        // Left side: English word + speaker icon
+                        HStack(alignment: .top, spacing: 8) {
+                            // English word
                             if keyTerm.term.isEmpty {
-                                SkeletonPlaceholder(width: 100, height: 16)
+                                SkeletonPlaceholder(width: 100, height: 18)
                             } else {
-                                HighlightedKeyTermText(term: keyTerm.term)
+                                Text(keyTerm.term)
+                                    .font(.body.weight(.medium))
+                                    .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
                             }
-
-                            // Row 2: Translation
-                            if keyTerm.translation.isEmpty {
-                                SkeletonPlaceholder(width: 150, height: 14)
-                            } else {
-                                Text(keyTerm.translation)
-                                    .appCardText()
-                            }
-                        }
-
-                        // Right side: Controls (Star + Chevron)
-                        VStack(spacing: 10) {
-                            // Star button with waving effect when term is empty
+                            
+                            // Speaker icon
                             if keyTerm.term.isEmpty {
                                 SkeletonPlaceholder(width: 16, height: 16)
                                     .modifier(ShimmerEffect())
                             } else {
                                 Button(action: {
-                                    onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
+                                    speakText(keyTerm.term)
                                 }) {
-                                    Image(systemName: keyTerm.favorite ? "star.fill" : "star")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(keyTerm.favorite ? .yellow : .gray)
+                                    Image(systemName: "speaker.wave.2")
+                                        .font(.body.weight(.medium))
+                                        .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .frame(width: 20, height: 20)
                             }
-
-                            // Chevron
-                            if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
-                                SkeletonPlaceholder(width: 20, height: 16)
-                            } else {
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal, 6)
+                        .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        
+                        Spacer()
+                        
+                        // Right side: Star button
+                        if keyTerm.term.isEmpty {
+                            SkeletonPlaceholder(width: 16, height: 16)
+                                .modifier(ShimmerEffect())
+                        } else {
+                            Button(action: {
+                                onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
+                            }) {
+                                Image(systemName: keyTerm.favorite ? "star.fill" : "star")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                            .disabled(keyTerm.term.isEmpty)
                         }
                     }
-                    .padding(16)
+                    
+                    // Bottom row: Chinese translation + chevron
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left side: Chinese translation
+                        if keyTerm.translation.isEmpty {
+                            SkeletonPlaceholder(width: 150, height: 14)
+                        } else {
+                            Text(keyTerm.translation)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(AppTheme.feedbackCardTextColor)
+                        }
+                        
+                        Spacer()
+                        
+                        // Right side: Chevron
+                        if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
+                            SkeletonPlaceholder(width: 20, height: 16)
+                        } else {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    onToggle()
+                                }
+                            }) {
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(AppTheme.feedbackCardTextColor)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                        }
+                    }
                 }
+                .padding(.top, 16)
+                .padding(.bottom, isExpanded ? 0 : 16)
+                .padding(.horizontal, 22)
                 .buttonStyle(PlainButtonStyle())
 
                 // Expanded content
                 if isExpanded {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Divider()
-                            .padding(.horizontal, 16)
 
                         if keyTerm.example.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
                                 SkeletonPlaceholder(width: .infinity, height: 14)
                                 SkeletonPlaceholder(width: 250, height: 14)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
                         } else {
                             Text(keyTerm.example)
-                                .appCardText(fontSize: 14)
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 16)
+                                .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
                         }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 16)
                 }
             }
-            .background(Color(.systemGray5))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(AppTheme.feedbackCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 26))
         }
     }
 }

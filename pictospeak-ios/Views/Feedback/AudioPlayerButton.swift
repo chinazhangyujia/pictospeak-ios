@@ -10,11 +10,28 @@ import SwiftUI
 
 struct AudioPlayerButton: View {
     let audioUrl: String
+    let foregroundColorPlaying: Color
+    let foregroundColorNotPlaying: Color
+    let backgroundColorPlaying: Color
+    let backgroundColorNotPlaying: Color
+    
     @State private var isPlaying = false
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isLoading = false
     @State private var hasError = false
     @State private var audioDelegate: AudioPlayerDelegate?
+    
+    init(audioUrl: String, 
+         foregroundColorPlaying: Color = .primary,
+         foregroundColorNotPlaying: Color = .primary,
+         backgroundColorPlaying: Color = Color(red: 0.549, green: 0.549, blue: 0.549),
+         backgroundColorNotPlaying: Color = Color(red: 0.549, green: 0.549, blue: 0.549)) {
+        self.audioUrl = audioUrl
+        self.foregroundColorPlaying = foregroundColorPlaying
+        self.foregroundColorNotPlaying = foregroundColorNotPlaying
+        self.backgroundColorPlaying = backgroundColorPlaying
+        self.backgroundColorNotPlaying = backgroundColorNotPlaying
+    }
 
     var body: some View {
         Button(action: {
@@ -30,14 +47,17 @@ struct AudioPlayerButton: View {
                     .frame(width: 16, height: 16)
             } else if hasError {
                 Image(systemName: "speaker.slash")
-                    .font(.system(size: 16))
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.gray)
             } else {
-                Image(systemName: isPlaying ? "pause" : "speaker.wave.2")
-                    .font(.system(size: 16))
-                    .foregroundColor(.primary)
+                Image(systemName: isPlaying ? "speaker.wave.3" : "speaker.wave.2")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(isPlaying ? foregroundColorPlaying : foregroundColorNotPlaying)
             }
         }
+        .frame(width: 44, height: 44)
+        .background(isPlaying ? backgroundColorPlaying : backgroundColorNotPlaying)
+        .clipShape(Circle())
         .disabled(isLoading || hasError)
         .onDisappear {
             stopAudio()

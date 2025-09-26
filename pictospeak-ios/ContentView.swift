@@ -80,7 +80,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                .tint(Color(red: 0.247, green: 0.388, blue: 0.910))
+                .tint(AppTheme.primaryBlue)
             } else {
                 NavigationStack(path: $onboardingRouter.path) {
                     OnboardingTargetLanguageView()

@@ -10,6 +10,14 @@ import SwiftUI
 // MARK: - Global App Theme Configuration
 
 enum AppTheme {
+    // MARK: - Colors
+    
+    static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
+    static let backButtonGray = Color(red: 0.471, green: 0.471, blue: 0.502).opacity(0.16)
+
+    static let feedbackCardBackground = Color(red: 0.961, green: 0.961, blue: 0.961, opacity: 0.6)
+    static let feedbackCardTextColor = Color(red: 0.549, green: 0.549, blue: 0.549, opacity: 1.0)
+    
     // MARK: - Letter Spacing (Kerning)
 
     static let defaultKerning: CGFloat = 0.3
@@ -64,6 +72,13 @@ extension Text {
         font(.system(size: fontSize, weight: .medium))
             .kerning(AppTheme.cardTextKerning)
             .foregroundColor(Color(.label).opacity(0.5))
+    }
+    
+    /// Card text styling with custom font size, weight, and color
+    func appCardText(fontSize: CGFloat, weight: Font.Weight, color: Color) -> some View {
+        font(.system(size: fontSize, weight: weight))
+            .kerning(AppTheme.cardTextKerning)
+            .foregroundColor(color)
     }
 }
 
