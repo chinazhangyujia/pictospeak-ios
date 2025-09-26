@@ -13,6 +13,7 @@ struct HomeView: View {
     @StateObject private var sessionsViewModel: PastSessionsViewModel = .init(contentViewModel: ContentViewModel())
     @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init(contentViewModel: ContentViewModel())
     @State private var selectedMode: NavigationMode = .home
+    @State private var hasLoadedInitialData = false
 
     enum NavigationMode {
         case home
@@ -63,11 +64,12 @@ struct HomeView: View {
             }
         }
         .task {
-            // Only load data if we have an auth token
-            if contentViewModel.authToken != nil {
+            // Only load data if we have an auth token and haven't loaded initial data yet
+            if contentViewModel.authToken != nil && !hasLoadedInitialData {
                 sessionsViewModel.clearError() // Clear any stale errors
                 await sessionsViewModel.loadInitialSessions()
                 await materialsModel.loadInitialMaterials()
+                hasLoadedInitialData = true
             }
         }
         .navigationBarBackButtonHidden(true)
