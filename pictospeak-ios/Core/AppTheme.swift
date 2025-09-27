@@ -11,11 +11,13 @@ import SwiftUI
 
 enum AppTheme {
     // MARK: - Colors
+
+    static let viewBackgroundGray = Color(red: 0.965, green: 0.969, blue: 0.984)
     
     static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
     static let backButtonGray = Color(red: 0.471, green: 0.471, blue: 0.502).opacity(0.16)
 
-    static let feedbackCardBackground = Color(red: 0.961, green: 0.961, blue: 0.961, opacity: 0.6)
+    static let feedbackCardBackground = Color(.white)
     static let feedbackCardTextColor = Color(red: 0.549, green: 0.549, blue: 0.549, opacity: 1.0)
     
     // MARK: - Letter Spacing (Kerning)

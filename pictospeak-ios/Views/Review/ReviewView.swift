@@ -40,7 +40,7 @@ struct ReviewView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            VStack(spacing: 16) {
                 // Segmented Control
                 Picker("Review Tab", selection: $selectedTab) {
                     ForEach(ReviewTab.allCases, id: \.self) { tab in
@@ -48,8 +48,8 @@ struct ReviewView: View {
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .controlSize(.large)
+                .padding(.top, 16)
                 
                 // Content based on selected tab
                 if selectedTab == .vocabulary {
@@ -58,9 +58,23 @@ struct ReviewView: View {
                     sessionsContent
                 }
             }
-            .background(Color(.systemBackground))
+            .padding(.horizontal, 16)
+            .background(AppTheme.viewBackgroundGray)
             .navigationTitle("Review")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        router.resetToHome()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.black)
+                            .frame(width: 24, height: 24)
+                            .clipShape(Circle())
+                            .blendMode(.multiply)
+                    }
+                }
+            }
         }
         .onAppear {
             // Initialize ReviewViewModel with the environment ContentViewModel
@@ -85,14 +99,13 @@ struct ReviewView: View {
     // MARK: - Vocabulary Content
     
     private var vocabularyContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 1) {
                 // Vocabulary Section Header
                 Text("Vocabulary")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primary)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 5)
+                    .padding(.bottom, 10)
                 
                 // Loading State
                 if reviewViewModel.isLoading && reviewViewModel.reviewItems.isEmpty {
@@ -122,7 +135,6 @@ struct ReviewView: View {
                         }
                         .buttonStyle(.borderedProminent)
                     }
-                    .padding(.horizontal, 20)
                     .padding(.vertical, 40)
                 }
                 
@@ -149,6 +161,7 @@ struct ReviewView: View {
                                 )
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets())
                                 .onAppear {
                                     loadMoreContentIfNeeded(currentItem: reviewItem)
                                 }
@@ -170,6 +183,7 @@ struct ReviewView: View {
                                 )
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets())
                                 .onAppear {
                                     loadMoreContentIfNeeded(currentItem: reviewItem)
                                 }
@@ -188,9 +202,11 @@ struct ReviewView: View {
                             .frame(maxWidth: .infinity)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets())
                         }
                     }
                     .listStyle(PlainListStyle())
+                    .listRowSpacing(12)
                     .scrollContentBackground(.hidden)
                 }
                 
@@ -208,7 +224,6 @@ struct ReviewView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }
-                    .padding(.horizontal, 20)
                     .padding(.vertical, 40)
                     
                     Spacer() // Push content to top

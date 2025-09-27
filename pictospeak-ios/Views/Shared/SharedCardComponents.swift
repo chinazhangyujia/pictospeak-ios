@@ -82,7 +82,7 @@ struct KeyTermCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header - always visible
-            VStack(spacing: 10) {
+            VStack(spacing: 26) {
                 // Top row: English word + speaker icon + star
                 HStack(alignment: .top, spacing: 12) {
                     // Left side: English word + speaker icon
@@ -93,7 +93,7 @@ struct KeyTermCard: View {
                         } else {
                             Text(keyTerm.term)
                                 .font(.body.weight(.medium))
-                                .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
+                                .foregroundColor(AppTheme.primaryBlue)
                         }
                         
                         // Speaker icon
@@ -106,15 +106,12 @@ struct KeyTermCard: View {
                             }) {
                                 Image(systemName: "speaker.wave.2")
                                     .font(.body.weight(.medium))
-                                    .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
+                                    .foregroundColor(AppTheme.primaryBlue)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .frame(width: 20, height: 20)
                         }
                     }
-                    .padding(.horizontal, 6)
-                    .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
                     
                     Spacer()
                     
@@ -216,7 +213,7 @@ struct SuggestionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header - always visible
-            VStack(spacing: 10) {
+            VStack(spacing: 26) {
                 // Top row: Term/Refinement + star
                 HStack(alignment: .top, spacing: 12) {
                     // Left side: Term/Refinement with blue background
@@ -240,15 +237,12 @@ struct SuggestionCard: View {
                             }) {
                                 Image(systemName: "speaker.wave.2")
                                     .font(.body.weight(.medium))
-                                    .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
+                                    .foregroundColor(AppTheme.primaryBlue)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .frame(width: 20, height: 20)
                         }
                     }
-                    .padding(.horizontal, 6)
-                    .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
                     
                     Spacer()
                     
