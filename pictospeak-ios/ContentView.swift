@@ -53,6 +53,8 @@ struct ContentView: View {
                                     switch route {
                                     case .review:
                                         ReviewView()
+                                    case let .feedbackFromSession(sessionId, pastSessionsViewModel):
+                                        FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                                     default:
                                         EmptyView()
                                     }

@@ -5,55 +5,9 @@
 //  Created by Yujia Zhang on 8/4/25.
 //
 
-import SwiftUI
-import AVKit
 import AVFoundation
-
-// MARK: - Skeleton Loading Components
-
-struct ShimmerEffect: ViewModifier {
-    @State private var phase: CGFloat = 0
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                GeometryReader { geometry in
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.clear,
-                            Color.white.opacity(0.3),
-                            Color.clear,
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: geometry.size.width * 2)
-                    .offset(x: -geometry.size.width + (geometry.size.width * 2) * phase)
-                    .animation(
-                        Animation.linear(duration: 1.5)
-                            .repeatForever(autoreverses: false),
-                        value: phase
-                    )
-                }
-            )
-            .onAppear {
-                phase = 1
-            }
-            .clipped()
-    }
-}
-
-struct SkeletonPlaceholder: View {
-    let width: CGFloat
-    let height: CGFloat
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 4)
-            .fill(Color(.systemGray4))
-            .frame(width: width, height: height)
-            .modifier(ShimmerEffect())
-    }
-}
+import AVKit
+import SwiftUI
 
 // MARK: - View Extensions
 
@@ -139,7 +93,7 @@ struct FeedbackView: View {
     enum FeedbackTab {
         case mine, aiRefined
     }
-    
+
     @State private var showSheet = true
     @State private var selectedDetent: PresentationDetent = .fraction(0.5)
 
@@ -164,7 +118,7 @@ struct FeedbackView: View {
                 } else if let session = session, let materialUrl = URL(string: session.materialUrl) {
                     // Show session's material as background - detect type from URL
                     let materialType = detectMaterialType(from: materialUrl)
-                    
+
                     if materialType == .image {
                         // Load session image asynchronously
                         AsyncImage(url: materialUrl) { image in
@@ -219,7 +173,6 @@ struct FeedbackView: View {
                             .padding(.top, 20)
                             .padding(.bottom, 40)
                         }
-                        // .background(Color(.systemGray6).opacity(0.95))
                     }
 
                 } else {
@@ -251,7 +204,7 @@ struct FeedbackView: View {
                             .padding(.top, 20)
                             .padding(.bottom, 40)
                         }
-                            // .background(Color(.systemGray6).opacity(0.95))
+                        // .background(Color(.systemGray6).opacity(0.95))
                     }
                 }
             }
@@ -259,10 +212,6 @@ struct FeedbackView: View {
             .presentationDetents([.fraction(0.15), .fraction(0.5), .fraction(0.95)], selection: $selectedDetent)
             .presentationDragIndicator(.visible)
             .interactiveDismissDisabled()
-
-            // test a long paragraph
-            // Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
-            // .presentationDetents([.fraction(0.15), .fraction(0.5), .large], selection: $selectedDetent)
         }
         .onAppear {
             viewModel.contentViewModel = contentViewModel
@@ -291,7 +240,7 @@ struct FeedbackView: View {
     // MARK: - Text Comparison Section
 
     private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 8) {            
+        VStack(spacing: 8) {
             HStack(spacing: 12) {
                 ZStack {
                     // Background pill always full width
@@ -336,8 +285,8 @@ struct FeedbackView: View {
                     }
                     .padding(4)
                 }
-                .frame(maxWidth: .infinity) 
-                                
+                .frame(maxWidth: .infinity)
+
                 // Speaker Icon
                 if selectedTab == .aiRefined, let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
                     AudioPlayerButton(
@@ -615,7 +564,7 @@ struct FeedbackView: View {
     // MARK: - Session Viewing Mode Methods
 
     private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 8) {            
+        VStack(spacing: 8) {
             HStack(spacing: 12) {
                 ZStack {
                     // Background pill always full width
@@ -646,8 +595,8 @@ struct FeedbackView: View {
                     }
                     .padding(4)
                 }
-                .frame(maxWidth: .infinity) 
-                                
+                .frame(maxWidth: .infinity)
+
                 // Speaker Icon
                 if selectedTab == .aiRefined, let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
                     AudioPlayerButton(
@@ -675,17 +624,17 @@ struct FeedbackView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     ClickableHighlightedTextView(
-                                text: session.standardDescription,
-                                clickableMatches: clickableMatches
-                            ) { match in
-                                handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
-                            }
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(.black)
-                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
-                        .kerning(-0.43) // Letter spacing -0.43px
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                        text: session.standardDescription,
+                        clickableMatches: clickableMatches
+                    ) { match in
+                        handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                    }
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(.black)
+                    .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                    .kerning(-0.43) // Letter spacing -0.43px
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.top, 8)
@@ -700,7 +649,6 @@ struct FeedbackView: View {
 
     private var customHeader: some View {
         HStack {
-            
             Image(systemName: "xmark")
                 .foregroundColor(.black)
                 .frame(width: 44, height: 44)
@@ -721,7 +669,6 @@ struct FeedbackView: View {
 
             Spacer()
 
-            
             Image(systemName: "checkmark")
                 .foregroundColor(.white)
                 .frame(width: 44, height: 44)
@@ -834,15 +781,15 @@ struct FeedbackView: View {
     }
 
     // MARK: - Helper Methods
-    
+
     private func detectMaterialType(from url: URL) -> MediaType {
         let pathExtension = url.pathExtension.lowercased()
-        
+
         // Common image extensions
         let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp", "heic", "heif"]
         // Common video extensions
         let videoExtensions = ["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "3gp"]
-        
+
         if imageExtensions.contains(pathExtension) {
             return .image
         } else if videoExtensions.contains(pathExtension) {
@@ -924,7 +871,6 @@ struct FeedbackView: View {
         var matches: [ClickableTextMatch] = []
         let refinedText = session.standardDescription
         let nsString = NSString(string: refinedText)
-
 
         // Only use chosen key terms for highlighting when they are generated
         for chosenTerm in session.keyTerms {
@@ -1204,140 +1150,6 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: - Suggestion Card
-
-    struct SuggestionCard: View {
-        let suggestion: Suggestion
-        let isExpanded: Bool
-        let onToggle: () -> Void
-        let onFavoriteToggle: (UUID, Bool) -> Void
-
-        @State private var speechSynthesizer = AVSpeechSynthesizer()
-        
-        private func speakText(_ text: String) {
-            let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-            speechSynthesizer.speak(utterance)
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                // Header - always visible
-                VStack(spacing: 10) {
-                    // Top row: Term/Refinement + star
-                    HStack(alignment: .top, spacing: 12) {
-                        // Left side: Term/Refinement with blue background
-                        HStack(alignment: .top, spacing: 8) {
-                            // Term/Refinement
-                            if suggestion.refinement.isEmpty {
-                                SkeletonPlaceholder(width: 100, height: 18)
-                            } else {
-                                Text(suggestion.refinement)
-                                    .font(.body.weight(.medium))
-                                    .foregroundColor(AppTheme.primaryBlue)
-                            }
-
-                            // Speaker icon
-                            if suggestion.refinement.isEmpty {
-                                SkeletonPlaceholder(width: 16, height: 16)
-                                    .modifier(ShimmerEffect())
-                            } else {
-                                Button(action: {
-                                    speakText(suggestion.refinement)
-                                }) {
-                                    Image(systemName: "speaker.wave.2")
-                                        .font(.body.weight(.medium))
-                                        .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .frame(width: 20, height: 20)
-                            }
-                        }
-                        .padding(.horizontal, 6)
-                        .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        
-                        Spacer()
-                        
-                        // Right side: Star button
-                        if suggestion.refinement.isEmpty {
-                            SkeletonPlaceholder(width: 16, height: 16)
-                                .modifier(ShimmerEffect())
-                        } else {
-                            Button(action: {
-                                onFavoriteToggle(suggestion.id, !suggestion.favorite)
-                            }) {
-                                Image(systemName: suggestion.favorite ? "star.fill" : "star")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(width: 22, height: 22)
-                            .disabled(suggestion.refinement.isEmpty)
-                        }
-                    }
-                    
-                    // Bottom row: Translation + chevron
-                    HStack(alignment: .top, spacing: 12) {
-                        // Left side: Translation
-                        if suggestion.translation.isEmpty {
-                            SkeletonPlaceholder(width: 150, height: 14)
-                        } else {
-                            Text(suggestion.translation)
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(AppTheme.feedbackCardTextColor)
-                        }
-                        
-                        Spacer()
-                        
-                        // Right side: Chevron
-                        if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
-                            SkeletonPlaceholder(width: 20, height: 16)
-                        } else {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    onToggle()
-                                }
-                            }) {
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(AppTheme.feedbackCardTextColor)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(width: 22, height: 22)
-                        }
-                    }
-                }
-                .padding(.top, 16)
-                .padding(.bottom, isExpanded ? 0 : 16)
-                .padding(.horizontal, 22)
-                .buttonStyle(PlainButtonStyle())
-
-                // Expanded content
-                if isExpanded {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Divider()
-
-                        if suggestion.reason.isEmpty {
-                            VStack(alignment: .leading, spacing: 6) {
-                                SkeletonPlaceholder(width: .infinity, height: 14)
-                                SkeletonPlaceholder(width: 280, height: 14)
-                            }
-                        } else {
-                            Text(suggestion.reason)
-                                .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
-                        }
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 16)
-                }
-            }
-            .background(AppTheme.feedbackCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 26))
-        }
-    }
-
     // MARK: - Highlighted Key Term Text
 
     struct HighlightedKeyTermText: View {
@@ -1416,140 +1228,6 @@ struct FeedbackView: View {
             attributedString.append(paddingEnd)
 
             return attributedString
-        }
-    }
-
-    // MARK: - Key Term Card
-
-    struct KeyTermCard: View {
-        let keyTerm: KeyTerm
-        let isExpanded: Bool
-        let onToggle: () -> Void
-        let onFavoriteToggle: (UUID, Bool) -> Void
-        
-        @State private var speechSynthesizer = AVSpeechSynthesizer()
-        
-        private func speakText(_ text: String) {
-            let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-            speechSynthesizer.speak(utterance)
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                // Header - always visible
-                VStack(spacing: 10) {
-                    // Top row: English word + speaker icon + star
-                    HStack(alignment: .top, spacing: 12) {
-                        // Left side: English word + speaker icon
-                        HStack(alignment: .top, spacing: 8) {
-                            // English word
-                            if keyTerm.term.isEmpty {
-                                SkeletonPlaceholder(width: 100, height: 18)
-                            } else {
-                                Text(keyTerm.term)
-                                    .font(.body.weight(.medium))
-                                    .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
-                            }
-                            
-                            // Speaker icon
-                            if keyTerm.term.isEmpty {
-                                SkeletonPlaceholder(width: 16, height: 16)
-                                    .modifier(ShimmerEffect())
-                            } else {
-                                Button(action: {
-                                    speakText(keyTerm.term)
-                                }) {
-                                    Image(systemName: "speaker.wave.2")
-                                        .font(.body.weight(.medium))
-                                        .foregroundColor(Color(red: 0.247, green: 0.388, blue: 0.910, opacity: 1.0))
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .frame(width: 20, height: 20)
-                            }
-                        }
-                        .padding(.horizontal, 6)
-                        .background(Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        
-                        Spacer()
-                        
-                        // Right side: Star button
-                        if keyTerm.term.isEmpty {
-                            SkeletonPlaceholder(width: 16, height: 16)
-                                .modifier(ShimmerEffect())
-                        } else {
-                            Button(action: {
-                                onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
-                            }) {
-                                Image(systemName: keyTerm.favorite ? "star.fill" : "star")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(width: 22, height: 22)
-                            .disabled(keyTerm.term.isEmpty)
-                        }
-                    }
-                    
-                    // Bottom row: Chinese translation + chevron
-                    HStack(alignment: .top, spacing: 12) {
-                        // Left side: Chinese translation
-                        if keyTerm.translation.isEmpty {
-                            SkeletonPlaceholder(width: 150, height: 14)
-                        } else {
-                            Text(keyTerm.translation)
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(AppTheme.feedbackCardTextColor)
-                        }
-                        
-                        Spacer()
-                        
-                        // Right side: Chevron
-                        if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
-                            SkeletonPlaceholder(width: 20, height: 16)
-                        } else {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    onToggle()
-                                }
-                            }) {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(AppTheme.feedbackCardTextColor)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(width: 22, height: 22)
-                        }
-                    }
-                }
-                .padding(.top, 16)
-                .padding(.bottom, isExpanded ? 0 : 16)
-                .padding(.horizontal, 22)
-                .buttonStyle(PlainButtonStyle())
-
-                // Expanded content
-                if isExpanded {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Divider()
-
-                        if keyTerm.example.isEmpty {
-                            VStack(alignment: .leading, spacing: 6) {
-                                SkeletonPlaceholder(width: .infinity, height: 14)
-                                SkeletonPlaceholder(width: 250, height: 14)
-                            }
-                        } else {
-                            Text(keyTerm.example)
-                                .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
-                        }
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 16)
-                }
-            }
-            .background(AppTheme.feedbackCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 26))
         }
     }
 }

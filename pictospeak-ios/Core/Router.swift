@@ -137,6 +137,8 @@ final class Router: ObservableObject {
             homePath = NavigationPath()
         case .review:
             reviewPath = NavigationPath()
+            selectedTab = .home
+            homePath = NavigationPath()
         case .capture:
             capturePath = NavigationPath()
             selectedTab = .home
