@@ -13,13 +13,13 @@ enum AppTheme {
     // MARK: - Colors
 
     static let viewBackgroundGray = Color(red: 0.965, green: 0.969, blue: 0.984)
-    
+
     static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
     static let backButtonGray = Color(red: 0.471, green: 0.471, blue: 0.502).opacity(0.16)
 
     static let feedbackCardBackground = Color(.white)
     static let feedbackCardTextColor = Color(red: 0.549, green: 0.549, blue: 0.549, opacity: 1.0)
-    
+
     // MARK: - Letter Spacing (Kerning)
 
     static let defaultKerning: CGFloat = 0.3
@@ -75,7 +75,7 @@ extension Text {
             .kerning(AppTheme.cardTextKerning)
             .foregroundColor(Color(.label).opacity(0.5))
     }
-    
+
     /// Card text styling with custom font size, weight, and color
     func appCardText(fontSize: CGFloat, weight: Font.Weight, color: Color) -> some View {
         font(.system(size: fontSize, weight: weight))

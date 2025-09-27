@@ -5,14 +5,14 @@
 //  Created by AI Assistant.
 //
 
-import SwiftUI
 import AVFoundation
+import SwiftUI
 
 // MARK: - Shimmer Effect
 
 struct ShimmerEffect: ViewModifier {
     @State private var phase: CGFloat = 0
-    
+
     func body(content: Content) -> some View {
         content
             .overlay(
@@ -22,7 +22,7 @@ struct ShimmerEffect: ViewModifier {
                             gradient: Gradient(colors: [
                                 Color.white.opacity(0.3),
                                 Color.white.opacity(0.6),
-                                Color.white.opacity(0.3)
+                                Color.white.opacity(0.3),
                             ]),
                             startPoint: .leading,
                             endPoint: .trailing
@@ -48,12 +48,12 @@ struct ShimmerEffect: ViewModifier {
 struct SkeletonPlaceholder: View {
     let width: CGFloat
     let height: CGFloat
-    
+
     init(width: CGFloat, height: CGFloat) {
         self.width = width
         self.height = height
     }
-    
+
     var body: some View {
         Rectangle()
             .fill(Color.gray.opacity(0.3))
@@ -69,9 +69,9 @@ struct KeyTermCard: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
-    
+
     @State private var speechSynthesizer = AVSpeechSynthesizer()
-    
+
     private func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
@@ -95,7 +95,7 @@ struct KeyTermCard: View {
                                 .font(.body.weight(.medium))
                                 .foregroundColor(AppTheme.primaryBlue)
                         }
-                        
+
                         // Speaker icon
                         if keyTerm.term.isEmpty {
                             SkeletonPlaceholder(width: 16, height: 16)
@@ -112,9 +112,9 @@ struct KeyTermCard: View {
                             .frame(width: 20, height: 20)
                         }
                     }
-                    
+
                     Spacer()
-                    
+
                     // Right side: Star button
                     if keyTerm.term.isEmpty {
                         SkeletonPlaceholder(width: 16, height: 16)
@@ -132,7 +132,7 @@ struct KeyTermCard: View {
                         .disabled(keyTerm.term.isEmpty)
                     }
                 }
-                
+
                 // Bottom row: Chinese translation + chevron
                 HStack(alignment: .top, spacing: 12) {
                     // Left side: Chinese translation
@@ -143,9 +143,9 @@ struct KeyTermCard: View {
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(AppTheme.feedbackCardTextColor)
                     }
-                    
+
                     Spacer()
-                    
+
                     // Right side: Chevron
                     if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
                         SkeletonPlaceholder(width: 20, height: 16)
@@ -155,7 +155,7 @@ struct KeyTermCard: View {
                                 onToggle()
                             }
                         }) {
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppTheme.feedbackCardTextColor)
                         }
@@ -202,7 +202,7 @@ struct SuggestionCard: View {
     let onFavoriteToggle: (UUID, Bool) -> Void
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
-    
+
     private func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
@@ -243,9 +243,9 @@ struct SuggestionCard: View {
                             .frame(width: 20, height: 20)
                         }
                     }
-                    
+
                     Spacer()
-                    
+
                     // Right side: Star button
                     if suggestion.refinement.isEmpty {
                         SkeletonPlaceholder(width: 16, height: 16)
@@ -263,7 +263,7 @@ struct SuggestionCard: View {
                         .disabled(suggestion.refinement.isEmpty)
                     }
                 }
-                
+
                 // Bottom row: Translation + chevron
                 HStack(alignment: .top, spacing: 12) {
                     // Left side: Translation
@@ -274,9 +274,9 @@ struct SuggestionCard: View {
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(AppTheme.feedbackCardTextColor)
                     }
-                    
+
                     Spacer()
-                    
+
                     // Right side: Chevron
                     if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
                         SkeletonPlaceholder(width: 20, height: 16)
@@ -321,5 +321,49 @@ struct SuggestionCard: View {
         }
         .background(AppTheme.feedbackCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 26))
+    }
+}
+
+// MARK: - Session Card
+
+struct SessionCard: View {
+    let session: SessionItem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            // AsyncImage for loading actual session image
+            AsyncImage(url: URL(string: session.materialUrl)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Rectangle()
+                    .fill(Color(.systemGray4))
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.secondary)
+                    )
+            }
+            .frame(width: 64, height: 64)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(session.standardDescription)
+                    .font(.system(size: 17, weight: .regular, design: .default))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .kerning(-0.4)
+
+                Text("Today")
+                    .font(.system(size: 13, weight: .regular, design: .default))
+                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                    .kerning(-0.1)
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 26))
+        .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.02), radius: 16, x: 0, y: 1)
     }
 }

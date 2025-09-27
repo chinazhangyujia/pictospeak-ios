@@ -5,10 +5,9 @@
 //  Created by Yujia Zhang on 8/4/25.
 //
 
-import SwiftUI
-import AVKit
 import AVFoundation
-
+import AVKit
+import SwiftUI
 
 // MARK: - View Extensions
 
@@ -94,7 +93,7 @@ struct FeedbackView: View {
     enum FeedbackTab {
         case mine, aiRefined
     }
-    
+
     @State private var showSheet = true
     @State private var selectedDetent: PresentationDetent = .fraction(0.5)
 
@@ -119,7 +118,7 @@ struct FeedbackView: View {
                 } else if let session = session, let materialUrl = URL(string: session.materialUrl) {
                     // Show session's material as background - detect type from URL
                     let materialType = detectMaterialType(from: materialUrl)
-                    
+
                     if materialType == .image {
                         // Load session image asynchronously
                         AsyncImage(url: materialUrl) { image in
@@ -174,7 +173,6 @@ struct FeedbackView: View {
                             .padding(.top, 20)
                             .padding(.bottom, 40)
                         }
-                        // .background(Color(.systemGray6).opacity(0.95))
                     }
 
                 } else {
@@ -206,7 +204,7 @@ struct FeedbackView: View {
                             .padding(.top, 20)
                             .padding(.bottom, 40)
                         }
-                            // .background(Color(.systemGray6).opacity(0.95))
+                        // .background(Color(.systemGray6).opacity(0.95))
                     }
                 }
             }
@@ -214,10 +212,6 @@ struct FeedbackView: View {
             .presentationDetents([.fraction(0.15), .fraction(0.5), .fraction(0.95)], selection: $selectedDetent)
             .presentationDragIndicator(.visible)
             .interactiveDismissDisabled()
-
-            // test a long paragraph
-            // Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
-            // .presentationDetents([.fraction(0.15), .fraction(0.5), .large], selection: $selectedDetent)
         }
         .onAppear {
             viewModel.contentViewModel = contentViewModel
@@ -246,7 +240,7 @@ struct FeedbackView: View {
     // MARK: - Text Comparison Section
 
     private func textComparisonSection(_ feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 8) {            
+        VStack(spacing: 8) {
             HStack(spacing: 12) {
                 ZStack {
                     // Background pill always full width
@@ -291,8 +285,8 @@ struct FeedbackView: View {
                     }
                     .padding(4)
                 }
-                .frame(maxWidth: .infinity) 
-                                
+                .frame(maxWidth: .infinity)
+
                 // Speaker Icon
                 if selectedTab == .aiRefined, let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
                     AudioPlayerButton(
@@ -570,7 +564,7 @@ struct FeedbackView: View {
     // MARK: - Session Viewing Mode Methods
 
     private func textComparisonSectionForSession(_ session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) -> some View {
-        VStack(spacing: 8) {            
+        VStack(spacing: 8) {
             HStack(spacing: 12) {
                 ZStack {
                     // Background pill always full width
@@ -601,8 +595,8 @@ struct FeedbackView: View {
                     }
                     .padding(4)
                 }
-                .frame(maxWidth: .infinity) 
-                                
+                .frame(maxWidth: .infinity)
+
                 // Speaker Icon
                 if selectedTab == .aiRefined, let pronunciationUrl = session.pronunciationUrl, !pronunciationUrl.isEmpty {
                     AudioPlayerButton(
@@ -630,17 +624,17 @@ struct FeedbackView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     ClickableHighlightedTextView(
-                                text: session.standardDescription,
-                                clickableMatches: clickableMatches
-                            ) { match in
-                                handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
-                            }
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(.black)
-                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
-                        .kerning(-0.43) // Letter spacing -0.43px
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                        text: session.standardDescription,
+                        clickableMatches: clickableMatches
+                    ) { match in
+                        handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                    }
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(.black)
+                    .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                    .kerning(-0.43) // Letter spacing -0.43px
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.top, 8)
@@ -655,7 +649,6 @@ struct FeedbackView: View {
 
     private var customHeader: some View {
         HStack {
-            
             Image(systemName: "xmark")
                 .foregroundColor(.black)
                 .frame(width: 44, height: 44)
@@ -676,7 +669,6 @@ struct FeedbackView: View {
 
             Spacer()
 
-            
             Image(systemName: "checkmark")
                 .foregroundColor(.white)
                 .frame(width: 44, height: 44)
@@ -789,15 +781,15 @@ struct FeedbackView: View {
     }
 
     // MARK: - Helper Methods
-    
+
     private func detectMaterialType(from url: URL) -> MediaType {
         let pathExtension = url.pathExtension.lowercased()
-        
+
         // Common image extensions
         let imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp", "heic", "heif"]
         // Common video extensions
         let videoExtensions = ["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "3gp"]
-        
+
         if imageExtensions.contains(pathExtension) {
             return .image
         } else if videoExtensions.contains(pathExtension) {
@@ -879,7 +871,6 @@ struct FeedbackView: View {
         var matches: [ClickableTextMatch] = []
         let refinedText = session.standardDescription
         let nsString = NSString(string: refinedText)
-
 
         // Only use chosen key terms for highlighting when they are generated
         for chosenTerm in session.keyTerms {
@@ -1159,7 +1150,6 @@ struct FeedbackView: View {
         }
     }
 
-
     // MARK: - Highlighted Key Term Text
 
     struct HighlightedKeyTermText: View {
@@ -1240,7 +1230,6 @@ struct FeedbackView: View {
             return attributedString
         }
     }
-
 }
 
 #Preview {

@@ -14,18 +14,19 @@ struct AudioPlayerButton: View {
     let foregroundColorNotPlaying: Color
     let backgroundColorPlaying: Color
     let backgroundColorNotPlaying: Color
-    
+
     @State private var isPlaying = false
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isLoading = false
     @State private var hasError = false
     @State private var audioDelegate: AudioPlayerDelegate?
-    
-    init(audioUrl: String, 
+
+    init(audioUrl: String,
          foregroundColorPlaying: Color = .primary,
          foregroundColorNotPlaying: Color = .primary,
          backgroundColorPlaying: Color = Color(red: 0.549, green: 0.549, blue: 0.549),
-         backgroundColorNotPlaying: Color = Color(red: 0.549, green: 0.549, blue: 0.549)) {
+         backgroundColorNotPlaying: Color = Color(red: 0.549, green: 0.549, blue: 0.549))
+    {
         self.audioUrl = audioUrl
         self.foregroundColorPlaying = foregroundColorPlaying
         self.foregroundColorNotPlaying = foregroundColorNotPlaying

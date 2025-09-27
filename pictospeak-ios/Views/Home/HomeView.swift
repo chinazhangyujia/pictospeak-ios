@@ -329,50 +329,6 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Session Card
-
-struct SessionCard: View {
-    let session: SessionItem
-
-    var body: some View {
-        HStack(spacing: 10) {
-            // AsyncImage for loading actual session image
-            AsyncImage(url: URL(string: session.materialUrl)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Rectangle()
-                    .fill(Color(.systemGray4))
-                    .overlay(
-                        Image(systemName: "photo")
-                            .foregroundColor(.secondary)
-                    )
-            }
-            .frame(width: 64, height: 64)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(session.standardDescription)
-                    .font(.system(size: 17, weight: .regular, design: .default))
-                    .foregroundColor(.black)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .kerning(-0.4)
-
-                Text("Today")
-                    .font(.system(size: 13, weight: .regular, design: .default))
-                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                    .kerning(-0.1)
-            }
-        }
-        .padding(16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 26))
-        .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.02), radius: 16, x: 0, y: 1)
-    }
-}
-
 // MARK: - Material Preview Card
 
 struct MaterialPreviewCard: View {
