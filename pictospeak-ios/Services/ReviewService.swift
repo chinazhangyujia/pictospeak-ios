@@ -23,9 +23,9 @@ class ReviewService {
     func getReviewItems(authToken: String, cursor: String? = nil) async throws -> ListReviewItemsResponse {
         var urlComponents = URLComponents(string: baseURL + "/key-term-and-suggestion/review")!
 
-        // Add cursor as query parameter if provided
+        // Add cursor as query parameters if provided
         if let cursor = cursor {
-            urlComponents.queryItems = [URLQueryItem(name: "cursor", value: cursor)]
+            urlComponents.queryItems = Utils.parseCursorString(cursor)
         }
 
         guard let url = urlComponents.url else {

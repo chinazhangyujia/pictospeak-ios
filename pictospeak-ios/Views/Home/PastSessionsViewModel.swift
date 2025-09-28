@@ -147,6 +147,34 @@ class PastSessionsViewModel: ObservableObject {
         await loadingTask?.value
     }
 
+    /// Gets or loads a session by ID without throwing errors (UI-safe)
+    /// - Parameter sessionId: The session ID to load
+    /// - Returns: The session if found/loaded successfully, nil otherwise
+    func getOrLoadSessionById(sessionId: String) async -> SessionItem? {
+        // Check if already loaded
+        if let session = sessions.first(where: { $0.id.uuidString == sessionId }) {
+            return session
+        }
+
+        do {
+            guard let authToken = contentViewModel.authToken else {
+                print("❌ No auth token available for loading session")
+                return nil
+            }
+
+            let session = try await sessionService.getSessionById(authToken: authToken, sessionId: sessionId)
+
+            // Add to loaded sessions
+            sessions.append(session)
+
+            return session
+        } catch {
+            print("❌ Error getting or loading session: \(error)")
+        }
+
+        return nil
+    }
+
     /// Refreshes all sessions by loading from the beginning
     func refreshSessions() async {
         // Cancel any existing loading task

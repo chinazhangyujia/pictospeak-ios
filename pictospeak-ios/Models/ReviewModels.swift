@@ -18,14 +18,16 @@ enum ReviewItemType: String, Codable, CaseIterable {
 
 struct ReviewItem: Codable, Identifiable {
     let id: UUID
+    let descriptionGuidanceId: UUID
     let type: ReviewItemType
     let term: String
+    let userOriginalTerm: String?
     let translation: String
     let favorite: Bool
     let detail: String
     let updatedAt: Date
 
-    init(id: UUID, type: ReviewItemType, term: String, translation: String, favorite: Bool, detail: String, updatedAt: Date) {
+    init(id: UUID, type: ReviewItemType, term: String, translation: String, favorite: Bool, detail: String, updatedAt: Date, descriptionGuidanceId: UUID = UUID(), userOriginalTerm: String? = nil) {
         self.id = id
         self.type = type
         self.term = term
@@ -33,12 +35,16 @@ struct ReviewItem: Codable, Identifiable {
         self.favorite = favorite
         self.detail = detail
         self.updatedAt = updatedAt
+        self.descriptionGuidanceId = descriptionGuidanceId
+        self.userOriginalTerm = userOriginalTerm
     }
 
     // Custom Codable implementation to handle snake_case from JSON
     private enum CodingKeys: String, CodingKey {
         case id, type, term, translation, favorite, detail
         case updatedAt = "updated_at"
+        case descriptionGuidanceId = "description_guidance_id"
+        case userOriginalTerm = "user_original_term"
     }
 
     init(from decoder: Decoder) throws {
@@ -49,6 +55,8 @@ struct ReviewItem: Codable, Identifiable {
         translation = try container.decode(String.self, forKey: .translation)
         favorite = try container.decode(Bool.self, forKey: .favorite)
         detail = try container.decode(String.self, forKey: .detail)
+        descriptionGuidanceId = try container.decode(UUID.self, forKey: .descriptionGuidanceId)
+        userOriginalTerm = try container.decodeIfPresent(String.self, forKey: .userOriginalTerm)
 
         // Handle date string decoding
         let dateString = try container.decode(String.self, forKey: .updatedAt)
@@ -69,6 +77,8 @@ struct ReviewItem: Codable, Identifiable {
         try container.encode(translation, forKey: .translation)
         try container.encode(favorite, forKey: .favorite)
         try container.encode(detail, forKey: .detail)
+        try container.encode(descriptionGuidanceId, forKey: .descriptionGuidanceId)
+        try container.encodeIfPresent(userOriginalTerm, forKey: .userOriginalTerm)
 
         // Handle date encoding to ISO 8601 string
         let formatter = ISO8601DateFormatter()
@@ -89,7 +99,8 @@ extension ReviewItem {
             translation: translation,
             example: detail,
             favorite: favorite,
-            id: id
+            id: id,
+            descriptionGuidanceId: descriptionGuidanceId
         )
     }
 
@@ -97,12 +108,13 @@ extension ReviewItem {
     /// - Returns: A Suggestion object with the same data
     func toSuggestion() -> Suggestion {
         return Suggestion(
-            term: term,
-            refinement: "",
+            term: userOriginalTerm ?? "",
+            refinement: term,
             translation: translation,
             reason: detail, // Using detail as reason
             favorite: favorite,
-            id: id
+            id: id,
+            descriptionGuidanceId: descriptionGuidanceId
         )
     }
 
@@ -115,40 +127,6 @@ extension ReviewItem {
         case .suggestion:
             return toSuggestion()
         }
-    }
-}
-
-// MARK: - Convenience Initializers
-
-extension ReviewItem {
-    /// Creates a ReviewItem from a KeyTerm
-    /// - Parameter keyTerm: The KeyTerm to convert
-    /// - Returns: A ReviewItem of type keyTerm
-    static func from(keyTerm: KeyTerm) -> ReviewItem {
-        return ReviewItem(
-            id: keyTerm.id,
-            type: .keyTerm,
-            term: keyTerm.term,
-            translation: keyTerm.translation,
-            favorite: keyTerm.favorite,
-            detail: keyTerm.example,
-            updatedAt: Date()
-        )
-    }
-
-    /// Creates a ReviewItem from a Suggestion
-    /// - Parameter suggestion: The Suggestion to convert
-    /// - Returns: A ReviewItem of type suggestion
-    static func from(suggestion: Suggestion) -> ReviewItem {
-        return ReviewItem(
-            id: suggestion.id,
-            type: .suggestion,
-            term: suggestion.term,
-            translation: suggestion.translation,
-            favorite: suggestion.favorite,
-            detail: suggestion.reason,
-            updatedAt: Date()
-        )
     }
 }
 

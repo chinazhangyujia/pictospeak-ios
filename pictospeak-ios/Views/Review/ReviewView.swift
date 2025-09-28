@@ -164,6 +164,16 @@ struct ReviewView: View {
                                 },
                                 onFavoriteToggle: { _, favorite in
                                     reviewViewModel.updateReviewItemFavorite(itemId: reviewItem.id, favorite: favorite)
+                                },
+                                onClickDetailText: {
+                                    // Load session details when detail text is clicked
+                                    Task {
+                                        let sessionItem = await sessionsViewModel.getOrLoadSessionById(sessionId: reviewItem.descriptionGuidanceId.uuidString)
+                                        if let sessionItem = sessionItem {
+                                            // Navigate to FeedbackView with the loaded session
+                                            router.goTo(.feedbackFromSession(sessionId: sessionItem.id, pastSessionsViewModel: sessionsViewModel))
+                                        }
+                                    }
                                 }
                             )
                             .listRowSeparator(.hidden)
@@ -186,6 +196,16 @@ struct ReviewView: View {
                                 },
                                 onFavoriteToggle: { _, favorite in
                                     reviewViewModel.updateReviewItemFavorite(itemId: reviewItem.id, favorite: favorite)
+                                },
+                                onClickDetailText: {
+                                    // Load session details when detail text is clicked
+                                    Task {
+                                        let sessionItem = await sessionsViewModel.getOrLoadSessionById(sessionId: reviewItem.descriptionGuidanceId.uuidString)
+                                        if let sessionItem = sessionItem {
+                                            // Navigate to FeedbackView with the loaded session
+                                            router.goTo(.feedbackFromSession(sessionId: sessionItem.id, pastSessionsViewModel: sessionsViewModel))
+                                        }
+                                    }
                                 }
                             )
                             .listRowSeparator(.hidden)

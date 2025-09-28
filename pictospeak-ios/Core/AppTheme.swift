@@ -25,7 +25,6 @@ enum AppTheme {
     static let defaultKerning: CGFloat = 0.3
     static let titleKerning: CGFloat = 0.5
     static let captionKerning: CGFloat = 0.2
-    static let cardTextKerning: CGFloat = 0.4
 
     // MARK: - Line Spacing
 
@@ -36,7 +35,9 @@ enum AppTheme {
 
     static let titleFontSize: CGFloat = 28
     static let bodyFontSize: CGFloat = 17
-    static let cardTextSize: CGFloat = 15 // Custom size for card text
+    static let cardDetailTextKerning: CGFloat = -0.23
+    static let cardDetailTextLineSpacing: CGFloat = 5
+    static let cardDetailTextSize: CGFloat = 15 // Custom size for card text
 }
 
 // MARK: - Text Extensions for Global Styling
@@ -62,25 +63,17 @@ extension Text {
             .lineSpacing(AppTheme.bodyLineSpacing)
     }
 
-    /// Card text styling (custom 15pt, medium weight, between black and gray)
-    func appCardText() -> some View {
-        font(.system(size: AppTheme.cardTextSize, weight: .medium))
-            .kerning(AppTheme.cardTextKerning)
-            .foregroundColor(Color(.label).opacity(0.5)) // Darker than gray, lighter than black
-    }
-
-    /// Card text styling with custom font size override
-    func appCardText(fontSize: CGFloat) -> some View {
-        font(.system(size: fontSize, weight: .medium))
-            .kerning(AppTheme.cardTextKerning)
-            .foregroundColor(Color(.label).opacity(0.5))
-    }
-
-    /// Card text styling with custom font size, weight, and color
-    func appCardText(fontSize: CGFloat, weight: Font.Weight, color: Color) -> some View {
-        font(.system(size: fontSize, weight: weight))
-            .kerning(AppTheme.cardTextKerning)
+    func appCardHeaderText(color: Color) -> some View {
+        font(.subheadline.weight(.regular))
             .foregroundColor(color)
+    }
+
+    /// Card text styling (custom 15pt, medium weight, between black and gray)
+    func appCardDetailText() -> some View {
+        font(.system(size: AppTheme.cardDetailTextSize, weight: .regular))
+            .kerning(AppTheme.cardDetailTextKerning)
+            .lineSpacing(AppTheme.cardDetailTextLineSpacing)
+            .foregroundColor(Color(.label).opacity(0.5)) // Darker than gray, lighter than black
     }
 }
 

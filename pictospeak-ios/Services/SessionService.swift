@@ -15,23 +15,76 @@ class SessionService {
     static let shared = SessionService()
     private init() {}
 
+    func getSessionById(authToken: String, sessionId: String) async throws -> SessionItem {
+        guard let url = URL(string: baseURL + "/description/guidance/\(sessionId)") else {
+            throw SessionError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.timeoutInterval = 30
+
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+
+        print("🌐 Making request to session detail endpoint: \(url)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw SessionError.serverError
+            }
+
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Session detail API error: \(httpResponse.statusCode)")
+                // Try to read error response body
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                if httpResponse.statusCode == 404 {
+                    throw SessionError.sessionNotFound
+                }
+                throw SessionError.serverError
+            }
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .useDefaultKeys
+
+            do {
+                let sessionItem = try decoder.decode(SessionItem.self, from: data)
+                print("✅ Successfully decoded session for ID: \(sessionId)")
+                return sessionItem
+            } catch {
+                print("❌ Decoding error: \(error)")
+                print("❌ Decoding error details: \(error.localizedDescription)")
+                throw SessionError.decodingError
+            }
+
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            print("❌ URL Error code: \(urlError.code.rawValue)")
+            throw SessionError.networkError
+        } catch let decodingError as DecodingError {
+            print("❌ Failed to decode session response: \(decodingError)")
+            throw SessionError.decodingError
+        } catch {
+            print("❌ Unexpected error fetching session: \(error)")
+            print("❌ Error type: \(type(of: error))")
+            throw SessionError.networkError
+        }
+    }
+
     /// Fetches past sessions with pagination support
     /// - Parameter cursor: Optional cursor for pagination. Pass nil for the first page.
     /// - Returns: PaginatedSessionResponse containing sessions and next cursor
     func getPastSessions(authToken: String, cursor: String? = nil) async throws -> PaginatedSessionResponse {
         var urlComponents = URLComponents(string: baseURL + "/description/guidance/list")!
 
-        // Add cursor as query parameter if provided
-        // The cursor format is "created_at_lt=xxx" so we parse it and add as query parameter
+        // Add cursor as query parameters if provided
         if let cursor = cursor {
-            // Parse cursor format: "created_at_lt=xxx"
-            let components = cursor.components(separatedBy: "=")
-            if components.count == 2 {
-                urlComponents.queryItems = [URLQueryItem(name: components[0], value: components[1])]
-            } else {
-                // Fallback: use cursor as-is with "cursor" parameter
-                urlComponents.queryItems = [URLQueryItem(name: "cursor", value: cursor)]
-            }
+            urlComponents.queryItems = Utils.parseCursorString(cursor)
         }
 
         guard let url = urlComponents.url else {

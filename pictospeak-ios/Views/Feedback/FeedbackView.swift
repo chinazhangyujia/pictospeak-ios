@@ -9,22 +9,6 @@ import AVFoundation
 import AVKit
 import SwiftUI
 
-// MARK: - View Extensions
-
-extension View {
-    func appTitle() -> some View {
-        font(.title2)
-            .fontWeight(.semibold)
-            .foregroundColor(.primary)
-    }
-
-    func appCardText(fontSize: CGFloat = 16) -> some View {
-        font(.system(size: fontSize, weight: .regular))
-            .foregroundColor(.primary)
-            .lineSpacing(2)
-    }
-}
-
 // MARK: - FeedbackView
 
 struct FeedbackView: View {
@@ -79,7 +63,6 @@ struct FeedbackView: View {
         _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
     }
 
-    // Initializer for session viewing mode (without showFeedbackView binding)
     init(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel) {
         self.sessionId = sessionId
         selectedImage = nil
@@ -1147,87 +1130,6 @@ struct FeedbackView: View {
                     }
                 }
             }
-        }
-    }
-
-    // MARK: - Highlighted Key Term Text
-
-    struct HighlightedKeyTermText: View {
-        let term: String
-
-        var body: some View {
-            Text(createAttributedText())
-                .appCardText()
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        private func createAttributedText() -> AttributedString {
-            var attributedString = AttributedString()
-
-            // Add padding spaces with background
-            var paddingStart = AttributedString(" ")
-            paddingStart.backgroundColor = Color.green.opacity(0.3)
-
-            // Add the highlighted term
-            var termText = AttributedString(term)
-            termText.backgroundColor = Color.green.opacity(0.3)
-
-            // Add padding spaces with background
-            var paddingEnd = AttributedString(" ")
-            paddingEnd.backgroundColor = Color.green.opacity(0.3)
-
-            attributedString.append(paddingStart)
-            attributedString.append(termText)
-            attributedString.append(paddingEnd)
-
-            return attributedString
-        }
-    }
-
-    // MARK: - Highlighted Suggestion Text
-
-    struct HighlightedSuggestionText: View {
-        let term: String?
-        let refinement: String
-
-        var body: some View {
-            // Create attributed text that flows naturally
-            Text(createAttributedText())
-                .appCardText()
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        private func createAttributedText() -> AttributedString {
-            var attributedString = AttributedString()
-
-            // If we have a term, show "term → refinement"
-            if let term = term, !term.isEmpty {
-                // Add the term
-                var termText = AttributedString(term)
-                attributedString.append(termText)
-
-                // Add the arrow
-                var arrowText = AttributedString(" → ")
-                attributedString.append(arrowText)
-            }
-
-            // Add the highlighted refinement
-            var refinementText = AttributedString(refinement)
-            refinementText.backgroundColor = Color.green.opacity(0.3)
-
-            // Add some padding effect by adding spaces with background
-            var paddingStart = AttributedString(" ")
-            paddingStart.backgroundColor = Color.green.opacity(0.3)
-            var paddingEnd = AttributedString(" ")
-            paddingEnd.backgroundColor = Color.green.opacity(0.3)
-
-            attributedString.append(paddingStart)
-            attributedString.append(refinementText)
-            attributedString.append(paddingEnd)
-
-            return attributedString
         }
     }
 }

@@ -69,6 +69,15 @@ struct KeyTermCard: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
+    let onClickDetailText: (() -> Void)?
+
+    init(keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil) {
+        self.keyTerm = keyTerm
+        self.isExpanded = isExpanded
+        self.onToggle = onToggle
+        self.onFavoriteToggle = onFavoriteToggle
+        self.onClickDetailText = onClickDetailText
+    }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
 
@@ -92,8 +101,7 @@ struct KeyTermCard: View {
                             SkeletonPlaceholder(width: 100, height: 18)
                         } else {
                             Text(keyTerm.term)
-                                .font(.body.weight(.medium))
-                                .foregroundColor(AppTheme.primaryBlue)
+                                .appCardHeaderText(color: AppTheme.primaryBlue)
                         }
 
                         // Speaker icon
@@ -140,8 +148,7 @@ struct KeyTermCard: View {
                         SkeletonPlaceholder(width: 150, height: 14)
                     } else {
                         Text(keyTerm.translation)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(AppTheme.feedbackCardTextColor)
+                            .appCardHeaderText(color: .primary)
                     }
 
                     Spacer()
@@ -181,7 +188,10 @@ struct KeyTermCard: View {
                         }
                     } else {
                         Text(keyTerm.example)
-                            .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
+                            .appCardDetailText()
+                            .onTapGesture {
+                                onClickDetailText?()
+                            }
                     }
                 }
                 .padding(.horizontal, 22)
@@ -200,6 +210,15 @@ struct SuggestionCard: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
+    let onClickDetailText: (() -> Void)?
+
+    init(suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil) {
+        self.suggestion = suggestion
+        self.isExpanded = isExpanded
+        self.onToggle = onToggle
+        self.onFavoriteToggle = onFavoriteToggle
+        self.onClickDetailText = onClickDetailText
+    }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
 
@@ -208,6 +227,30 @@ struct SuggestionCard: View {
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         speechSynthesizer.speak(utterance)
+    }
+
+    private func createRefinementAttributedString() -> AttributedString {
+        var attributedString = AttributedString(suggestion.term + " → " + suggestion.refinement)
+
+        // Apply font to the entire string (matching appCardHeaderText style)
+        attributedString.font = .subheadline.weight(.regular)
+
+        // Style the term part
+        if let termRange = attributedString.range(of: suggestion.term) {
+            attributedString[termRange].foregroundColor = .primary
+        }
+
+        // Style the arrow
+        if let arrowRange = attributedString.range(of: " → ") {
+            attributedString[arrowRange].foregroundColor = .primary
+        }
+
+        // Style the refinement part
+        if let refinementRange = attributedString.range(of: suggestion.refinement) {
+            attributedString[refinementRange].foregroundColor = AppTheme.primaryBlue
+        }
+
+        return attributedString
     }
 
     var body: some View {
@@ -222,9 +265,13 @@ struct SuggestionCard: View {
                         if suggestion.refinement.isEmpty {
                             SkeletonPlaceholder(width: 100, height: 18)
                         } else {
-                            Text(suggestion.refinement)
-                                .font(.body.weight(.medium))
-                                .foregroundColor(AppTheme.primaryBlue)
+                            if isExpanded {
+                                Text(createRefinementAttributedString())
+
+                            } else {
+                                Text(suggestion.refinement)
+                                    .appCardHeaderText(color: AppTheme.primaryBlue)
+                            }
                         }
 
                         // Speaker icon
@@ -271,8 +318,7 @@ struct SuggestionCard: View {
                         SkeletonPlaceholder(width: 150, height: 14)
                     } else {
                         Text(suggestion.translation)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(AppTheme.feedbackCardTextColor)
+                            .appCardHeaderText(color: .primary)
                     }
 
                     Spacer()
@@ -312,7 +358,10 @@ struct SuggestionCard: View {
                         }
                     } else {
                         Text(suggestion.reason)
-                            .appCardText(fontSize: 14, weight: .regular, color: AppTheme.feedbackCardTextColor)
+                            .appCardDetailText()
+                            .onTapGesture {
+                                onClickDetailText?()
+                            }
                     }
                 }
                 .padding(.horizontal, 22)
