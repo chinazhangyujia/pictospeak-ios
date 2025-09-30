@@ -233,7 +233,7 @@ struct HomeView: View {
                 Spacer()
 
                 Button("Start review") {
-                    // Handle review action
+                    router.goTo(.review)
                 }
                 .font(.system(size: 15, weight: .semibold, design: .default))
                 .kerning(-0.23)

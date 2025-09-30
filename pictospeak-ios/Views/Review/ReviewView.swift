@@ -42,40 +42,39 @@ struct ReviewView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 16) {
-                // Segmented Control
-                Picker("Review Tab", selection: $selectedTab) {
-                    ForEach(ReviewTab.allCases, id: \.self) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .controlSize(.large)
-                .padding(.top, 16)
-
-                // Content based on selected tab
-                if selectedTab == .vocabulary {
-                    vocabularyContent
-                } else {
-                    sessionsContent
+        VStack(spacing: 16) {
+            // Segmented Control
+            Picker("Review Tab", selection: $selectedTab) {
+                ForEach(ReviewTab.allCases, id: \.self) { tab in
+                    Text(tab.rawValue).tag(tab)
                 }
             }
-            .padding(.horizontal, 16)
-            .background(AppTheme.viewBackgroundGray)
-            .navigationTitle("Review")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(action: {
-                        router.resetToHome()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.black)
-                            .frame(width: 24, height: 24)
-                            .clipShape(Circle())
-                            .blendMode(.multiply)
-                    }
+            .pickerStyle(SegmentedPickerStyle())
+            .controlSize(.large)
+            .padding(.top, 16)
+
+            // Content based on selected tab
+            if selectedTab == .vocabulary {
+                vocabularyContent
+            } else {
+                sessionsContent
+            }
+        }
+        .padding(.horizontal, 16)
+        .background(AppTheme.viewBackgroundGray)
+        .navigationBarBackButtonHidden(true)
+        .navigationTitle("Review")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: {
+                    router.resetToHome()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.primary)
+                        .frame(width: 24, height: 24)
+                        .clipShape(Circle())
+                        .blendMode(.multiply)
                 }
             }
         }

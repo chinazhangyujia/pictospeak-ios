@@ -37,6 +37,8 @@ struct ContentView: View {
                                         FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                                     case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
                                         FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType)
+                                    case .review:
+                                        ReviewView()
                                     case .auth:
                                         AuthView()
                                     default:
