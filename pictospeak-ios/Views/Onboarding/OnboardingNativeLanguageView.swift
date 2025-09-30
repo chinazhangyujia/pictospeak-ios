@@ -19,98 +19,80 @@ struct OnboardingNativeLanguageView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top navigation
-            HStack {
-                Button(action: {
-                    onboardingRouter.goBack()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .foregroundColor(.black)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-
             Spacer()
+                .frame(maxHeight: 80)
 
             // Main content
             VStack(spacing: 32) {
-                // Title
-                Text("Choose learning language")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.black)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+                VStack(spacing: 12) {
+                    Text("What language do you want to learn in?")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(12)
+                        .tracking(0.38)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                // Description
-                Text("Used for explanations and translations. You can change this in Settings.")
-                    .font(.system(size: 16))
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(2)
-                    .padding(.horizontal, 20)
+                    Text("Select the language for explanations and translations")
+                        .font(.body)
+                        .foregroundColor(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, 48)
 
                 // Language selection options
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
                     // Chinese option
-                    LanguageOptionView(
+                    LanguageSelectionRow(
                         flag: "🇨🇳",
                         language: "中文 (简体)",
                         isSelected: selectedNativeLanguage == "Chinese",
-                        action: { selectedNativeLanguage = "Chinese" }
+                        action: { toggleLanguage("Chinese") }
                     )
 
                     // English option
-                    LanguageOptionView(
+                    LanguageSelectionRow(
                         flag: "🇺🇸",
                         language: "English",
                         isSelected: selectedNativeLanguage == "English",
-                        action: { selectedNativeLanguage = "English" }
+                        action: { toggleLanguage("English") }
                     )
                 }
 
                 // Request other languages link
-                Button(action: {
-                    print("🔐 Requesting other languages")
-                }) {
+                Button(action: {}) {
                     Text("Request other languages")
-                        .font(.system(size: 16))
-                        .foregroundColor(.blue)
-                        .underline()
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(AppTheme.primaryBlue)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
 
             Spacer()
 
-            // Get Started button
             Button(action: {
                 completeUserSetting()
                 onboardingRouter.goTo(.auth)
             }) {
                 Text("Get Started")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 52)
                     .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.blue)
+                        RoundedRectangle(cornerRadius: 100)
+                            .fill(AppTheme.primaryBlue)
                     )
             }
+            .padding(.vertical, 6)
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.white, Color.blue.opacity(0.05)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .navigationBarHidden(true)
+        .background(AppTheme.viewBackgroundGray)
+    }
+
+    private func toggleLanguage(_ language: String) {
+        selectedNativeLanguage = language
     }
 
     private func completeUserSetting() {
@@ -144,57 +126,6 @@ struct OnboardingNativeLanguageView: View {
 
         // Set the user setting in ContentViewModel
         contentViewModel.setUserSetting(userSetting)
-    }
-}
-
-struct LanguageOptionView: View {
-    let flag: String
-    let language: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                // Radio button
-                ZStack {
-                    Circle()
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 2)
-                        .frame(width: 24, height: 24)
-
-                    if isSelected {
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 12, height: 12)
-                    }
-                }
-
-                // Flag icon
-                ZStack {
-                    Circle()
-                        .fill(Color.gray.opacity(0.1))
-                        .frame(width: 40, height: 40)
-
-                    Text(flag)
-                        .font(.system(size: 20))
-                }
-
-                // Language text
-                Text(language)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.black)
-
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 

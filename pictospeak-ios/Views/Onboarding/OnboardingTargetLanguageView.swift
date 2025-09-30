@@ -14,50 +14,46 @@ struct OnboardingTargetLanguageView: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
+                .frame(maxHeight: 120)
+
             // Main content
-            VStack(spacing: 32) {
-                // Title
-                Text("What language do you\nwant to learn?")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.black)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+            VStack {
+                // Title and subtitle
+                VStack(spacing: 12) {
+                    Text("What language do you want to learn?")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(12)
+                        .tracking(0.38)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("You can change this later in Settings")
+                        .font(.body)
+                        .foregroundColor(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, 48)
 
                 // Language selection box
-                VStack(spacing: 0) {
-                    HStack(spacing: 16) {
-                        // Flag icon
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue)
-                                .frame(width: 40, height: 40)
-
-                            Text("🇺🇸")
-                                .font(.system(size: 20))
-                        }
-
-                        // Language text
-                        Text("English")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.black)
-
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                VStack(spacing: 20) {
+                    // Flag icon
+                    LanguageSelectionRow(
+                        flag: "🇺🇸",
+                        language: "English",
+                        isSelected: selectedLanguage == "English",
+                        action: { toggleLanguage("English") }
                     )
                 }
 
                 // Coming soon text
                 Text("More languages coming soon")
-                    .font(.system(size: 16))
-                    .foregroundColor(.gray)
+                    .font(.body)
+                    .foregroundColor(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6))
+                    .padding(.top, 20)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
 
             Spacer()
 
@@ -66,26 +62,24 @@ struct OnboardingTargetLanguageView: View {
                 onboardingRouter.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage))
             }) {
                 Text("Continue")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 52)
                     .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.blue)
+                        RoundedRectangle(cornerRadius: 100)
+                            .fill(AppTheme.primaryBlue)
                     )
             }
+            .padding(.vertical, 6)
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.white, Color.blue.opacity(0.05)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .background(AppTheme.viewBackgroundGray)
         .navigationBarHidden(true)
+    }
+
+    private func toggleLanguage(_ language: String) {
+        selectedLanguage = language
     }
 }
 

@@ -276,7 +276,7 @@ struct FeedbackView: View {
                         audioUrl: pronunciationUrl,
                         foregroundColorPlaying: AppTheme.primaryBlue,
                         foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
-                        backgroundColorPlaying: Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6), // #E9EEFF 60%
+                        backgroundColorPlaying: AppTheme.lightBlueBackground, // #E9EEFF 60%
                         backgroundColorNotPlaying: .clear
                     )
                 }
@@ -586,7 +586,7 @@ struct FeedbackView: View {
                         audioUrl: pronunciationUrl,
                         foregroundColorPlaying: AppTheme.primaryBlue,
                         foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
-                        backgroundColorPlaying: Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6), // #E9EEFF 60%
+                        backgroundColorPlaying: AppTheme.lightBlueBackground, // #E9EEFF 60%
                         backgroundColorNotPlaying: .clear
                     )
                 }

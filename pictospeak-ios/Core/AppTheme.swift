@@ -15,6 +15,7 @@ enum AppTheme {
     static let viewBackgroundGray = Color(red: 0.965, green: 0.969, blue: 0.984)
 
     static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
+    static let lightBlueBackground = Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6)
     static let backButtonGray = Color(red: 0.471, green: 0.471, blue: 0.502).opacity(0.16)
 
     static let feedbackCardBackground = Color(.white)
