@@ -76,7 +76,7 @@ struct OnboardingNativeLanguageView: View {
                 onboardingRouter.goTo(.auth)
             }) {
                 Text("Get Started")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)

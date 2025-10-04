@@ -21,6 +21,12 @@ enum AppTheme {
     static let feedbackCardBackground = Color(.white)
     static let feedbackCardTextColor = Color(red: 0.549, green: 0.549, blue: 0.549, opacity: 1.0)
 
+    static let gray3c3c3c60 = Color(red: 0x3c/255, green: 0x3c/255, blue: 0x3c/255).opacity(0.6)
+    static let grayf8f9fa = Color(red: 0xf8/255, green: 0xf9/255, blue: 0xfa/255)
+    static let gray333333 = Color(red: 0x33/255, green: 0x33/255, blue: 0x33/255)
+    static let gray3c3c4360 = Color(red: 0x3c/255, green: 0x3c/255, blue: 0x43/255).opacity(0.6)
+    static let grayd9d9d9 = Color(red: 0xd9/255, green: 0xd9/255, blue: 0xd9/255)
+
     // MARK: - Letter Spacing (Kerning)
 
     static let defaultKerning: CGFloat = 0.3
