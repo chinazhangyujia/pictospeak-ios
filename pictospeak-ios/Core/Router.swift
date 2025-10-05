@@ -1,5 +1,11 @@
 import SwiftUI
 
+enum AuthMode {
+    case signUp
+    case signIn
+    case resetPassword
+}
+
 enum NavTab: Hashable {
     case home
     case review
@@ -17,7 +23,7 @@ enum AppRoute: Hashable {
     case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType)
     case onboardingTargetLanguage
     case onboardingNativeLanguage(selectedTargetLanguage: String)
-    case auth
+    case auth(initialMode: AuthMode)
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -51,8 +57,9 @@ enum AppRoute: Hashable {
         case let .onboardingNativeLanguage(selectedTargetLanguage):
             hasher.combine(9)
             hasher.combine(selectedTargetLanguage)
-        case .auth:
+        case let .auth(initialMode):
             hasher.combine(10)
+            hasher.combine(initialMode)
         }
     }
 
@@ -78,8 +85,8 @@ enum AppRoute: Hashable {
             return true
         case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage), .onboardingNativeLanguage(rhsSelectedTargetLanguage)):
             return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
-        case (.auth, .auth):
-            return true
+        case let (.auth(lhsInitialMode), .auth(rhsInitialMode)):
+            return lhsInitialMode == rhsInitialMode
         default:
             return false
         }

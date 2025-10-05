@@ -94,8 +94,8 @@ struct ContentView: View {
                                 OnboardingTargetLanguageView()
                             case let .onboardingNativeLanguage(selectedTargetLanguage):
                                 OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
-                            case .auth:
-                                AuthView()
+                            case let .auth(initialMode):
+                                AuthView(initialMode: initialMode)
                             default:
                                 EmptyView()
                             }

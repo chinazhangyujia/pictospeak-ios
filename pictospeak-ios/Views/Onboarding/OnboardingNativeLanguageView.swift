@@ -73,7 +73,7 @@ struct OnboardingNativeLanguageView: View {
 
             Button(action: {
                 completeUserSetting()
-                onboardingRouter.goTo(.auth)
+                onboardingRouter.goTo(.auth(initialMode: .signUp))
             }) {
                 Text("Get Started")
                     .font(.system(size: 17, weight: .medium))

@@ -246,6 +246,57 @@ class AuthService {
     func getCurrentToken() -> String? {
         return keychainManager.getToken()
     }
+
+    /// Sends a password reset email to the user
+    /// - Parameter email: User's email address
+    func resetPassword(email: String) async throws {
+        guard let url = URL(string: baseURL + "/auth/reset_password") else {
+            throw AuthError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 30
+
+        let resetRequest = PasswordResetRequest(email: email)
+
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(resetRequest)
+        } catch {
+            throw AuthError.encodingError
+        }
+
+        print("🌐 Making password reset request to: \(url)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw AuthError.serverError
+            }
+
+            print("📡 Password reset response status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Password reset API error: \(httpResponse.statusCode)")
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                throw AuthError.serverError
+            }
+
+            print("✅ Password reset email sent successfully to: \(email)")
+
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            throw AuthError.networkError
+        } catch {
+            print("❌ Unexpected error during password reset: \(error)")
+            throw AuthError.unknownError
+        }
+    }
 }
 
 // MARK: - Error Types

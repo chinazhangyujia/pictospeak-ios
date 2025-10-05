@@ -30,6 +30,10 @@ struct UserSignInRequest: Codable {
     let password: String
 }
 
+struct PasswordResetRequest: Codable {
+    let email: String
+}
+
 // MARK: - Authentication Response Models
 
 struct AuthResponse: Codable {

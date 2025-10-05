@@ -60,7 +60,7 @@ struct HomeView: View {
             // Check if auth token is nil on initial load and redirect to auth
             if contentViewModel.authToken == nil {
                 print("🔐 No auth token on initial load, navigating to auth view")
-                router.goTo(.auth)
+                router.goTo(.auth(initialMode: .signIn))
             }
         }
         .task {
@@ -106,7 +106,7 @@ struct HomeView: View {
             // Auto-route to auth when token becomes null
             if oldValue != nil && newValue == nil {
                 print("🔐 Auth token became null, navigating to auth view")
-                router.goTo(.auth)
+                router.goTo(.auth(initialMode: .signIn))
             }
             // When token becomes available, load data
             else if oldValue == nil && newValue != nil {
