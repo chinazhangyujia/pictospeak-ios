@@ -236,16 +236,17 @@ struct AuthView: View {
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 )
 
-                    if authMode == .signIn {
-                        // Forgot password text
-                        Text("Forgot password?")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(AppTheme.primaryBlue)
-                            .onTapGesture {
-                                authMode = .resetPassword
-                                clearForm()
-                            }
-                    }
+
+                if authMode == .signIn {
+                    // Forgot password text
+                    Text("Forgot password?")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(AppTheme.primaryBlue)
+                        .onTapGesture {
+                            authMode = .resetPassword
+                            clearForm()
+                        }
+                }
 
                 // Account status and toggle (only for sign up and sign in)
                 if authMode != .resetPassword {
@@ -435,7 +436,8 @@ struct AuthView: View {
     
     private func handleResetPassword() async {
         do {
-            try await AuthService.shared.resetPassword(email: email)
+            // try await AuthService.shared.resetPassword(email: email)
+            onboardingRouter.goTo(.verificationCode(email: email))
             
             await MainActor.run {
                 isLoading = false

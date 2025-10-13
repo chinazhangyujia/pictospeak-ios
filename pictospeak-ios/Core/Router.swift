@@ -24,6 +24,8 @@ enum AppRoute: Hashable {
     case onboardingTargetLanguage
     case onboardingNativeLanguage(selectedTargetLanguage: String)
     case auth(initialMode: AuthMode)
+    case verificationCode(email: String)
+    case createNewPassword(verificationCode: String, email: String)
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -60,6 +62,13 @@ enum AppRoute: Hashable {
         case let .auth(initialMode):
             hasher.combine(10)
             hasher.combine(initialMode)
+        case let .verificationCode(email):
+            hasher.combine(11)
+            hasher.combine(email)
+        case let .createNewPassword(verificationCode, email):
+            hasher.combine(12)
+            hasher.combine(verificationCode)
+            hasher.combine(email)
         }
     }
 
@@ -87,6 +96,10 @@ enum AppRoute: Hashable {
             return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
         case let (.auth(lhsInitialMode), .auth(rhsInitialMode)):
             return lhsInitialMode == rhsInitialMode
+        case let (.verificationCode(lhsEmail), .verificationCode(rhsEmail)):
+            return lhsEmail == rhsEmail
+        case let (.createNewPassword(lhsVerificationCode, lhsEmail), .createNewPassword(rhsVerificationCode, rhsEmail)):
+            return lhsVerificationCode == rhsVerificationCode && lhsEmail == rhsEmail
         default:
             return false
         }

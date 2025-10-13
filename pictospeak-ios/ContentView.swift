@@ -96,6 +96,10 @@ struct ContentView: View {
                                 OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
                             case let .auth(initialMode):
                                 AuthView(initialMode: initialMode)
+                            case let .verificationCode(email):
+                                VerificationCodeView(email: email)
+                            case let .createNewPassword(verificationCode, email):
+                                CreateNewPasswordView(verificationCode: verificationCode, email: email)
                             default:
                                 EmptyView()
                             }
