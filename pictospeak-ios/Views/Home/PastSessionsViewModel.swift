@@ -31,59 +31,65 @@ class PastSessionsViewModel: ObservableObject {
 
         // Create new loading task
         loadingTask = Task {
-            guard !isLoading else { return }
-
-            isLoading = true
-            errorMessage = nil
-
-            do {
-                guard let authToken = contentViewModel.authToken else {
-                    print("❌ No auth token available for loading sessions")
-                    errorMessage = "Authentication required"
-                    isLoading = false
-                    return
-                }
-
-                let response = try await sessionService.getPastSessions(authToken: authToken)
-
-                // Check if task was cancelled
-                if Task.isCancelled { return }
-
-                sessions = response.items
-                currentCursor = response.nextCursor
-                hasMorePages = response.nextCursor != nil
-
-                print("✅ Loaded \(sessions.count) initial sessions")
-            } catch {
-                // Check if task was cancelled
-                if Task.isCancelled { return }
-
-                let errorDescription: String
-                if let sessionError = error as? SessionError {
-                    switch sessionError {
-                    case .networkError:
-                        errorDescription = "Network connection issue. Please check your internet connection."
-                    case .serverError:
-                        errorDescription = "Server error. Please try again later."
-                    case .decodingError:
-                        errorDescription = "Data format error. Please contact support."
-                    case .invalidURL:
-                        errorDescription = "Invalid request. Please try again."
-                    default:
-                        errorDescription = "Unknown error occurred. Please try again."
-                    }
-                } else {
-                    errorDescription = error.localizedDescription
-                }
-
-                errorMessage = "Failed to load sessions: \(errorDescription)"
-                print("❌ Error loading initial sessions: \(error)")
-            }
-
-            isLoading = false
+            await loadInitialSessionsInternal()
         }
 
         await loadingTask?.value
+    }
+
+    /// Loads the initial page of sessions (internal implementation)
+    private func loadInitialSessionsInternal() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Check if task was cancelled
+            if Task.isCancelled { return }
+
+            guard let authToken = contentViewModel.authToken else {
+                print("❌ No auth token available for loading sessions")
+                errorMessage = "Authentication required"
+                isLoading = false
+                return
+            }
+
+            let response = try await sessionService.getPastSessions(authToken: authToken)
+
+            // Check if task was cancelled after the request
+            if Task.isCancelled { return }
+
+            sessions = response.items
+            currentCursor = response.nextCursor
+            hasMorePages = response.nextCursor != nil
+
+            print("✅ Loaded \(sessions.count) initial sessions")
+        } catch {
+            // Check if task was cancelled
+            if Task.isCancelled { return }
+
+            let errorDescription: String
+            if let sessionError = error as? SessionError {
+                switch sessionError {
+                case .networkError:
+                    errorDescription = "Network connection issue. Please check your internet connection."
+                case .serverError:
+                    errorDescription = "Server error. Please try again later."
+                case .decodingError:
+                    errorDescription = "Data format error. Please contact support."
+                case .invalidURL:
+                    errorDescription = "Invalid request. Please try again."
+                default:
+                    errorDescription = "Unknown error occurred. Please try again."
+                }
+            } else {
+                errorDescription = error.localizedDescription
+            }
+
+            errorMessage = "Failed to load sessions: \(errorDescription)"
+            print("❌ Error loading initial sessions: \(error)")
+        }
+
+        isLoading = false
     }
 
     /// Loads the next page of sessions (pagination)
@@ -177,18 +183,13 @@ class PastSessionsViewModel: ObservableObject {
 
     /// Refreshes all sessions by loading from the beginning
     func refreshSessions() async {
-        // Cancel any existing loading task
-        loadingTask?.cancel()
+        // Reset state
+        sessions = []
+        currentCursor = nil
+        hasMorePages = true
 
-        // Create new loading task
-        loadingTask = Task {
-            sessions = []
-            currentCursor = nil
-            hasMorePages = true
-            await loadInitialSessions()
-        }
-
-        await loadingTask?.value
+        // Load initial sessions
+        await loadInitialSessions()
     }
 
     func updateKeyTermFavorite(sessionId: UUID, termId: UUID, favorite: Bool) {

@@ -41,6 +41,10 @@ struct ContentView: View {
                                         ReviewView()
                                     case .auth:
                                         AuthView()
+                                    case let .verificationCode(email):
+                                        VerificationCodeView(email: email)
+                                    case let .createNewPassword(verificationId, verificationCode, email):
+                                        CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email)
                                     default:
                                         EmptyView()
                                     }
@@ -94,8 +98,12 @@ struct ContentView: View {
                                 OnboardingTargetLanguageView()
                             case let .onboardingNativeLanguage(selectedTargetLanguage):
                                 OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
-                            case .auth:
-                                AuthView()
+                            case let .auth(initialMode):
+                                AuthView(initialMode: initialMode)
+                            case let .verificationCode(email):
+                                VerificationCodeView(email: email)
+                            case let .createNewPassword(verificationId, verificationCode, email):
+                                CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email)
                             default:
                                 EmptyView()
                             }

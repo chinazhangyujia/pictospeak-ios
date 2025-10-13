@@ -246,6 +246,88 @@ class AuthService {
     func getCurrentToken() -> String? {
         return keychainManager.getToken()
     }
+
+    /// Resets the user's password using verification code
+    /// - Parameters:
+    ///   - targetType: The target type (e.g., EMAIL)
+    ///   - targetValue: The email address
+    ///   - newPassword: The new password
+    ///   - verificationCodeId: The verification code ID from verification response
+    ///   - verificationCode: The verification code
+    /// - Returns: AuthResponse containing access token and token type
+    func resetPassword(targetType: TargetType, targetValue: String, newPassword: String, verificationCodeId: String, verificationCode: String) async throws -> AuthResponse {
+        guard let url = URL(string: baseURL + "/auth/reset_password") else {
+            throw AuthError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 30
+
+        let resetRequest = ResetPasswordRequest(
+            targetType: targetType,
+            targetValue: targetValue,
+            newPassword: newPassword,
+            verificationCodeId: verificationCodeId,
+            verificationCode: verificationCode
+        )
+
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(resetRequest)
+        } catch {
+            throw AuthError.encodingError
+        }
+
+        print("🌐 Making password reset request to: \(url)")
+        print("📤 Resetting password for: \(targetValue)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw AuthError.serverError
+            }
+
+            print("📡 Password reset response status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Password reset API error: \(httpResponse.statusCode)")
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                throw AuthError.serverError
+            }
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .useDefaultKeys
+
+            do {
+                let authResponse = try decoder.decode(AuthResponse.self, from: data)
+
+                // Save the access token to keychain
+                let tokenSaved = keychainManager.saveToken(authResponse.accessToken)
+                if tokenSaved {
+                    print("✅ Password reset successful and saved token for user: \(targetValue)")
+                } else {
+                    print("⚠️ Password reset successful but failed to save token")
+                }
+
+                return authResponse
+            } catch {
+                print("❌ Decoding error: \(error)")
+                throw AuthError.decodingError
+            }
+
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            throw AuthError.networkError
+        } catch {
+            print("❌ Unexpected error during password reset: \(error)")
+            throw AuthError.unknownError
+        }
+    }
 }
 
 // MARK: - Error Types

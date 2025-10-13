@@ -62,7 +62,7 @@ struct OnboardingTargetLanguageView: View {
                 onboardingRouter.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage))
             }) {
                 Text("Continue")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)

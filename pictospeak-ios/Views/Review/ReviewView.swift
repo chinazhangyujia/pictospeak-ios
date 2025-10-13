@@ -90,7 +90,7 @@ struct ReviewView: View {
             // Check if auth token is nil on initial load and redirect to auth
             if contentViewModel.authToken == nil {
                 print("🔐 No auth token on initial load, navigating to auth view")
-                router.goTo(.auth)
+                router.goTo(.auth(initialMode: .signIn))
             } else if !hasLoadedInitialData {
                 // Load data only on first appearance
                 hasLoadedInitialData = true

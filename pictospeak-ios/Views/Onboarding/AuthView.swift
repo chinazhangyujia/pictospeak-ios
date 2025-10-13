@@ -11,214 +11,348 @@ struct AuthView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @EnvironmentObject private var router: Router
+    @State private var fullName: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
+    @State private var confirmPassword: String = ""
     @State private var isPasswordVisible: Bool = false
+    @State private var isConfirmPasswordVisible: Bool = false
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
-    @State private var isSignUpMode: Bool = true
+    @State private var authMode: AuthMode
+
+    init(initialMode: AuthMode = .signUp) {
+        _authMode = State(initialValue: initialMode)
+    }
+
+    // MARK: - Computed Properties
+
+    private var titleText: String {
+        switch authMode {
+        case .signUp:
+            return "Create account"
+        case .signIn:
+            return "Welcome back"
+        case .resetPassword:
+            return "Reset password"
+        }
+    }
+
+    private var subtitleText: String {
+        switch authMode {
+        case .signUp:
+            return "Save your words and sessions"
+        case .signIn:
+            return "Sign in to continue your learning journey"
+        case .resetPassword:
+            return "Enter your email to receive a reset link"
+        }
+    }
+
+    private var buttonText: String {
+        switch authMode {
+        case .signUp:
+            return "Sign up"
+        case .signIn:
+            return "Sign in"
+        case .resetPassword:
+            return "Send reset link"
+        }
+    }
+
+    private func showDisableButton() -> Bool {
+        switch authMode {
+        case .signUp:
+            return isLoading || email.isEmpty || password.isEmpty || fullName.isEmpty || confirmPassword.isEmpty
+        case .signIn:
+            return isLoading || email.isEmpty || password.isEmpty
+        case .resetPassword:
+            return isLoading || email.isEmpty || !isValidEmail(email)
+        }
+    }
+
+    private func isValidEmail(_ email: String) -> Bool {
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email)
+    }
+
+    private func clearForm() {
+        fullName = ""
+        email = ""
+        password = ""
+        confirmPassword = ""
+        isPasswordVisible = false
+        isConfirmPasswordVisible = false
+        errorMessage = nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top navigation
-            HStack {
-                // Only show back button if onboarding is not completed
-                if !contentViewModel.hasOnboardingCompleted {
-                    Button(action: {
-                        onboardingRouter.goBack()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 40, height: 40)
-                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.black)
-                        }
-                    }
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-
-            Spacer()
-
             // Main content
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 // Title and subtitle
-                VStack(spacing: 8) {
-                    Text(isSignUpMode ? "Create account" : "Sign in")
-                        .font(.system(size: 32, weight: .bold))
+                VStack(spacing: 12) {
+                    Text(titleText)
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 
-                    Text(isSignUpMode ? "Save your words and sessions" : "Welcome back")
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
+                    Text(subtitleText)
+                        .font(.system(size: 17))
+                        .foregroundColor(AppTheme.gray3c3c3c60)
                         .multilineTextAlignment(.center)
                 }
 
                 // Input fields card
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
+                    // Full Name field (only for sign-up)
+                    if authMode == .signUp {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Full Name")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(AppTheme.gray333333)
+
+                            TextField("Enter your full name", text: $fullName)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 16))
+                                .padding(.vertical, 14)
+                                .padding(.horizontal, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(AppTheme.grayf8f9fa)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.black.opacity(0.03), lineWidth: 1)
+                                        )
+                                )
+                                .autocapitalization(.words)
+                        }
+                    }
+
                     // Email field
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Email")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.black)
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(AppTheme.gray333333)
 
                         TextField("Enter your email", text: $email)
                             .textFieldStyle(PlainTextFieldStyle())
                             .font(.system(size: 16))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 16)
                             .padding(.vertical, 14)
+                            .padding(.horizontal, 16)
                             .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white)
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(AppTheme.grayf8f9fa)
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.black.opacity(0.03), lineWidth: 1)
                                     )
                             )
                             .autocapitalization(.none)
                             .keyboardType(.emailAddress)
                     }
 
-                    // Password field
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Password")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.black)
+                    // Password field (only for sign up and sign in)
+                    if authMode != .resetPassword {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Password")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(AppTheme.gray333333)
 
-                        HStack {
-                            if isPasswordVisible {
-                                TextField("Enter your password", text: $password)
-                                    .textFieldStyle(PlainTextFieldStyle())
-                            } else {
-                                SecureField("Enter your password", text: $password)
-                                    .textFieldStyle(PlainTextFieldStyle())
-                            }
+                            HStack {
+                                if isPasswordVisible {
+                                    TextField("Enter your password", text: $password)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                } else {
+                                    SecureField("Enter your password", text: $password)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                }
 
-                            Button(action: {
-                                isPasswordVisible.toggle()
-                            }) {
-                                Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
+                                Button(action: {
+                                    isPasswordVisible.toggle()
+                                }) {
+                                    Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(AppTheme.gray3c3c3c60)
+                                }
                             }
+                            .font(.system(size: 16))
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(AppTheme.grayf8f9fa)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.black.opacity(0.03), lineWidth: 1)
+                                    )
+                            )
                         }
-                        .font(.system(size: 16))
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                )
-                        )
+                    }
+
+                    // Confirm Password field (only for sign-up)
+                    if authMode == .signUp {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Confirm Password")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(AppTheme.gray333333)
+
+                            HStack {
+                                if isConfirmPasswordVisible {
+                                    TextField("Confirm your password", text: $confirmPassword)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                } else {
+                                    SecureField("Confirm your password", text: $confirmPassword)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                }
+
+                                Button(action: {
+                                    isConfirmPasswordVisible.toggle()
+                                }) {
+                                    Image(systemName: isConfirmPasswordVisible ? "eye.slash" : "eye")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(AppTheme.gray3c3c3c60)
+                                }
+                            }
+                            .font(.system(size: 16))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(AppTheme.grayf8f9fa)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.black.opacity(0.03), lineWidth: 1)
+                                    )
+                            )
+                        }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 24)
+                .padding(24)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white)
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 )
-                .padding(.horizontal, 20)
 
-                // Account status and toggle
-                HStack(spacing: 4) {
-                    Text(isSignUpMode ? "Already have an account?" : "Don't have an account?")
-                        .font(.system(size: 16))
-                        .foregroundColor(.black)
+                if authMode == .signIn {
+                    // Forgot password text
+                    Text("Forgot password?")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(AppTheme.primaryBlue)
+                        .onTapGesture {
+                            authMode = .resetPassword
+                            clearForm()
+                        }
+                }
 
-                    Button(action: {
-                        isSignUpMode.toggle()
-                        errorMessage = nil
-                    }) {
-                        Text(isSignUpMode ? "Sign in" : "Sign up")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
+                // Account status and toggle (only for sign up and sign in)
+                if authMode != .resetPassword {
+                    HStack(spacing: 10) {
+                        Text(authMode == .signUp ? "Already have an account?" : "Don't have an account?")
+                            .font(.system(size: 17))
+                            .foregroundColor(AppTheme.gray3c3c4360)
+
+                        Button(action: {
+                            authMode = authMode == .signUp ? .signIn : .signUp
+                            errorMessage = nil
+                            clearForm()
+                        }) {
+                            Text(authMode == .signUp ? "Sign in" : "Sign up")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(AppTheme.primaryBlue)
+                        }
+                    }
+                } else {
+                    // Sign up link for reset password mode
+                    HStack(spacing: 10) {
+                        Text("Don't have an account?")
+                            .font(.system(size: 17))
+                            .foregroundColor(AppTheme.gray3c3c4360)
+
+                        Button(action: {
+                            authMode = .signUp
+                            clearForm()
+                        }) {
+                            Text("Sign up")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(AppTheme.primaryBlue)
+                        }
                     }
                 }
+            }
 
-                // Error message
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .font(.system(size: 14))
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
+            // Error message
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 14))
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
             }
 
             Spacer()
 
-            // Action buttons
-            VStack(spacing: 16) {
-                // Sign up/Sign in button
-                Button(action: {
-                    handleAuthAction()
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.8)
-                        }
-
-                        Text(isSignUpMode ? "Sign up" : "Sign in")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
+            // Action button (only show if not in success state)
+            Button(action: {
+                handleAuthAction()
+            }) {
+                HStack {
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .gray))
+                            .scaleEffect(0.8)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.purple, Color.blue]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(16)
+
+                    Text(buttonText)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(showDisableButton() ? AppTheme.grayd9d9d9 : .white)
                 }
-                .disabled(isLoading || email.isEmpty || password.isEmpty)
-                .opacity((isLoading || email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(showDisableButton() ? .white : AppTheme.primaryBlue)
+                )
             }
+            .disabled(showDisableButton())
+            .padding(.vertical, 6)
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.white, Color.purple.opacity(0.05), Color.blue.opacity(0.05)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .navigationBarHidden(true)
+        .padding(.horizontal, 16)
+        .background(AppTheme.viewBackgroundGray)
+        .navigationBarBackButtonHidden(contentViewModel.hasOnboardingCompleted)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     // MARK: - Actions
 
     private func handleAuthAction() {
-        guard !email.isEmpty, !password.isEmpty else { return }
+        switch authMode {
+        case .signUp:
+            guard !email.isEmpty, !password.isEmpty, !fullName.isEmpty, !confirmPassword.isEmpty else { return }
+            guard password == confirmPassword else {
+                errorMessage = "Passwords do not match"
+                return
+            }
+        case .signIn:
+            guard !email.isEmpty, !password.isEmpty else { return }
+        case .resetPassword:
+            guard !email.isEmpty, isValidEmail(email) else { return }
+        }
 
         isLoading = true
         errorMessage = nil
 
         Task {
             do {
-                if isSignUpMode {
+                switch authMode {
+                case .signUp:
                     await handleSignUp()
-                } else {
+                case .signIn:
                     await handleSignIn()
+                case .resetPassword:
+                    await handleResetPassword()
                 }
             }
         }
@@ -243,7 +377,7 @@ struct AuthView: View {
             let authResponse = try await AuthService.shared.signUp(
                 email: email,
                 password: password,
-                nickname: email.components(separatedBy: "@").first ?? "",
+                nickname: fullName,
                 userSetting: userSetting
             )
 
@@ -293,6 +427,33 @@ struct AuthView: View {
                 router.resetToHome()
             }
 
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+            }
+        }
+    }
+
+    private func handleResetPassword() async {
+        do {
+            // Send verification code to user's email
+            try await VerificationCodeService.shared.sendVerificationCode(
+                targetType: .EMAIL,
+                targetValue: email,
+                flowType: .resetPassword
+            )
+
+            await MainActor.run {
+                isLoading = false
+                // Navigate to verification code view after successful send
+                // Use the appropriate router based on onboarding status
+                if contentViewModel.hasOnboardingCompleted {
+                    router.goTo(.verificationCode(email: email))
+                } else {
+                    onboardingRouter.goTo(.verificationCode(email: email))
+                }
+            }
         } catch {
             await MainActor.run {
                 self.errorMessage = error.localizedDescription

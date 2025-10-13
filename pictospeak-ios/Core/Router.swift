@@ -1,5 +1,11 @@
 import SwiftUI
 
+enum AuthMode {
+    case signUp
+    case signIn
+    case resetPassword
+}
+
 enum NavTab: Hashable {
     case home
     case review
@@ -17,7 +23,9 @@ enum AppRoute: Hashable {
     case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType)
     case onboardingTargetLanguage
     case onboardingNativeLanguage(selectedTargetLanguage: String)
-    case auth
+    case auth(initialMode: AuthMode)
+    case verificationCode(email: String)
+    case createNewPassword(verificationId: String, verificationCode: String, email: String)
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -51,8 +59,17 @@ enum AppRoute: Hashable {
         case let .onboardingNativeLanguage(selectedTargetLanguage):
             hasher.combine(9)
             hasher.combine(selectedTargetLanguage)
-        case .auth:
+        case let .auth(initialMode):
             hasher.combine(10)
+            hasher.combine(initialMode)
+        case let .verificationCode(email):
+            hasher.combine(11)
+            hasher.combine(email)
+        case let .createNewPassword(verificationId, verificationCode, email):
+            hasher.combine(12)
+            hasher.combine(verificationId)
+            hasher.combine(verificationCode)
+            hasher.combine(email)
         }
     }
 
@@ -78,8 +95,12 @@ enum AppRoute: Hashable {
             return true
         case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage), .onboardingNativeLanguage(rhsSelectedTargetLanguage)):
             return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
-        case (.auth, .auth):
-            return true
+        case let (.auth(lhsInitialMode), .auth(rhsInitialMode)):
+            return lhsInitialMode == rhsInitialMode
+        case let (.verificationCode(lhsEmail), .verificationCode(rhsEmail)):
+            return lhsEmail == rhsEmail
+        case let (.createNewPassword(lhsVerificationId, lhsVerificationCode, lhsEmail), .createNewPassword(rhsVerificationId, rhsVerificationCode, rhsEmail)):
+            return lhsVerificationId == rhsVerificationId && lhsVerificationCode == rhsVerificationCode && lhsEmail == rhsEmail
         default:
             return false
         }
