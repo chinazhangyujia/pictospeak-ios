@@ -41,6 +41,10 @@ struct ContentView: View {
                                         ReviewView()
                                     case .auth:
                                         AuthView()
+                                    case let .verificationCode(email):
+                                        VerificationCodeView(email: email)
+                                    case let .createNewPassword(verificationId, verificationCode, email):
+                                        CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email)
                                     default:
                                         EmptyView()
                                     }
@@ -98,8 +102,8 @@ struct ContentView: View {
                                 AuthView(initialMode: initialMode)
                             case let .verificationCode(email):
                                 VerificationCodeView(email: email)
-                            case let .createNewPassword(verificationCode, email):
-                                CreateNewPasswordView(verificationCode: verificationCode, email: email)
+                            case let .createNewPassword(verificationId, verificationCode, email):
+                                CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email)
                             default:
                                 EmptyView()
                             }

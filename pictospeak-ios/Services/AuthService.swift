@@ -247,9 +247,15 @@ class AuthService {
         return keychainManager.getToken()
     }
 
-    /// Sends a password reset email to the user
-    /// - Parameter email: User's email address
-    func resetPassword(email: String) async throws {
+    /// Resets the user's password using verification code
+    /// - Parameters:
+    ///   - targetType: The target type (e.g., EMAIL)
+    ///   - targetValue: The email address
+    ///   - newPassword: The new password
+    ///   - verificationCodeId: The verification code ID from verification response
+    ///   - verificationCode: The verification code
+    /// - Returns: AuthResponse containing access token and token type
+    func resetPassword(targetType: TargetType, targetValue: String, newPassword: String, verificationCodeId: String, verificationCode: String) async throws -> AuthResponse {
         guard let url = URL(string: baseURL + "/auth/reset_password") else {
             throw AuthError.invalidURL
         }
@@ -259,7 +265,13 @@ class AuthService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.timeoutInterval = 30
 
-        let resetRequest = PasswordResetRequest(email: email)
+        let resetRequest = ResetPasswordRequest(
+            targetType: targetType,
+            targetValue: targetValue,
+            newPassword: newPassword,
+            verificationCodeId: verificationCodeId,
+            verificationCode: verificationCode
+        )
 
         do {
             urlRequest.httpBody = try JSONEncoder().encode(resetRequest)
@@ -268,6 +280,7 @@ class AuthService {
         }
 
         print("🌐 Making password reset request to: \(url)")
+        print("📤 Resetting password for: \(targetValue)")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: urlRequest)
@@ -287,7 +300,25 @@ class AuthService {
                 throw AuthError.serverError
             }
 
-            print("✅ Password reset email sent successfully to: \(email)")
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .useDefaultKeys
+
+            do {
+                let authResponse = try decoder.decode(AuthResponse.self, from: data)
+
+                // Save the access token to keychain
+                let tokenSaved = keychainManager.saveToken(authResponse.accessToken)
+                if tokenSaved {
+                    print("✅ Password reset successful and saved token for user: \(targetValue)")
+                } else {
+                    print("⚠️ Password reset successful but failed to save token")
+                }
+
+                return authResponse
+            } catch {
+                print("❌ Decoding error: \(error)")
+                throw AuthError.decodingError
+            }
 
         } catch let urlError as URLError {
             print("❌ URL Error: \(urlError.localizedDescription)")

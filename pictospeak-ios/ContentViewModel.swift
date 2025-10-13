@@ -72,8 +72,8 @@ class ContentViewModel: ObservableObject {
         authToken = nil
         userSetting = nil
         authService.signOut()
-        let hasOnboardingCompletedTmp = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
-        print("✅ Got onboarding completed from UserDefaults when sign out \(hasOnboardingCompletedTmp)")
+        let hasOnboardingCompleted = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
+        print("✅ Got onboarding completed from UserDefaults when sign out \(hasOnboardingCompleted)")
     }
 
     /// Sets the user setting (called when user completes onboarding)

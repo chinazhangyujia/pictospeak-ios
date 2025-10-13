@@ -11,33 +11,34 @@ struct VerificationCodeView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @EnvironmentObject private var router: Router
-    
+
     @State private var verificationCode: [String] = Array(repeating: "", count: 6)
     @State private var isVerifying: Bool = false
     @State private var errorMessage: String?
-    
+    @FocusState private var focusedField: Int?
+
     let email: String
-    
+
     init(email: String) {
         self.email = email
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var isCodeComplete: Bool {
         return verificationCode.allSatisfy { !$0.isEmpty }
     }
-    
+
     private var isButtonDisabled: Bool {
         return isVerifying || !isCodeComplete
     }
-    
+
     private var verificationCodeString: String {
         return verificationCode.joined()
     }
-    
+
     // MARK: - Body
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Main content
@@ -56,7 +57,7 @@ struct VerificationCodeView: View {
                 }
 
                 // Verification code input section
-                VStack() {
+                VStack {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Verification code")
                             .font(.system(size: 17, weight: .medium))
@@ -64,10 +65,11 @@ struct VerificationCodeView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         HStack(spacing: 12) {
-                            ForEach(0..<6, id: \.self) { index in
+                            ForEach(0 ..< 6, id: \.self) { index in
                                 VerificationCodeDigitField(
                                     text: $verificationCode[index],
-                                    isFirstResponder: index == 0
+                                    focusedField: $focusedField,
+                                    index: index
                                 )
                                 .onChange(of: verificationCode[index]) { newValue in
                                     handleDigitInput(at: index, newValue: newValue)
@@ -75,6 +77,10 @@ struct VerificationCodeView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
+                        .onAppear {
+                            // Focus first field on appear
+                            focusedField = 0
+                        }
                     }
                 }
                 .padding(24)
@@ -83,13 +89,13 @@ struct VerificationCodeView: View {
                         .fill(.white)
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 )
-                
+
                 // Resend code section
                 HStack(spacing: 10) {
                     Text("Didn't receive the code?")
                         .font(.system(size: 17))
                         .foregroundColor(AppTheme.gray3c3c4360)
-                    
+
                     Button(action: {
                         resendVerificationCode()
                     }) {
@@ -140,47 +146,58 @@ struct VerificationCodeView: View {
         .padding(.horizontal, 16)
         .background(AppTheme.viewBackgroundGray)
     }
-    
+
     // MARK: - Actions
-    
+
     private func handleDigitInput(at index: Int, newValue: String) {
         // Only allow single digit
         if newValue.count > 1 {
             verificationCode[index] = String(newValue.prefix(1))
         }
-        
+
         // Move to next field if digit entered
-        if !verificationCode[index].isEmpty && index < 5 {
-            // Focus next field logic would go here if using UIKit
+        if !verificationCode[index].isEmpty, index < 5 {
+            focusedField = index + 1
         }
-        
-        // Auto-verify if all fields are filled
-        if isCodeComplete && !isVerifying {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                verifyCode()
-            }
+
+        // Move to previous field if digit deleted
+        if verificationCode[index].isEmpty, index > 0 {
+            focusedField = index - 1
         }
     }
-    
+
     private func verifyCode() {
         guard isCodeComplete else { return }
-        
+
         isVerifying = true
         errorMessage = nil
-        
+
         Task {
             do {
-                // TODO: Implement actual verification API call
-                // let result = try await AuthService.shared.verifyCode(email: email, code: verificationCodeString)
-                
-                // Simulate API call for now
-                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                
+                // Call the verification code service to verify the code
+                let response = try await VerificationCodeService.shared.verifyVerificationCode(
+                    targetType: .EMAIL,
+                    targetValue: email,
+                    flowType: .resetPassword,
+                    code: verificationCodeString
+                )
+
                 await MainActor.run {
                     isVerifying = false
-                    // Navigate to next screen or complete onboarding
-                    // For now, just show success
-                    onboardingRouter.goTo(.createNewPassword(verificationCode: verificationCodeString, email: email))
+                    // Navigate to create new password screen with verification ID and code
+                    if contentViewModel.hasOnboardingCompleted {
+                        router.goTo(.createNewPassword(
+                            verificationId: response.id,
+                            verificationCode: response.code,
+                            email: email
+                        ))
+                    } else {
+                        onboardingRouter.goTo(.createNewPassword(
+                            verificationId: response.id,
+                            verificationCode: response.code,
+                            email: email
+                        ))
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -190,16 +207,16 @@ struct VerificationCodeView: View {
             }
         }
     }
-    
+
     private func resendVerificationCode() {
         Task {
             do {
                 // TODO: Implement actual resend API call
                 // try await AuthService.shared.resendVerificationCode(email: email)
-                
+
                 // Simulate API call
                 try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                
+
                 await MainActor.run {
                     print("✅ Verification code resent to \(email)")
                 }
@@ -216,8 +233,9 @@ struct VerificationCodeView: View {
 
 struct VerificationCodeDigitField: View {
     @Binding var text: String
-    let isFirstResponder: Bool
-    
+    @FocusState.Binding var focusedField: Int?
+    let index: Int
+
     var body: some View {
         TextField("", text: $text)
             .textFieldStyle(PlainTextFieldStyle())
@@ -233,13 +251,11 @@ struct VerificationCodeDigitField: View {
                             .stroke(Color.black.opacity(0.03), lineWidth: 1)
                     )
             )
-            .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidChangeNotification)) { notification in
-                if let textField = notification.object as? UITextField {
-                    let newValue = textField.text ?? ""
-                    if newValue.count > 1 {
-                        textField.text = String(newValue.prefix(1))
-                        text = String(newValue.prefix(1))
-                    }
+            .focused($focusedField, equals: index)
+            .onChange(of: text) { newValue in
+                // Limit to single digit
+                if newValue.count > 1 {
+                    text = String(newValue.prefix(1))
                 }
             }
     }

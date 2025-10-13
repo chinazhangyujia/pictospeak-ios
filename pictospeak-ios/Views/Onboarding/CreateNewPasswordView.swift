@@ -9,6 +9,8 @@ import SwiftUI
 
 struct CreateNewPasswordView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
+    @EnvironmentObject private var contentViewModel: ContentViewModel
+    @EnvironmentObject private var router: Router
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
     @State private var isNewPasswordVisible: Bool = false
@@ -16,28 +18,30 @@ struct CreateNewPasswordView: View {
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
 
+    let verificationId: String
     let verificationCode: String
     let email: String
 
-    init(verificationCode: String, email: String) {
+    init(verificationId: String, verificationCode: String, email: String) {
+        self.verificationId = verificationId
         self.verificationCode = verificationCode
         self.email = email
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var isPasswordValid: Bool {
         return newPassword.count >= 8
     }
-    
+
     private var doPasswordsMatch: Bool {
         return !newPassword.isEmpty && !confirmPassword.isEmpty && newPassword == confirmPassword
     }
-    
+
     private var isResetButtonEnabled: Bool {
         return isPasswordValid && doPasswordsMatch && !isLoading
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Main content
@@ -142,40 +146,40 @@ struct CreateNewPasswordView: View {
                     HStack(spacing: 8) {
                         ZStack {
                             Circle()
-                                .fill(isPasswordValid ? Color.green : Color(red: 0xd1/255, green: 0xd5/255, blue: 0xdc/255))
+                                .fill(isPasswordValid ? Color.green : Color(red: 0xD1 / 255, green: 0xD5 / 255, blue: 0xDC / 255))
                                 .frame(width: 16, height: 16)
-                            
+
                             if isPasswordValid {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 10))
                                     .foregroundColor(.white)
                             }
                         }
-                        
+
                         Text("At least 8 characters")
                             .font(.system(size: 16))
                             .foregroundColor(isPasswordValid ? Color.green : AppTheme.gray3c3c4360)
-                        
+
                         Spacer()
                     }
-                    
+
                     HStack(spacing: 8) {
                         ZStack {
                             Circle()
-                                .fill(doPasswordsMatch ? Color.green : Color(red: 0xd1/255, green: 0xd5/255, blue: 0xdc/255))
+                                .fill(doPasswordsMatch ? Color.green : Color(red: 0xD1 / 255, green: 0xD5 / 255, blue: 0xDC / 255))
                                 .frame(width: 16, height: 16)
-                            
+
                             if doPasswordsMatch {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 10))
                                     .foregroundColor(.white)
                             }
                         }
-                        
+
                         Text("Passwords match")
                             .font(.system(size: 16))
                             .foregroundColor(doPasswordsMatch ? Color.green : AppTheme.gray3c3c4360)
-                        
+
                         Spacer()
                     }
                 }
@@ -204,7 +208,7 @@ struct CreateNewPasswordView: View {
                             .scaleEffect(0.8)
                     }
 
-                    Text("Reset password")
+                    Text("Set password")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(isResetButtonEnabled ? .white : AppTheme.grayd9d9d9)
                 }
@@ -227,19 +231,29 @@ struct CreateNewPasswordView: View {
 
     private func handleResetPassword() {
         guard isResetButtonEnabled else { return }
-        
+
         isLoading = true
         errorMessage = nil
 
         Task {
             do {
-                // TODO: Implement password reset API call
-                // try await AuthService.shared.resetPassword(newPassword: newPassword)
-                
+                // Call reset password API with verification data
+                let authResponse = try await AuthService.shared.resetPassword(
+                    targetType: .EMAIL,
+                    targetValue: email,
+                    newPassword: newPassword,
+                    verificationCodeId: verificationId,
+                    verificationCode: verificationCode
+                )
+
+                // Load auth token and user settings into content view model
+                await contentViewModel.readAuthTokenFromKeychain()
+                await contentViewModel.loadUserSettings()
+
                 await MainActor.run {
                     isLoading = false
-                    // Navigate back or to success screen
-                    onboardingRouter.goBack()
+                    // Reset navigation to home after successful reset password
+                    router.resetToHome()
                 }
             } catch {
                 await MainActor.run {
@@ -252,6 +266,8 @@ struct CreateNewPasswordView: View {
 }
 
 #Preview {
-    CreateNewPasswordView(verificationCode: "123456", email: "test@test.com")
+    CreateNewPasswordView(verificationId: "test-id", verificationCode: "123456", email: "test@test.com")
         .environmentObject(OnboardingRouter())
+        .environmentObject(ContentViewModel())
+        .environmentObject(Router())
 }

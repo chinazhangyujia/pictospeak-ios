@@ -20,13 +20,13 @@ struct AuthView: View {
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
     @State private var authMode: AuthMode
-    
+
     init(initialMode: AuthMode = .signUp) {
         _authMode = State(initialValue: initialMode)
     }
 
     // MARK: - Computed Properties
-    
+
     private var titleText: String {
         switch authMode {
         case .signUp:
@@ -37,7 +37,7 @@ struct AuthView: View {
             return "Reset password"
         }
     }
-    
+
     private var subtitleText: String {
         switch authMode {
         case .signUp:
@@ -48,7 +48,7 @@ struct AuthView: View {
             return "Enter your email to receive a reset link"
         }
     }
-    
+
     private var buttonText: String {
         switch authMode {
         case .signUp:
@@ -70,13 +70,13 @@ struct AuthView: View {
             return isLoading || email.isEmpty || !isValidEmail(email)
         }
     }
-    
+
     private func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
-    
+
     private func clearForm() {
         fullName = ""
         email = ""
@@ -236,7 +236,6 @@ struct AuthView: View {
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 )
 
-
                 if authMode == .signIn {
                     // Forgot password text
                     Text("Forgot password?")
@@ -322,6 +321,8 @@ struct AuthView: View {
         }
         .padding(.horizontal, 16)
         .background(AppTheme.viewBackgroundGray)
+        .navigationBarBackButtonHidden(contentViewModel.hasOnboardingCompleted)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     // MARK: - Actions
@@ -433,14 +434,25 @@ struct AuthView: View {
             }
         }
     }
-    
+
     private func handleResetPassword() async {
         do {
-            // try await AuthService.shared.resetPassword(email: email)
-            onboardingRouter.goTo(.verificationCode(email: email))
-            
+            // Send verification code to user's email
+            try await VerificationCodeService.shared.sendVerificationCode(
+                targetType: .EMAIL,
+                targetValue: email,
+                flowType: .resetPassword
+            )
+
             await MainActor.run {
                 isLoading = false
+                // Navigate to verification code view after successful send
+                // Use the appropriate router based on onboarding status
+                if contentViewModel.hasOnboardingCompleted {
+                    router.goTo(.verificationCode(email: email))
+                } else {
+                    onboardingRouter.goTo(.verificationCode(email: email))
+                }
             }
         } catch {
             await MainActor.run {
