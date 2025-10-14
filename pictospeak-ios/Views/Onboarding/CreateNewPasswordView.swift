@@ -21,14 +21,20 @@ struct CreateNewPasswordView: View {
     let verificationId: String
     let verificationCode: String
     let email: String
+    let fullName: String?
 
-    init(verificationId: String, verificationCode: String, email: String) {
+    init(verificationId: String, verificationCode: String, email: String, fullName: String?) {
         self.verificationId = verificationId
         self.verificationCode = verificationCode
         self.email = email
+        self.fullName = fullName
     }
 
     // MARK: - Computed Properties
+
+    private var isSignUpFlow: Bool {
+        return fullName != nil
+    }
 
     private var isPasswordValid: Bool {
         return newPassword.count >= 8
@@ -237,23 +243,77 @@ struct CreateNewPasswordView: View {
 
         Task {
             do {
-                // Call reset password API with verification data
-                let authResponse = try await AuthService.shared.resetPassword(
-                    targetType: .EMAIL,
-                    targetValue: email,
-                    newPassword: newPassword,
-                    verificationCodeId: verificationId,
-                    verificationCode: verificationCode
-                )
+                if isSignUpFlow {
+                    // Sign-up flow - create new account
+                    guard let fullName = fullName else {
+                        await MainActor.run {
+                            self.errorMessage = "Full name is required"
+                            self.isLoading = false
+                        }
+                        return
+                    }
 
-                // Load auth token and user settings into content view model
-                await contentViewModel.readAuthTokenFromKeychain()
-                await contentViewModel.loadUserSettings()
+                    // Get pre-signup user settings if available
+                    let userSetting: UserSetting
+                    if let contentUserSetting = contentViewModel.userSetting {
+                        userSetting = contentUserSetting
+                        print("✅ Using user setting from ContentViewModel")
+                    } else if let preSignUpUserSetting = UserDefaultManager.shared.getPreSignUpUserSetting() {
+                        userSetting = preSignUpUserSetting
+                        print("✅ Using user setting from UserDefaultManager")
+                    } else {
+                        print("❌ No user setting found in ContentViewModel or UserDefaultManager. This should not happen.")
+                        await MainActor.run {
+                            self.errorMessage = "User settings not found"
+                            self.isLoading = false
+                        }
+                        return
+                    }
 
-                await MainActor.run {
-                    isLoading = false
-                    // Reset navigation to home after successful reset password
-                    router.resetToHome()
+                    // Call sign-up API with verification data
+                    let authResponse = try await AuthService.shared.signUp(
+                        email: email,
+                        password: newPassword,
+                        nickname: fullName,
+                        userSetting: userSetting,
+                        verificationCodeId: verificationId,
+                        verificationCode: verificationCode
+                    )
+
+                    // Clear pre-signup settings after successful signup
+                    UserDefaultManager.shared.deletePreSignUpUserSetting()
+                    UserDefaultManager.shared.delete(forKey: UserDefaultKeys.hasOnboardingCompleted)
+
+                    await contentViewModel.readAuthTokenFromKeychain()
+                    await contentViewModel.loadUserSettings()
+
+                    await MainActor.run {
+                        isLoading = false
+                        UserDefaultManager.shared.saveValue(true, forKey: UserDefaultKeys.hasOnboardingCompleted)
+                        contentViewModel.hasOnboardingCompleted = true
+
+                        // Reset navigation to home after successful sign-up
+                        router.resetToHome()
+                    }
+                } else {
+                    // Reset password flow
+                    let authResponse = try await AuthService.shared.resetPassword(
+                        targetType: .EMAIL,
+                        targetValue: email,
+                        newPassword: newPassword,
+                        verificationCodeId: verificationId,
+                        verificationCode: verificationCode
+                    )
+
+                    // Load auth token and user settings into content view model
+                    await contentViewModel.readAuthTokenFromKeychain()
+                    await contentViewModel.loadUserSettings()
+
+                    await MainActor.run {
+                        isLoading = false
+                        // Reset navigation to home after successful reset password
+                        router.resetToHome()
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -266,7 +326,7 @@ struct CreateNewPasswordView: View {
 }
 
 #Preview {
-    CreateNewPasswordView(verificationId: "test-id", verificationCode: "123456", email: "test@test.com")
+    CreateNewPasswordView(verificationId: "test-id", verificationCode: "123456", email: "test@test.com", fullName: nil)
         .environmentObject(OnboardingRouter())
         .environmentObject(ContentViewModel())
         .environmentObject(Router())

@@ -15,6 +15,8 @@ struct UserSignUpRequest: Codable {
     let nickname: String
     let targetLanguage: String
     let nativeLanguage: String
+    let verificationCodeId: String
+    let verificationCode: String
 
     private enum CodingKeys: String, CodingKey {
         case email
@@ -22,6 +24,8 @@ struct UserSignUpRequest: Codable {
         case nickname
         case targetLanguage = "target_language"
         case nativeLanguage = "native_language"
+        case verificationCodeId = "verification_code_id"
+        case verificationCode = "verification_code"
     }
 }
 

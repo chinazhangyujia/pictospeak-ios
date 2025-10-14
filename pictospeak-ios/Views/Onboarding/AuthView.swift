@@ -52,7 +52,7 @@ struct AuthView: View {
     private var buttonText: String {
         switch authMode {
         case .signUp:
-            return "Sign up"
+            return "Continue"
         case .signIn:
             return "Sign in"
         case .resetPassword:
@@ -63,7 +63,7 @@ struct AuthView: View {
     private func showDisableButton() -> Bool {
         switch authMode {
         case .signUp:
-            return isLoading || email.isEmpty || password.isEmpty || fullName.isEmpty || confirmPassword.isEmpty
+            return isLoading || email.isEmpty || fullName.isEmpty || !isValidEmail(email)
         case .signIn:
             return isLoading || email.isEmpty || password.isEmpty
         case .resetPassword:
@@ -153,8 +153,8 @@ struct AuthView: View {
                             .keyboardType(.emailAddress)
                     }
 
-                    // Password field (only for sign up and sign in)
-                    if authMode != .resetPassword {
+                    // Password field (only for sign in)
+                    if authMode == .signIn {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Password")
                                 .font(.system(size: 17, weight: .medium))
@@ -180,44 +180,6 @@ struct AuthView: View {
                             .font(.system(size: 16))
                             .padding(.vertical, 14)
                             .padding(.horizontal, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(AppTheme.grayf8f9fa)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color.black.opacity(0.03), lineWidth: 1)
-                                    )
-                            )
-                        }
-                    }
-
-                    // Confirm Password field (only for sign-up)
-                    if authMode == .signUp {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Confirm Password")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundColor(AppTheme.gray333333)
-
-                            HStack {
-                                if isConfirmPasswordVisible {
-                                    TextField("Confirm your password", text: $confirmPassword)
-                                        .textFieldStyle(PlainTextFieldStyle())
-                                } else {
-                                    SecureField("Confirm your password", text: $confirmPassword)
-                                        .textFieldStyle(PlainTextFieldStyle())
-                                }
-
-                                Button(action: {
-                                    isConfirmPasswordVisible.toggle()
-                                }) {
-                                    Image(systemName: isConfirmPasswordVisible ? "eye.slash" : "eye")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(AppTheme.gray3c3c3c60)
-                                }
-                            }
-                            .font(.system(size: 16))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(AppTheme.grayf8f9fa)
@@ -330,11 +292,7 @@ struct AuthView: View {
     private func handleAuthAction() {
         switch authMode {
         case .signUp:
-            guard !email.isEmpty, !password.isEmpty, !fullName.isEmpty, !confirmPassword.isEmpty else { return }
-            guard password == confirmPassword else {
-                errorMessage = "Passwords do not match"
-                return
-            }
+            guard !email.isEmpty, !fullName.isEmpty, isValidEmail(email) else { return }
         case .signIn:
             guard !email.isEmpty, !password.isEmpty else { return }
         case .resetPassword:
@@ -348,7 +306,7 @@ struct AuthView: View {
             do {
                 switch authMode {
                 case .signUp:
-                    await handleSignUp()
+                    await handleSignUpSendCode()
                 case .signIn:
                     await handleSignIn()
                 case .resetPassword:
@@ -358,46 +316,24 @@ struct AuthView: View {
         }
     }
 
-    private func handleSignUp() async {
+    private func handleSignUpSendCode() async {
         do {
-            // Get pre-signup user settings if available
-            // Get user setting from ContentViewModel first, then fall back to UserDefaultManager
-            let userSetting: UserSetting
-            if let contentUserSetting = contentViewModel.userSetting {
-                userSetting = contentUserSetting
-                print("✅ Using user setting from ContentViewModel")
-            } else if let preSignUpUserSetting = UserDefaultManager.shared.getPreSignUpUserSetting() {
-                userSetting = preSignUpUserSetting
-                print("✅ Using user setting from UserDefaultManager")
-            } else {
-                print("❌ No user setting found in ContentViewModel or UserDefaultManager. This should not happen.")
-                return
-            }
-
-            let authResponse = try await AuthService.shared.signUp(
-                email: email,
-                password: password,
-                nickname: fullName,
-                userSetting: userSetting
+            // Send verification code to user's email
+            try await VerificationCodeService.shared.sendVerificationCode(
+                targetType: .EMAIL,
+                targetValue: email,
+                flowType: .signUp
             )
 
-            // Clear pre-signup settings after successful signup
-            UserDefaultManager.shared.deletePreSignUpUserSetting()
-            UserDefaultManager.shared.delete(forKey: UserDefaultKeys.hasOnboardingCompleted)
-
-            await contentViewModel.readAuthTokenFromKeychain()
-            await contentViewModel.loadUserSettings()
-
-            // Update ContentViewModel with auth token
             await MainActor.run {
                 isLoading = false
-                UserDefaultManager.shared.saveValue(true, forKey: UserDefaultKeys.hasOnboardingCompleted)
-                contentViewModel.hasOnboardingCompleted = true
-
-                // Reset navigation to home after successful sign-up
-                router.resetToHome()
+                // Navigate to verification code view for sign-up flow
+                if contentViewModel.hasOnboardingCompleted {
+                    router.goTo(.verificationCode(email: email, flowType: .signUp, fullName: fullName))
+                } else {
+                    onboardingRouter.goTo(.verificationCode(email: email, flowType: .signUp, fullName: fullName))
+                }
             }
-
         } catch {
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
@@ -449,9 +385,9 @@ struct AuthView: View {
                 // Navigate to verification code view after successful send
                 // Use the appropriate router based on onboarding status
                 if contentViewModel.hasOnboardingCompleted {
-                    router.goTo(.verificationCode(email: email))
+                    router.goTo(.verificationCode(email: email, flowType: .resetPassword, fullName: nil))
                 } else {
-                    onboardingRouter.goTo(.verificationCode(email: email))
+                    onboardingRouter.goTo(.verificationCode(email: email, flowType: .resetPassword, fullName: nil))
                 }
             }
         } catch {

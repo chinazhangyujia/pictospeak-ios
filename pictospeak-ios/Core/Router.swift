@@ -24,8 +24,8 @@ enum AppRoute: Hashable {
     case onboardingTargetLanguage
     case onboardingNativeLanguage(selectedTargetLanguage: String)
     case auth(initialMode: AuthMode)
-    case verificationCode(email: String)
-    case createNewPassword(verificationId: String, verificationCode: String, email: String)
+    case verificationCode(email: String, flowType: FlowType, fullName: String?)
+    case createNewPassword(verificationId: String, verificationCode: String, email: String, fullName: String?)
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -62,14 +62,17 @@ enum AppRoute: Hashable {
         case let .auth(initialMode):
             hasher.combine(10)
             hasher.combine(initialMode)
-        case let .verificationCode(email):
+        case let .verificationCode(email, flowType, fullName):
             hasher.combine(11)
             hasher.combine(email)
-        case let .createNewPassword(verificationId, verificationCode, email):
+            hasher.combine(flowType)
+            hasher.combine(fullName)
+        case let .createNewPassword(verificationId, verificationCode, email, fullName):
             hasher.combine(12)
             hasher.combine(verificationId)
             hasher.combine(verificationCode)
             hasher.combine(email)
+            hasher.combine(fullName)
         }
     }
 
@@ -97,10 +100,10 @@ enum AppRoute: Hashable {
             return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
         case let (.auth(lhsInitialMode), .auth(rhsInitialMode)):
             return lhsInitialMode == rhsInitialMode
-        case let (.verificationCode(lhsEmail), .verificationCode(rhsEmail)):
-            return lhsEmail == rhsEmail
-        case let (.createNewPassword(lhsVerificationId, lhsVerificationCode, lhsEmail), .createNewPassword(rhsVerificationId, rhsVerificationCode, rhsEmail)):
-            return lhsVerificationId == rhsVerificationId && lhsVerificationCode == rhsVerificationCode && lhsEmail == rhsEmail
+        case let (.verificationCode(lhsEmail, lhsFlowType, lhsFullName), .verificationCode(rhsEmail, rhsFlowType, rhsFullName)):
+            return lhsEmail == rhsEmail && lhsFlowType == rhsFlowType && lhsFullName == rhsFullName
+        case let (.createNewPassword(lhsVerificationId, lhsVerificationCode, lhsEmail, lhsFullName), .createNewPassword(rhsVerificationId, rhsVerificationCode, rhsEmail, rhsFullName)):
+            return lhsVerificationId == rhsVerificationId && lhsVerificationCode == rhsVerificationCode && lhsEmail == rhsEmail && lhsFullName == rhsFullName
         default:
             return false
         }

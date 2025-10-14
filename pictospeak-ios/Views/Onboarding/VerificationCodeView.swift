@@ -18,9 +18,13 @@ struct VerificationCodeView: View {
     @FocusState private var focusedField: Int?
 
     let email: String
+    let flowType: FlowType
+    let fullName: String?
 
-    init(email: String) {
+    init(email: String, flowType: FlowType, fullName: String?) {
         self.email = email
+        self.flowType = flowType
+        self.fullName = fullName
     }
 
     // MARK: - Computed Properties
@@ -178,7 +182,7 @@ struct VerificationCodeView: View {
                 let response = try await VerificationCodeService.shared.verifyVerificationCode(
                     targetType: .EMAIL,
                     targetValue: email,
-                    flowType: .resetPassword,
+                    flowType: flowType,
                     code: verificationCodeString
                 )
 
@@ -189,13 +193,15 @@ struct VerificationCodeView: View {
                         router.goTo(.createNewPassword(
                             verificationId: response.id,
                             verificationCode: response.code,
-                            email: email
+                            email: email,
+                            fullName: fullName
                         ))
                     } else {
                         onboardingRouter.goTo(.createNewPassword(
                             verificationId: response.id,
                             verificationCode: response.code,
-                            email: email
+                            email: email,
+                            fullName: fullName
                         ))
                     }
                 }
@@ -263,7 +269,7 @@ struct VerificationCodeDigitField: View {
 
 #Preview {
     NavigationView {
-        VerificationCodeView(email: "johndoe@gmail.com")
+        VerificationCodeView(email: "johndoe@gmail.com", flowType: .signUp, fullName: "John Doe")
             .environmentObject(OnboardingRouter())
             .environmentObject(ContentViewModel())
             .environmentObject(Router())

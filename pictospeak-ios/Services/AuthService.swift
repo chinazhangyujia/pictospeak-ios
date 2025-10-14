@@ -23,8 +23,11 @@ class AuthService {
     ///   - email: User's email address
     ///   - password: User's password
     ///   - nickname: User's display name
+    ///   - userSetting: User's language settings
+    ///   - verificationCodeId: The verification code ID from verification response
+    ///   - verificationCode: The verification code
     /// - Returns: AuthResponse containing access token and token type
-    func signUp(email: String, password: String, nickname: String, userSetting: UserSetting) async throws -> AuthResponse {
+    func signUp(email: String, password: String, nickname: String, userSetting: UserSetting, verificationCodeId: String, verificationCode: String) async throws -> AuthResponse {
         guard let url = URL(string: baseURL + "/auth/sign_up") else {
             throw AuthError.invalidURL
         }
@@ -34,7 +37,7 @@ class AuthService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.timeoutInterval = 30
 
-        let signUpRequest = UserSignUpRequest(email: email, password: password, nickname: nickname, targetLanguage: userSetting.targetLanguage, nativeLanguage: userSetting.nativeLanguage)
+        let signUpRequest = UserSignUpRequest(email: email, password: password, nickname: nickname, targetLanguage: userSetting.targetLanguage, nativeLanguage: userSetting.nativeLanguage, verificationCodeId: verificationCodeId, verificationCode: verificationCode)
 
         do {
             urlRequest.httpBody = try JSONEncoder().encode(signUpRequest)

@@ -41,10 +41,10 @@ struct ContentView: View {
                                         ReviewView()
                                     case .auth:
                                         AuthView()
-                                    case let .verificationCode(email):
-                                        VerificationCodeView(email: email)
-                                    case let .createNewPassword(verificationId, verificationCode, email):
-                                        CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email)
+                                    case let .verificationCode(email, flowType, fullName):
+                                        VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
+                                    case let .createNewPassword(verificationId, verificationCode, email, fullName):
+                                        CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
                                     default:
                                         EmptyView()
                                     }
@@ -100,10 +100,10 @@ struct ContentView: View {
                                 OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
                             case let .auth(initialMode):
                                 AuthView(initialMode: initialMode)
-                            case let .verificationCode(email):
-                                VerificationCodeView(email: email)
-                            case let .createNewPassword(verificationId, verificationCode, email):
-                                CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email)
+                            case let .verificationCode(email, flowType, fullName):
+                                VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
+                            case let .createNewPassword(verificationId, verificationCode, email, fullName):
+                                CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
                             default:
                                 EmptyView()
                             }
