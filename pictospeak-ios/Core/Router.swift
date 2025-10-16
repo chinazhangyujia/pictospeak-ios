@@ -26,6 +26,7 @@ enum AppRoute: Hashable {
     case auth(initialMode: AuthMode)
     case verificationCode(email: String, flowType: FlowType, fullName: String?)
     case createNewPassword(verificationId: String, verificationCode: String, email: String, fullName: String?)
+    case subscription
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -73,6 +74,8 @@ enum AppRoute: Hashable {
             hasher.combine(verificationCode)
             hasher.combine(email)
             hasher.combine(fullName)
+        case .subscription:
+            hasher.combine(13)
         }
     }
 
@@ -104,6 +107,8 @@ enum AppRoute: Hashable {
             return lhsEmail == rhsEmail && lhsFlowType == rhsFlowType && lhsFullName == rhsFullName
         case let (.createNewPassword(lhsVerificationId, lhsVerificationCode, lhsEmail, lhsFullName), .createNewPassword(rhsVerificationId, rhsVerificationCode, rhsEmail, rhsFullName)):
             return lhsVerificationId == rhsVerificationId && lhsVerificationCode == rhsVerificationCode && lhsEmail == rhsEmail && lhsFullName == rhsFullName
+        case (.subscription, .subscription):
+            return true
         default:
             return false
         }
