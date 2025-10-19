@@ -6,13 +6,20 @@
 //
 
 import SwiftUI
+import StoreKit
 
 struct SubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var contentViewModel: ContentViewModel
+    @StateObject private var storeKitManager = StoreKitManager.shared
     @State private var selectedPlan: SubscriptionPlan = .yearly
     @State private var policyData: SubscriptionPolicyResponse?
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var isPurchasing = false
+    @State private var showPurchaseSuccess = false
+    @State private var showPurchaseError = false
+    @State private var purchaseErrorMessage: String?
     
     enum SubscriptionPlan: CaseIterable {
         case monthly, yearly
@@ -163,16 +170,26 @@ struct SubscriptionView: View {
                         // CTA Button Section
                         VStack(spacing: 16) {
                             Button(action: {
-                                // Handle subscription purchase
+                                Task {
+                                    await handlePurchase()
+                                }
                             }) {
-                                Text(trialButtonText)
-                                    .font(.system(size: 17, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 52)
-                                    .background(AppTheme.primaryBlue)
-                                    .clipShape(RoundedRectangle(cornerRadius: 100))
+                                HStack(spacing: 8) {
+                                    if isPurchasing {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(0.8)
+                                    }
+                                    Text(isPurchasing ? "Processing..." : trialButtonText)
+                                        .font(.system(size: 17, weight: .medium))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(isPurchasing ? AppTheme.primaryBlue.opacity(0.7) : AppTheme.primaryBlue)
+                                .clipShape(RoundedRectangle(cornerRadius: 100))
                             }
+                            .disabled(isPurchasing)
                             .padding(.horizontal, 20)
                             
                             Text(subscriptionDetailsText)
@@ -233,12 +250,22 @@ struct SubscriptionView: View {
                 
                         // Footer Section
                         Button(action: {
-                            // Handle restore purchases
+                            Task {
+                                await handleRestorePurchases()
+                            }
                         }) {
-                            Text("Restore Purchases")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundColor(AppTheme.primaryBlue)
+                            HStack(spacing: 8) {
+                                if isPurchasing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.primaryBlue))
+                                        .scaleEffect(0.8)
+                                }
+                                Text("Restore Purchases")
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(AppTheme.primaryBlue)
+                            }
                         }
+                        .disabled(isPurchasing)
                         
                         HStack(spacing: 24) {
                             Button(action: {
@@ -287,6 +314,18 @@ struct SubscriptionView: View {
         .toolbar(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .alert("Purchase Successful", isPresented: $showPurchaseSuccess) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your subscription has been activated. Enjoy unlimited access!")
+        }
+        .alert("Purchase Failed", isPresented: $showPurchaseError) {
+            Button("OK") { }
+        } message: {
+            Text(purchaseErrorMessage ?? "An error occurred during purchase. Please try again.")
+        }
         .onAppear {
             Task {
                 await loadSubscriptionPolicy()
@@ -327,6 +366,72 @@ struct SubscriptionView: View {
             errorMessage = error.localizedDescription
             isLoading = false
         }
+    }
+    
+    func handlePurchase() async {
+        guard !isPurchasing else { return }
+        
+        isPurchasing = true
+        purchaseErrorMessage = nil
+        
+        do {
+            // Get the selected product
+            let product: Product?
+            if selectedPlan == .monthly {
+                product = storeKitManager.monthlyProduct
+            } else {
+                product = storeKitManager.yearlyProduct
+            }
+            
+            guard let selectedProduct = product else {
+                purchaseErrorMessage = "Product not available. Please try again later."
+                showPurchaseError = true
+                isPurchasing = false
+                return
+            }
+            
+            // Start the purchase
+            let transaction = try await storeKitManager.purchase(selectedProduct, authToken: contentViewModel.authToken)
+            
+            if transaction != nil {
+                // Purchase successful
+                showPurchaseSuccess = true
+            } else {
+                // Purchase was cancelled or is pending
+                purchaseErrorMessage = "Purchase was cancelled or is pending approval."
+                showPurchaseError = true
+            }
+            
+        } catch {
+            purchaseErrorMessage = error.localizedDescription
+            showPurchaseError = true
+        }
+        
+        isPurchasing = false
+    }
+    
+    func handleRestorePurchases() async {
+        guard !isPurchasing else { return }
+        
+        isPurchasing = true
+        purchaseErrorMessage = nil
+        
+        do {
+            try await storeKitManager.restorePurchases(authToken: contentViewModel.authToken)
+            
+            if storeKitManager.hasActiveSubscription {
+                purchaseErrorMessage = "Purchases restored successfully!"
+                showPurchaseSuccess = true
+            } else {
+                purchaseErrorMessage = "No active subscriptions found to restore."
+                showPurchaseError = true
+            }
+        } catch {
+            purchaseErrorMessage = "Failed to restore purchases: \(error.localizedDescription)"
+            showPurchaseError = true
+        }
+        
+        isPurchasing = false
     }
 }
 

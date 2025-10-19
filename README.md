@@ -12,6 +12,14 @@ A SwiftUI-based iOS application for capturing and processing images and videos.
 - **Gallery Access**: Select images from photo library
 - **Permission Handling**: Proper camera and photo library permission requests
 
+### Subscription System
+
+- **Apple In-App Purchases**: Full StoreKit 2 integration
+- **Free Trial**: 7-day free trial for new users
+- **Multiple Plans**: Monthly and yearly subscription options
+- **Restore Purchases**: Seamlessly restore subscriptions across devices
+- **Sandbox Testing**: Complete testing environment for development
+
 ### UI Components
 
 - **Navigation**: Back button to return to home screen
@@ -67,15 +75,66 @@ These permissions are configured in the project settings and will prompt the use
 3. Build and run on a physical device (camera features require a real device)
 4. Grant camera and photo library permissions when prompted
 
+### Testing In-App Purchases
+
+For testing subscriptions:
+
+**Quick Start (Local Testing)**:
+
+1. Edit Scheme: **Product** > **Scheme** > **Edit Scheme...**
+2. Go to **Run** > **Options**
+3. Set **StoreKit Configuration** to `pictospeak-ios.storekit`
+4. Run the app and test purchases without any setup!
+
+**For detailed testing instructions**, see:
+
+- **Quick Start**: `QUICK_START_IAP_TESTING.md` - Fast setup for immediate testing
+- **Complete Guide**: `SANDBOX_TESTING_GUIDE.md` - Comprehensive testing documentation
+
 ## File Structure
 
 ```
 pictospeak-ios/
 ├── Views/
 │   ├── Capture/
-│   │   └── CaptureView.swift      # Main capture interface
+│   │   └── CaptureView.swift              # Main capture interface
+│   ├── Subscription/
+│   │   └── SubscriptionView.swift         # Subscription and payment UI
 │   └── Home/
-│       └── HomeView.swift         # Home screen with navigation
-├── pictospeak_iosApp.swift        # App entry point
-└── ContentView.swift              # Root view controller
+│       └── HomeView.swift                 # Home screen with navigation
+├── Services/
+│   ├── StoreKitManager.swift              # Apple IAP management
+│   ├── SubscriptionService.swift          # Backend subscription API
+│   └── ...
+├── Models/
+│   ├── SubscriptionModels.swift           # Subscription data models
+│   └── ...
+├── pictospeak-ios.storekit                # StoreKit configuration for testing
+├── pictospeak_iosApp.swift                # App entry point
+└── ContentView.swift                      # Root view controller
 ```
+
+## Key Components
+
+### StoreKit Integration
+
+- **StoreKitManager**: Handles all Apple IAP operations
+
+  - Product loading and caching
+  - Purchase processing with free trial support
+  - Transaction verification
+  - Subscription restoration
+  - Backend synchronization
+
+- **SubscriptionView**: Modern UI for subscription plans
+  - Monthly and yearly pricing cards
+  - Feature comparison
+  - Free trial callout
+  - Restore purchases functionality
+
+### Backend Integration
+
+- **SubscriptionService**: Communicates with backend API
+  - Fetches subscription policy
+  - Verifies purchases server-side
+  - Syncs subscription status

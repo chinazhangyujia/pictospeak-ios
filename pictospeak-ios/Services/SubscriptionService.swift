@@ -72,6 +72,64 @@ class SubscriptionService {
             throw SubscriptionError.unknownError
         }
     }
+    
+    /// Verifies a purchase with the backend server
+    /// - Parameters:
+    ///   - authToken: User authentication token
+    ///   - transactionId: The Apple transaction ID
+    ///   - productId: The product identifier (e.g., com.pictospeak.monthly)
+    ///   - receiptData: The JWS token from transaction.jwsRepresentation (cryptographically signed by Apple)
+    func verifyPurchase(authToken: String, transactionId: String, productId: String, receiptData: String) async throws {
+        guard let url = URL(string: baseURL + "/subscription/verify-purchase") else {
+            throw SubscriptionError.invalidURL
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 30
+        
+        // Add auth token if available
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        
+        let requestBody: [String: Any] = [
+            "transaction_id": transactionId,
+            "product_id": productId,
+            "receipt_data": receiptData,
+        ]
+        
+        urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        print("🌐 Verifying purchase with backend: \(transactionId)")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw SubscriptionError.serverError
+            }
+            
+            print("📡 Purchase verification response status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Purchase verification failed: \(httpResponse.statusCode)")
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                throw SubscriptionError.serverError
+            }
+            
+            print("✅ Purchase verified with backend")
+            
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            throw SubscriptionError.networkError
+        } catch {
+            print("❌ Unexpected error during purchase verification: \(error)")
+            throw SubscriptionError.unknownError
+        }
+    }
 }
 
 // MARK: - Error Types
@@ -82,6 +140,8 @@ enum SubscriptionError: Error, LocalizedError {
     case serverError
     case networkError
     case unknownError
+    case purchaseFailed
+    case purchaseCancelled
     
     var errorDescription: String? {
         switch self {
@@ -95,6 +155,10 @@ enum SubscriptionError: Error, LocalizedError {
             return "Network error occurred"
         case .unknownError:
             return "Unknown error occurred"
+        case .purchaseFailed:
+            return "Purchase failed. Please try again."
+        case .purchaseCancelled:
+            return "Purchase was cancelled"
         }
     }
 }
