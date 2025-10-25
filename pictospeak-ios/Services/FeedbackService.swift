@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 
 class FeedbackService {
-    private let baseURL = "http://127.0.0.1:8000" // Local FastAPI server - use 127.0.0.1 for simulator
+    private let baseURL = APIConfiguration.baseURL
 
     // MARK: - Singleton
 

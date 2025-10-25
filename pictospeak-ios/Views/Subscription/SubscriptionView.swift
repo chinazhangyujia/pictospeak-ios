@@ -5,8 +5,8 @@
 //  Created by AI Assistant
 //
 
-import SwiftUI
 import StoreKit
+import SwiftUI
 
 struct SubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
@@ -20,17 +20,17 @@ struct SubscriptionView: View {
     @State private var showPurchaseSuccess = false
     @State private var showPurchaseError = false
     @State private var purchaseErrorMessage: String?
-    
+
     enum SubscriptionPlan: CaseIterable {
         case monthly, yearly
-        
+
         var title: String {
             switch self {
             case .monthly: return "Monthly"
             case .yearly: return "Yearly"
             }
         }
-        
+
         func price(from policyData: SubscriptionPolicyResponse?) -> String {
             guard let policyData = policyData else {
                 switch self {
@@ -38,20 +38,20 @@ struct SubscriptionView: View {
                 case .yearly: return "$69.99"
                 }
             }
-            
+
             switch self {
             case .monthly: return String(format: "$%.2f", policyData.price.monthly)
             case .yearly: return String(format: "$%.2f", policyData.price.yearly)
             }
         }
-        
+
         var period: String {
             switch self {
             case .monthly: return "per month"
             case .yearly: return "per year"
             }
         }
-        
+
         func monthlyEquivalent(from policyData: SubscriptionPolicyResponse?) -> String? {
             guard let policyData = policyData else {
                 switch self {
@@ -59,7 +59,7 @@ struct SubscriptionView: View {
                 case .yearly: return "≈ $5.83 / month"
                 }
             }
-            
+
             switch self {
             case .monthly: return nil
             case .yearly:
@@ -67,7 +67,7 @@ struct SubscriptionView: View {
                 return String(format: "≈ $%.2f / month", monthlyPrice)
             }
         }
-        
+
         func savings(from policyData: SubscriptionPolicyResponse?) -> String? {
             guard let policyData = policyData else {
                 switch self {
@@ -75,7 +75,7 @@ struct SubscriptionView: View {
                 case .yearly: return "Save 27%"
                 }
             }
-            
+
             switch self {
             case .monthly: return nil
             case .yearly:
@@ -84,7 +84,7 @@ struct SubscriptionView: View {
                 return String(format: "Save %.0f%%", savingsPercent)
             }
         }
-        
+
         var isRecommended: Bool {
             switch self {
             case .monthly: return false
@@ -92,7 +92,7 @@ struct SubscriptionView: View {
             }
         }
     }
-    
+
     var body: some View {
         Group {
             if isLoading {
@@ -140,14 +140,14 @@ struct SubscriptionView: View {
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.black)
                                 .multilineTextAlignment(.center)
-                            
+
                             Text("Get quick, useful feedback with image-based practice.")
                                 .font(.system(size: 17))
                                 .foregroundColor(AppTheme.gray3c3c4360)
                                 .multilineTextAlignment(.center)
                         }
                         .padding(.horizontal, 32)
-                
+
                         // Pricing Cards Section
                         HStack(spacing: 16) {
                             // Monthly Card
@@ -157,7 +157,7 @@ struct SubscriptionView: View {
                                 policyData: policyData,
                                 onTap: { selectedPlan = .monthly }
                             )
-                            
+
                             // Yearly Card
                             SubscriptionPlanCard(
                                 plan: .yearly,
@@ -165,8 +165,8 @@ struct SubscriptionView: View {
                                 policyData: policyData,
                                 onTap: { selectedPlan = .yearly }
                             )
-                        }                        
-                
+                        }
+
                         // CTA Button Section
                         VStack(spacing: 16) {
                             Button(action: {
@@ -191,19 +191,19 @@ struct SubscriptionView: View {
                             }
                             .disabled(isPurchasing)
                             .padding(.horizontal, 20)
-                            
+
                             Text(subscriptionDetailsText)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(AppTheme.primaryBlue)
                                 .multilineTextAlignment(.center)
                         }
-                
+
                         // What's Included Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("What's included:")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(.black)
-                            
+
                             VStack(alignment: .leading, spacing: 12) {
                                 if let features = policyData?.featuresIncluded.features {
                                     ForEach(features, id: \.self) { feature in
@@ -215,13 +215,13 @@ struct SubscriptionView: View {
                         .padding(24)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 26))
-                
+
                         // Usage Limits Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Usage limits:")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(.black)
-                            
+
                             VStack(alignment: .leading, spacing: 8) {
                                 if let limits = policyData?.usageLimits.usageLimits {
                                     ForEach(limits, id: \.self) { limit in
@@ -231,13 +231,13 @@ struct SubscriptionView: View {
                                             .foregroundColor(AppTheme.gray3c3c4360)
                                     }
                                 }
-                                
+
                                 Divider()
-                                
+
                                 if let clauses = policyData?.usageLimits.additionalClauses {
                                     ForEach(clauses, id: \.self) { clause in
                                         Text(clause)
-                                            .font(.system(size: 15))    
+                                            .font(.system(size: 15))
                                             .lineSpacing(22 - 15)
                                             .foregroundColor(AppTheme.gray3c3c4360)
                                     }
@@ -247,7 +247,7 @@ struct SubscriptionView: View {
                         .padding(24)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 26))
-                
+
                         // Footer Section
                         Button(action: {
                             Task {
@@ -266,7 +266,7 @@ struct SubscriptionView: View {
                             }
                         }
                         .disabled(isPurchasing)
-                        
+
                         HStack(spacing: 24) {
                             Button(action: {
                                 // Handle terms of use
@@ -275,7 +275,7 @@ struct SubscriptionView: View {
                                     .font(.system(size: 15))
                                     .foregroundColor(AppTheme.primaryBlue)
                             }
-                            
+
                             Button(action: {
                                 // Handle privacy policy
                             }) {
@@ -284,7 +284,7 @@ struct SubscriptionView: View {
                                     .foregroundColor(AppTheme.primaryBlue)
                             }
                         }
-                        
+
                         Text(policyData?.purchasePolicy.policy ?? "")
                             .font(.system(size: 11))
                             .foregroundColor(AppTheme.gray3c3c4360)
@@ -322,7 +322,7 @@ struct SubscriptionView: View {
             Text("Your subscription has been activated. Enjoy unlimited access!")
         }
         .alert("Purchase Failed", isPresented: $showPurchaseError) {
-            Button("OK") { }
+            Button("OK") {}
         } message: {
             Text(purchaseErrorMessage ?? "An error occurred during purchase. Please try again.")
         }
@@ -332,32 +332,32 @@ struct SubscriptionView: View {
             }
         }
     }
-    
+
     // MARK: - Helper Properties
-    
+
     var trialButtonText: String {
         guard let trialDays = policyData?.freeTrial.days else {
             return "Start 7-day free trial"
         }
         return "Start \(trialDays)-day free trial"
     }
-    
+
     var subscriptionDetailsText: String {
         guard let policyData = policyData else {
             return "Then $69.99/year, cancel anytime."
         }
-        
+
         let price = selectedPlan == .yearly ? policyData.price.yearly : policyData.price.monthly
         let period = selectedPlan == .yearly ? "year" : "month"
         return String(format: "Then $%.2f/%@, cancel anytime.", price, period)
     }
-    
+
     // MARK: - Helper Methods
-    
+
     func loadSubscriptionPolicy() async {
         isLoading = true
         errorMessage = nil
-        
+
         do {
             let policy = try await SubscriptionService.shared.fetchSubscriptionPolicy()
             policyData = policy
@@ -367,13 +367,13 @@ struct SubscriptionView: View {
             isLoading = false
         }
     }
-    
+
     func handlePurchase() async {
         guard !isPurchasing else { return }
-        
+
         isPurchasing = true
         purchaseErrorMessage = nil
-        
+
         do {
             // Get the selected product
             let product: Product?
@@ -382,17 +382,17 @@ struct SubscriptionView: View {
             } else {
                 product = storeKitManager.yearlyProduct
             }
-            
+
             guard let selectedProduct = product else {
                 purchaseErrorMessage = "Product not available. Please try again later."
                 showPurchaseError = true
                 isPurchasing = false
                 return
             }
-            
+
             // Start the purchase
             let transaction = try await storeKitManager.purchase(selectedProduct, authToken: contentViewModel.authToken)
-            
+
             if transaction != nil {
                 // Purchase successful
                 showPurchaseSuccess = true
@@ -401,24 +401,24 @@ struct SubscriptionView: View {
                 purchaseErrorMessage = "Purchase was cancelled or is pending approval."
                 showPurchaseError = true
             }
-            
+
         } catch {
             purchaseErrorMessage = error.localizedDescription
             showPurchaseError = true
         }
-        
+
         isPurchasing = false
     }
-    
+
     func handleRestorePurchases() async {
         guard !isPurchasing else { return }
-        
+
         isPurchasing = true
         purchaseErrorMessage = nil
-        
+
         do {
             try await storeKitManager.restorePurchases(authToken: contentViewModel.authToken)
-            
+
             if storeKitManager.hasActiveSubscription {
                 purchaseErrorMessage = "Purchases restored successfully!"
                 showPurchaseSuccess = true
@@ -430,7 +430,7 @@ struct SubscriptionView: View {
             purchaseErrorMessage = "Failed to restore purchases: \(error.localizedDescription)"
             showPurchaseError = true
         }
-        
+
         isPurchasing = false
     }
 }
@@ -442,37 +442,37 @@ struct SubscriptionPlanCard: View {
     let isSelected: Bool
     let policyData: SubscriptionPolicyResponse?
     let onTap: () -> Void
-    
+
     var body: some View {
         Button(action: onTap) {
             ZStack {
                 // Main card content
                 VStack(spacing: 8) {
                     Spacer()
-                    
+
                     // Price and period
                     VStack(spacing: 4) {
                         Text(plan.price(from: policyData))
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(isSelected ? .white : .black)
-                        
+
                         Text(plan.period)
                             .font(.system(size: 17))
                             .foregroundColor(isSelected ? .white : .black)
-                        
+
                         if let monthlyEquivalent = plan.monthlyEquivalent(from: policyData) {
                             Text(monthlyEquivalent)
                                 .font(.system(size: 14))
                                 .foregroundColor(isSelected ? .white.opacity(0.8) : .black)
                         }
-                        
+
                         if let savings = plan.savings(from: policyData) {
                             Text(savings)
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(isSelected ? .white : .black)
                         }
                     }
-                    
+
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -483,7 +483,7 @@ struct SubscriptionPlanCard: View {
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(isSelected ? AppTheme.primaryBlue : Color.clear, lineWidth: 2)
                 )
-                
+
                 // Floating recommended badge
                 if plan.isRecommended {
                     VStack {
@@ -503,7 +503,7 @@ struct SubscriptionPlanCard: View {
                     }
                     .padding(.top, -12)
                 }
-                
+
                 // Floating checkmark indicator
                 if isSelected {
                     VStack {
@@ -531,22 +531,22 @@ struct SubscriptionPlanCard: View {
 
 struct FeatureRow: View {
     let text: String
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "checkmark")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color.white)
                 .frame(width: 20, height: 20)
-                .background(Color(red: 0x34/255, green: 0xC7/255, blue: 0x59/255))
+                .background(Color(red: 0x34 / 255, green: 0xC7 / 255, blue: 0x59 / 255))
                 .clipShape(Circle())
-            
+
             Text(text)
                 .font(.system(size: 15))
                 .lineSpacing(22 - 15)
                 .foregroundColor(.black)
                 .multilineTextAlignment(.leading)
-            
+
             Spacer()
         }
     }

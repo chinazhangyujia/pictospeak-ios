@@ -15,7 +15,7 @@ struct SubscriptionPolicyResponse: Codable {
     let featuresIncluded: FeaturesInfo
     let usageLimits: UsageLimitsInfo
     let purchasePolicy: PurchasePolicyInfo
-    
+
     enum CodingKeys: String, CodingKey {
         case price
         case freeTrial = "free_trial"
@@ -41,7 +41,7 @@ struct FeaturesInfo: Codable {
 struct UsageLimitsInfo: Codable {
     let usageLimits: [String]
     let additionalClauses: [String]
-    
+
     enum CodingKeys: String, CodingKey {
         case usageLimits = "usage_limits"
         case additionalClauses = "additional_clauses"
