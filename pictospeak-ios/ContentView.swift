@@ -45,6 +45,8 @@ struct ContentView: View {
                                         VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
                                     case let .createNewPassword(verificationId, verificationCode, email, fullName):
                                         CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
+                                    case .subscription:
+                                        SubscriptionView()
                                     default:
                                         EmptyView()
                                     }

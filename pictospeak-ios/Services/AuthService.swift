@@ -8,7 +8,7 @@
 import Foundation
 
 class AuthService {
-    private let baseURL = "http://127.0.0.1:8000" // Local FastAPI server
+    private let baseURL = APIConfiguration.baseURL
     private let keychainManager = KeychainManager.shared
 
     // MARK: - Singleton
