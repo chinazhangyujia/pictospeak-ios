@@ -47,6 +47,8 @@ struct ContentView: View {
                                         CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
                                     case .subscription:
                                         SubscriptionView()
+                                    case .settings:
+                                        SettingView()
                                     default:
                                         EmptyView()
                                     }

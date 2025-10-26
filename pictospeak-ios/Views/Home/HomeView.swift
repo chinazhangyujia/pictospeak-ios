@@ -86,8 +86,7 @@ struct HomeView: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
-                    // contentViewModel.signOut()
-                    router.goTo(.subscription)
+                    router.goTo(.settings)
                 }) {
                     Image(systemName: "gearshape")
                         .font(.system(size: 18, weight: .regular))
