@@ -11,18 +11,18 @@ import SwiftUI
 @MainActor
 class ContentViewModel: ObservableObject {
     @Published var authToken: String?
-    @Published var userSetting: UserSetting?
+    @Published var userInfo: UserInfo = .init(user: nil, userSetting: nil)
     @Published var hasOnboardingCompleted: Bool = false
     @Published var isLoading = false
     @Published var error: String?
 
-    private let userSettingService = UserSettingService.shared
+    private let userService = UserService.shared
     private let authService = AuthService.shared
 
     init() {
         Task {
             await readAuthTokenFromKeychain()
-            await loadUserSettings()
+            await loadUserInfo()
             loadOnboardingCompleted()
         }
     }
@@ -41,15 +41,15 @@ class ContentViewModel: ObservableObject {
         authToken = KeychainManager.shared.getToken()
     }
 
-    /// Loads user settings from backend or UserDefaults based on auth token
-    func loadUserSettings() async {
+    /// Loads user info from backend or UserDefaults based on auth token
+    func loadUserInfo() async {
         isLoading = true
         error = nil
 
         // If no auth token, try to fetch from UserDefaults (pre-signup settings)
         if authToken == nil {
             if let preSignUpUserSetting = UserDefaultManager.shared.getPreSignUpUserSetting() {
-                userSetting = preSignUpUserSetting
+                userInfo = UserInfo(user: nil, userSetting: preSignUpUserSetting)
                 print("✅ User settings loaded from UserDefaults (pre-signup)")
             } else {
                 print("📝 No pre-signup user settings found in UserDefaults")
@@ -57,11 +57,11 @@ class ContentViewModel: ObservableObject {
         } else {
             // User is authenticated, fetch from backend
             do {
-                userSetting = try await userSettingService.getUserSettings(authToken: authToken!)
-                print("✅ User settings loaded successfully from backend")
+                userInfo = try await userService.getUserInfo(authToken: authToken!)
+                print("✅ User info loaded successfully from backend")
             } catch {
                 self.error = error.localizedDescription
-                print("❌ Failed to load user settings from backend: \(error)")
+                print("❌ Failed to load user info from backend: \(error)")
             }
         }
 
@@ -70,7 +70,7 @@ class ContentViewModel: ObservableObject {
 
     func signOut() {
         authToken = nil
-        userSetting = nil
+        userInfo = UserInfo(user: nil, userSetting: nil)
         authService.signOut()
         let hasOnboardingCompleted = UserDefaultManager.shared.getValue(Bool.self, forKey: UserDefaultKeys.hasOnboardingCompleted) ?? false
         print("✅ Got onboarding completed from UserDefaults when sign out \(hasOnboardingCompleted)")
@@ -79,13 +79,13 @@ class ContentViewModel: ObservableObject {
     /// Sets the user setting (called when user completes onboarding)
     /// - Parameter userSetting: The user setting to set
     func setUserSetting(_ userSetting: UserSetting) {
-        self.userSetting = userSetting
+        userInfo = UserInfo(user: userInfo.user, userSetting: userSetting)
         print("✅ User setting updated: \(userSetting.targetLanguage) -> \(userSetting.nativeLanguage)")
     }
 
-    /// Clears the user setting (for testing or logout purposes)
+    /// Clears the user info (for testing or logout purposes)
     func clearUserSetting() {
-        userSetting = nil
-        print("✅ User setting cleared")
+        userInfo = UserInfo(user: nil, userSetting: nil)
+        print("✅ User info cleared")
     }
 }

@@ -28,8 +28,11 @@ class SettingViewModel: ObservableObject {
     func loadUserInfo(from contentViewModel: ContentViewModel) {
         isLoading = true
 
-        // Load user settings from ContentViewModel
-        if let userSetting = contentViewModel.userSetting {
+        // Load user info from ContentViewModel
+        let userInfo = contentViewModel.userInfo
+
+        // Load user settings if available
+        if let userSetting = userInfo.userSetting {
             targetLanguage = userSetting.targetLanguage.capitalized
             teachingLanguage = userSetting.nativeLanguage.capitalized
 
@@ -37,11 +40,18 @@ class SettingViewModel: ObservableObject {
             targetLanguageFlag = getLanguageFlag(for: userSetting.targetLanguage)
         }
 
-        // TODO: Load user profile data (name, learning days) from backend
-        // For now, set placeholder values
-        userName = "User" // Should come from API
-        userInitial = userName?.first.map { String($0) } ?? "U"
-        learningDays = 0 // Should come from API
+        // Load user profile data if available
+        if let user = userInfo.user {
+            userName = user.nickname
+            userInitial = user.nickname.first.map { String($0) } ?? "U"
+            learningDays = calculateLearningDays(from: user.createdAt)
+        } else {
+            // Pre-auth state, use placeholder values
+            userName = "User"
+            userInitial = "U"
+            learningDays = 0
+        }
+
         systemLanguage = Locale.current.language.languageCode?.identifier.capitalized ?? "English"
 
         isLoading = false
@@ -51,6 +61,25 @@ class SettingViewModel: ObservableObject {
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             appVersion = "v\(version)"
         }
+    }
+
+    private func calculateLearningDays(from createdAt: String) -> Int {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        guard let createdDate = formatter.date(from: createdAt) else {
+            print("❌ Failed to parse createdAt date: \(createdAt)")
+            return 0
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        let components = calendar.dateComponents([.day], from: createdDate, to: now)
+        let days = components.day ?? 0
+
+        // Return at least 0 (if account was created today) or the number of days
+        return max(0, days)
     }
 
     private func getLanguageFlag(for language: String) -> String {

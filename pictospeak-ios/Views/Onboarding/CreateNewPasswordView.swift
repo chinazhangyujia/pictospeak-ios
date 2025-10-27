@@ -255,7 +255,7 @@ struct CreateNewPasswordView: View {
 
                     // Get pre-signup user settings if available
                     let userSetting: UserSetting
-                    if let contentUserSetting = contentViewModel.userSetting {
+                    if let contentUserSetting = contentViewModel.userInfo.userSetting {
                         userSetting = contentUserSetting
                         print("✅ Using user setting from ContentViewModel")
                     } else if let preSignUpUserSetting = UserDefaultManager.shared.getPreSignUpUserSetting() {
@@ -285,7 +285,7 @@ struct CreateNewPasswordView: View {
                     UserDefaultManager.shared.delete(forKey: UserDefaultKeys.hasOnboardingCompleted)
 
                     await contentViewModel.readAuthTokenFromKeychain()
-                    await contentViewModel.loadUserSettings()
+                    await contentViewModel.loadUserInfo()
 
                     await MainActor.run {
                         isLoading = false
@@ -305,9 +305,9 @@ struct CreateNewPasswordView: View {
                         verificationCode: verificationCode
                     )
 
-                    // Load auth token and user settings into content view model
+                    // Load auth token and user info into content view model
                     await contentViewModel.readAuthTokenFromKeychain()
-                    await contentViewModel.loadUserSettings()
+                    await contentViewModel.loadUserInfo()
 
                     await MainActor.run {
                         isLoading = false

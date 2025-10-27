@@ -7,23 +7,6 @@
 
 import Foundation
 
-// MARK: - Temporary API Response Model for Backend
-
-private struct BackendLanguageResponse: Codable {
-    let code: String
-    let name: String
-}
-
-private struct BackendUserSettingResponse: Codable {
-    let nativeLanguage: BackendLanguageResponse
-    let targetLanguage: BackendLanguageResponse
-
-    private enum CodingKeys: String, CodingKey {
-        case nativeLanguage = "native_language"
-        case targetLanguage = "target_language"
-    }
-}
-
 class UserSettingService {
     private let baseURL = APIConfiguration.baseURL
 
