@@ -41,6 +41,10 @@ struct ContentView: View {
                                         ReviewView()
                                     case .auth:
                                         AuthView()
+                                    case let .onboardingTargetLanguage(sourceView):
+                                        OnboardingTargetLanguageView(sourceView: sourceView)
+                                    case let .onboardingNativeLanguage(selectedTargetLanguage, sourceView):
+                                        OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage, sourceView: sourceView)
                                     case let .verificationCode(email, flowType, fullName):
                                         VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
                                     case let .createNewPassword(verificationId, verificationCode, email, fullName):
@@ -49,6 +53,8 @@ struct ContentView: View {
                                         SubscriptionView()
                                     case .settings:
                                         SettingView()
+                                    case .editProfile:
+                                        EditProfileView()
                                     default:
                                         EmptyView()
                                     }
@@ -98,10 +104,10 @@ struct ContentView: View {
                     OnboardingTargetLanguageView()
                         .navigationDestination(for: AppRoute.self) { route in
                             switch route {
-                            case .onboardingTargetLanguage:
-                                OnboardingTargetLanguageView()
-                            case let .onboardingNativeLanguage(selectedTargetLanguage):
-                                OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage)
+                            case let .onboardingTargetLanguage(sourceView):
+                                OnboardingTargetLanguageView(sourceView: sourceView)
+                            case let .onboardingNativeLanguage(selectedTargetLanguage, sourceView):
+                                OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage, sourceView: sourceView)
                             case let .auth(initialMode):
                                 AuthView(initialMode: initialMode)
                             case let .verificationCode(email, flowType, fullName):

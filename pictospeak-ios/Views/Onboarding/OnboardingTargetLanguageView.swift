@@ -9,7 +9,13 @@ import SwiftUI
 
 struct OnboardingTargetLanguageView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
+    @EnvironmentObject private var router: Router
+    let sourceView: SourceView?
     @State private var selectedLanguage: String = "English"
+
+    init(sourceView: SourceView? = nil) {
+        self.sourceView = sourceView
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -59,7 +65,11 @@ struct OnboardingTargetLanguageView: View {
 
             // Continue button
             Button(action: {
-                onboardingRouter.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage))
+                if sourceView == .settings {
+                    router.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage, sourceView: .settings))
+                } else {
+                    onboardingRouter.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage, sourceView: nil))
+                }
             }) {
                 Text("Continue")
                     .font(.system(size: 17, weight: .medium))
@@ -75,7 +85,8 @@ struct OnboardingTargetLanguageView: View {
             .padding(.horizontal, 20)
         }
         .background(AppTheme.viewBackgroundGray)
-        .navigationBarHidden(true)
+        .navigationBarHidden(sourceView == nil)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func toggleLanguage(_ language: String) {

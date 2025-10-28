@@ -80,7 +80,7 @@ class UserSettingService {
 
     /// Updates user settings on the backend
     /// - Parameter userSetting: The UserSetting to update
-    func createUserSettings(authToken: String, userSetting: UserSetting) async throws {
+    func upsertUserSettings(authToken: String, userSetting: UserSetting) async throws {
         guard let url = URL(string: baseURL + "/user-setting") else {
             throw UserSettingError.invalidURL
         }

@@ -211,7 +211,7 @@ struct SettingView: View {
 
     private var userProfileSection: some View {
         Button(action: {
-            // Navigate to user profile
+            router.goTo(.editProfile)
         }) {
             HStack(spacing: 16) {
                 // Avatar
@@ -277,7 +277,7 @@ struct SettingView: View {
 
     private var currentlyLearningSection: some View {
         Button(action: {
-            // Navigate to currently learning settings
+            router.goTo(.onboardingTargetLanguage(sourceView: .settings))
         }) {
             HStack(spacing: 10) {
                 // Flag Icon

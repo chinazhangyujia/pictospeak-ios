@@ -98,6 +98,77 @@ class UserService {
             throw UserError.unknownError
         }
     }
+
+    /// Updates the user's nickname
+    /// - Parameters:
+    ///   - authToken: The authentication token
+    ///   - nickname: The new nickname for the user
+    /// - Returns: The updated User object
+    func updateUserProfile(authToken: String, nickname: String) async throws -> User {
+        guard let url = URL(string: baseURL + "/user/nickname") else {
+            throw UserError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "PUT"
+        urlRequest.timeoutInterval = 30
+
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Create request body
+        let requestBody: [String: Any] = ["nickname": nickname]
+
+        do {
+            urlRequest.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            print("❌ Failed to encode request body: \(error)")
+            throw UserError.unknownError
+        }
+
+        print("🌐 Making update user nickname request to: \(url)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw UserError.serverError
+            }
+
+            print("📡 Update user nickname response status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Update nickname API error: \(httpResponse.statusCode)")
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                throw UserError.serverError
+            }
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .useDefaultKeys
+
+            do {
+                let updatedUser = try decoder.decode(User.self, from: data)
+                print("✅ Successfully updated user nickname to: \(updatedUser.nickname)")
+                return updatedUser
+            } catch {
+                print("❌ Decoding error: \(error)")
+                print("❌ Decoding error details: \(error.localizedDescription)")
+                throw UserError.decodingError
+            }
+
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            print("❌ URL Error code: \(urlError.code.rawValue)")
+            throw UserError.networkError
+        } catch {
+            print("❌ Unexpected error: \(error)")
+            throw UserError.unknownError
+        }
+    }
 }
 
 // MARK: - Error Types
