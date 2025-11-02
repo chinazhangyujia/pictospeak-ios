@@ -54,6 +54,16 @@ struct ResetPasswordRequest: Codable {
     }
 }
 
+struct ChangePasswordRequest: Codable {
+    let currentPassword: String
+    let newPassword: String
+
+    private enum CodingKeys: String, CodingKey {
+        case currentPassword = "current_password"
+        case newPassword = "new_password"
+    }
+}
+
 // MARK: - Verification Code Request Models
 
 enum TargetType: String, Codable {

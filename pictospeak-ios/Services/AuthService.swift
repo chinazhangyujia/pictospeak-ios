@@ -331,6 +331,83 @@ class AuthService {
             throw AuthError.unknownError
         }
     }
+
+    /// Changes the user's password using current password
+    /// - Parameters:
+    ///   - authToken: The current authentication token
+    ///   - currentPassword: The user's current password
+    ///   - newPassword: The new password
+    /// - Returns: AuthResponse containing new access token and token type
+    func changePassword(authToken: String, currentPassword: String, newPassword: String) async throws -> AuthResponse {
+        guard let url = URL(string: baseURL + "/auth/change_password") else {
+            throw AuthError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        urlRequest.timeoutInterval = 30
+
+        let changePasswordRequest = ChangePasswordRequest(
+            currentPassword: currentPassword,
+            newPassword: newPassword
+        )
+
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(changePasswordRequest)
+        } catch {
+            throw AuthError.encodingError
+        }
+
+        print("🌐 Making change password request to: \(url)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw AuthError.serverError
+            }
+
+            print("📡 Change password response status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Change password API error: \(httpResponse.statusCode)")
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                throw AuthError.serverError
+            }
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .useDefaultKeys
+
+            do {
+                let authResponse = try decoder.decode(AuthResponse.self, from: data)
+
+                // Save the new access token to keychain
+                let tokenSaved = keychainManager.saveToken(authResponse.accessToken)
+                if tokenSaved {
+                    print("✅ Password changed successfully and saved new token")
+                } else {
+                    print("⚠️ Password changed successfully but failed to save token")
+                }
+
+                return authResponse
+            } catch {
+                print("❌ Decoding error: \(error)")
+                throw AuthError.decodingError
+            }
+
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            throw AuthError.networkError
+        } catch {
+            print("❌ Unexpected error during password change: \(error)")
+            throw AuthError.unknownError
+        }
+    }
 }
 
 // MARK: - Error Types

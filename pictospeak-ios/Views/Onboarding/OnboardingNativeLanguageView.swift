@@ -9,12 +9,15 @@ import SwiftUI
 
 struct OnboardingNativeLanguageView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
+    @EnvironmentObject private var router: Router
     @EnvironmentObject private var contentViewModel: ContentViewModel
     let selectedTargetLanguage: String
+    let sourceView: SourceView?
     @State private var selectedNativeLanguage: String = "Chinese"
 
-    init(selectedTargetLanguage: String) {
+    init(selectedTargetLanguage: String, sourceView: SourceView? = nil) {
         self.selectedTargetLanguage = selectedTargetLanguage
+        self.sourceView = sourceView
     }
 
     var body: some View {
@@ -73,9 +76,15 @@ struct OnboardingNativeLanguageView: View {
 
             Button(action: {
                 completeUserSetting()
-                onboardingRouter.goTo(.auth(initialMode: .signUp))
+                if sourceView == .settings {
+                    // Go back to settings after updating
+                    router.goBack()
+                    router.goBack()
+                } else {
+                    onboardingRouter.goTo(.auth(initialMode: .signUp))
+                }
             }) {
-                Text("Get Started")
+                Text(sourceView == .settings ? "Save" : "Get Started")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -115,7 +124,7 @@ struct OnboardingNativeLanguageView: View {
             // User is authenticated, update user settings on the backend
             Task {
                 do {
-                    try await UserSettingService.shared.createUserSettings(authToken: contentViewModel.authToken!, userSetting: userSetting)
+                    try await UserSettingService.shared.upsertUserSettings(authToken: contentViewModel.authToken!, userSetting: userSetting)
                     print("✅ User settings updated successfully on backend")
                 } catch {
                     print("❌ Failed to update user settings on backend: \(error)")

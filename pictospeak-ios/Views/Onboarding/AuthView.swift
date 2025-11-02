@@ -350,7 +350,7 @@ struct AuthView: View {
             )
 
             await contentViewModel.readAuthTokenFromKeychain()
-            await contentViewModel.loadUserSettings()
+            await contentViewModel.loadUserInfo()
             print("✅ auth token: \(contentViewModel.authToken)")
 
             await MainActor.run {

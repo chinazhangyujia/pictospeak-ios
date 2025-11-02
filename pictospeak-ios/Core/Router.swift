@@ -12,6 +12,10 @@ enum NavTab: Hashable {
     case capture
 }
 
+enum SourceView: Hashable {
+    case settings
+}
+
 enum AppRoute: Hashable {
     case home
     case review
@@ -21,12 +25,16 @@ enum AppRoute: Hashable {
     case speakFromMaterials(materialsModel: InternalUploadedMaterialsViewModel)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
     case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType)
-    case onboardingTargetLanguage
-    case onboardingNativeLanguage(selectedTargetLanguage: String)
+    case onboardingTargetLanguage(sourceView: SourceView?)
+    case onboardingNativeLanguage(selectedTargetLanguage: String, sourceView: SourceView?)
     case auth(initialMode: AuthMode)
     case verificationCode(email: String, flowType: FlowType, fullName: String?)
     case createNewPassword(verificationId: String, verificationCode: String, email: String, fullName: String?)
     case subscription
+    case settings
+    case editProfile
+    case manageAccount
+    case changePassword
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -55,11 +63,13 @@ enum AppRoute: Hashable {
             hasher.combine(selectedVideo?.hashValue ?? 0)
             hasher.combine(audioData.hashValue)
             hasher.combine(mediaType)
-        case .onboardingTargetLanguage:
+        case let .onboardingTargetLanguage(sourceView):
             hasher.combine(8)
-        case let .onboardingNativeLanguage(selectedTargetLanguage):
+            hasher.combine(sourceView.hashValue)
+        case let .onboardingNativeLanguage(selectedTargetLanguage, sourceView):
             hasher.combine(9)
             hasher.combine(selectedTargetLanguage)
+            hasher.combine(sourceView.hashValue)
         case let .auth(initialMode):
             hasher.combine(10)
             hasher.combine(initialMode)
@@ -76,6 +86,14 @@ enum AppRoute: Hashable {
             hasher.combine(fullName)
         case .subscription:
             hasher.combine(13)
+        case .settings:
+            hasher.combine(14)
+        case .editProfile:
+            hasher.combine(15)
+        case .manageAccount:
+            hasher.combine(16)
+        case .changePassword:
+            hasher.combine(17)
         }
     }
 
@@ -97,10 +115,10 @@ enum AppRoute: Hashable {
             return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
         case let (.feedbackFromSpeak(lhsImage, lhsVideo, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsVideo, rhsAudioData, rhsMediaType)):
             return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsAudioData.hashValue == rhsAudioData.hashValue && lhsMediaType == rhsMediaType
-        case (.onboardingTargetLanguage, .onboardingTargetLanguage):
-            return true
-        case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage), .onboardingNativeLanguage(rhsSelectedTargetLanguage)):
-            return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage
+        case let (.onboardingTargetLanguage(lhsSourceView), .onboardingTargetLanguage(rhsSourceView)):
+            return lhsSourceView == rhsSourceView
+        case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage, lhsSourceView), .onboardingNativeLanguage(rhsSelectedTargetLanguage, rhsSourceView)):
+            return lhsSelectedTargetLanguage == rhsSelectedTargetLanguage && lhsSourceView == rhsSourceView
         case let (.auth(lhsInitialMode), .auth(rhsInitialMode)):
             return lhsInitialMode == rhsInitialMode
         case let (.verificationCode(lhsEmail, lhsFlowType, lhsFullName), .verificationCode(rhsEmail, rhsFlowType, rhsFullName)):
@@ -108,6 +126,14 @@ enum AppRoute: Hashable {
         case let (.createNewPassword(lhsVerificationId, lhsVerificationCode, lhsEmail, lhsFullName), .createNewPassword(rhsVerificationId, rhsVerificationCode, rhsEmail, rhsFullName)):
             return lhsVerificationId == rhsVerificationId && lhsVerificationCode == rhsVerificationCode && lhsEmail == rhsEmail && lhsFullName == rhsFullName
         case (.subscription, .subscription):
+            return true
+        case (.settings, .settings):
+            return true
+        case (.editProfile, .editProfile):
+            return true
+        case (.manageAccount, .manageAccount):
+            return true
+        case (.changePassword, .changePassword):
             return true
         default:
             return false

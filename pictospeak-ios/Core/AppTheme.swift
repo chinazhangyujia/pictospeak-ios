@@ -17,6 +17,7 @@ enum AppTheme {
     static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
     static let lightBlueBackground = Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6)
     static let backButtonGray = Color(red: 0.471, green: 0.471, blue: 0.502).opacity(0.16)
+    static let logoutButtonGray = Color(red: 0.463, green: 0.463, blue: 0.502).opacity(0.12) // #7676801F
 
     static let feedbackCardBackground = Color(.white)
     static let feedbackCardTextColor = Color(red: 0.549, green: 0.549, blue: 0.549, opacity: 1.0)
@@ -26,6 +27,8 @@ enum AppTheme {
     static let gray333333 = Color(red: 0x33 / 255, green: 0x33 / 255, blue: 0x33 / 255)
     static let gray3c3c4360 = Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6)
     static let grayd9d9d9 = Color(red: 0xD9 / 255, green: 0xD9 / 255, blue: 0xD9 / 255)
+    static let grayc7c7cc = Color(red: 0xC7 / 255, green: 0xC7 / 255, blue: 0xCC / 255) // Chevron/separator gray
+    static let gray8c8c8c = Color(red: 0x8C / 255, green: 0x8C / 255, blue: 0x8C / 255) // Icon gray
 
     // MARK: - Letter Spacing (Kerning)
 

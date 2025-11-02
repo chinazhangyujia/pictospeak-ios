@@ -1,40 +1,25 @@
 //
-//  CreateNewPasswordView.swift
+//  ChangePasswordView.swift
 //  pictospeak-ios
 //
-//  Created by AI Assistant.
+//  Created by AI Assistant
 //
 
 import SwiftUI
 
-struct CreateNewPasswordView: View {
-    @EnvironmentObject private var onboardingRouter: OnboardingRouter
-    @EnvironmentObject private var contentViewModel: ContentViewModel
+struct ChangePasswordView: View {
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var contentViewModel: ContentViewModel
+    @State private var currentPassword: String = ""
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
+    @State private var isCurrentPasswordVisible: Bool = false
     @State private var isNewPasswordVisible: Bool = false
     @State private var isConfirmPasswordVisible: Bool = false
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
 
-    let verificationId: String
-    let verificationCode: String
-    let email: String
-    let fullName: String?
-
-    init(verificationId: String, verificationCode: String, email: String, fullName: String?) {
-        self.verificationId = verificationId
-        self.verificationCode = verificationCode
-        self.email = email
-        self.fullName = fullName
-    }
-
     // MARK: - Computed Properties
-
-    private var isSignUpFlow: Bool {
-        return fullName != nil
-    }
 
     private var isPasswordValid: Bool {
         return newPassword.count >= 8
@@ -45,7 +30,7 @@ struct CreateNewPasswordView: View {
     }
 
     private var isResetButtonEnabled: Bool {
-        return isPasswordValid && doPasswordsMatch && !isLoading
+        return !currentPassword.isEmpty && isPasswordValid && doPasswordsMatch && !isLoading
     }
 
     var body: some View {
@@ -54,7 +39,7 @@ struct CreateNewPasswordView: View {
             VStack(spacing: 24) {
                 // Title and subtitle
                 VStack(spacing: 12) {
-                    Text("Create new password")
+                    Text("Change Password")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
@@ -64,10 +49,57 @@ struct CreateNewPasswordView: View {
                         .foregroundColor(AppTheme.gray3c3c3c60)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 20)
 
                 // Input fields card
                 VStack(spacing: 20) {
+                    // Current Password field
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Current password")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(AppTheme.gray333333)
+
+                        HStack {
+                            if isCurrentPasswordVisible {
+                                TextField("Enter current password", text: $currentPassword)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                            } else {
+                                SecureField("Enter current password", text: $currentPassword)
+                                    .textFieldStyle(PlainTextFieldStyle())
+                            }
+
+                            Button(action: {
+                                isCurrentPasswordVisible.toggle()
+                            }) {
+                                Image(systemName: isCurrentPasswordVisible ? "eye.slash" : "eye")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(AppTheme.gray3c3c3c60)
+                            }
+                        }
+                        .font(.system(size: 16))
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(AppTheme.grayf8f9fa)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color(red: 0, green: 0, blue: 0, opacity: 15 / 255), lineWidth: 1)
+                                )
+                        )
+
+                        // Forgot Password Link
+                        HStack {
+                            Button(action: {
+                                handleForgotPassword()
+                            }) {
+                                Text("Forgot password?")
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(AppTheme.primaryBlue)
+                            }
+                            Spacer()
+                        }
+                    }
+
                     // New Password field
                     VStack(alignment: .leading, spacing: 8) {
                         Text("New password")
@@ -99,7 +131,7 @@ struct CreateNewPasswordView: View {
                                 .fill(AppTheme.grayf8f9fa)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.black.opacity(0.03), lineWidth: 1)
+                                        .stroke(Color(red: 0, green: 0, blue: 0, opacity: 15 / 255), lineWidth: 1)
                                 )
                         )
                     }
@@ -135,16 +167,16 @@ struct CreateNewPasswordView: View {
                                 .fill(AppTheme.grayf8f9fa)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.black.opacity(0.03), lineWidth: 1)
+                                        .stroke(Color(red: 0, green: 0, blue: 0, opacity: 15 / 255), lineWidth: 1)
                                 )
                         )
                     }
                 }
                 .padding(24)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 26)
                         .fill(Color.white)
-                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.02), radius: 16, x: 0, y: 1)
                 )
 
                 // Password requirements
@@ -199,13 +231,14 @@ struct CreateNewPasswordView: View {
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
+                    .padding(.top, 16)
             }
 
             Spacer()
 
             // Reset password button
             Button(action: {
-                handleResetPassword()
+                handleChangePassword()
             }) {
                 HStack {
                     if isLoading {
@@ -214,7 +247,7 @@ struct CreateNewPasswordView: View {
                             .scaleEffect(0.8)
                     }
 
-                    Text("Set password")
+                    Text("Reset password")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(isResetButtonEnabled ? .white : AppTheme.grayd9d9d9)
                 }
@@ -231,89 +264,77 @@ struct CreateNewPasswordView: View {
         }
         .padding(.horizontal, 16)
         .background(AppTheme.viewBackgroundGray)
+        .navigationBarBackButtonHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: {
+                    router.goBack()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.primary)
+                        .frame(width: 24, height: 24)
+                        .clipShape(Circle())
+                }
+            }
+        }
     }
 
     // MARK: - Actions
 
-    private func handleResetPassword() {
+    private func handleForgotPassword() {
+        guard let email = contentViewModel.userInfo.user?.email else {
+            errorMessage = "Email not found. Please sign in again."
+            return
+        }
+
+        // Navigate to verification code view immediately
+        router.goTo(.verificationCode(email: email, flowType: .resetPassword, fullName: nil))
+
+        // Send verification code in the background (fire and forget)
+        Task {
+            do {
+                try await VerificationCodeService.shared.sendVerificationCode(
+                    targetType: .EMAIL,
+                    targetValue: email,
+                    flowType: .resetPassword
+                )
+            } catch {
+                // Error handling in background - user is already on verification code screen
+                print("❌ Failed to send verification code: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func handleChangePassword() {
         guard isResetButtonEnabled else { return }
+
+        guard let authToken = contentViewModel.authToken else {
+            errorMessage = "You must be logged in to change your password"
+            return
+        }
 
         isLoading = true
         errorMessage = nil
 
         Task {
             do {
-                if isSignUpFlow {
-                    // Sign-up flow - create new account
-                    guard let fullName = fullName else {
-                        await MainActor.run {
-                            self.errorMessage = "Full name is required"
-                            self.isLoading = false
-                        }
-                        return
-                    }
+                // Call change password API
+                let authResponse = try await AuthService.shared.changePassword(
+                    authToken: authToken,
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                )
 
-                    // Get pre-signup user settings if available
-                    let userSetting: UserSetting
-                    if let contentUserSetting = contentViewModel.userInfo.userSetting {
-                        userSetting = contentUserSetting
-                        print("✅ Using user setting from ContentViewModel")
-                    } else if let preSignUpUserSetting = UserDefaultManager.shared.getPreSignUpUserSetting() {
-                        userSetting = preSignUpUserSetting
-                        print("✅ Using user setting from UserDefaultManager")
-                    } else {
-                        print("❌ No user setting found in ContentViewModel or UserDefaultManager. This should not happen.")
-                        await MainActor.run {
-                            self.errorMessage = "User settings not found"
-                            self.isLoading = false
-                        }
-                        return
-                    }
+                // Reload auth token and user info from keychain
+                await contentViewModel.readAuthTokenFromKeychain()
+                await contentViewModel.loadUserInfo()
 
-                    // Call sign-up API with verification data
-                    let authResponse = try await AuthService.shared.signUp(
-                        email: email,
-                        password: newPassword,
-                        nickname: fullName,
-                        userSetting: userSetting,
-                        verificationCodeId: verificationId,
-                        verificationCode: verificationCode
-                    )
-
-                    // Clear pre-signup settings after successful signup
-                    UserDefaultManager.shared.deletePreSignUpUserSetting()
-                    UserDefaultManager.shared.delete(forKey: UserDefaultKeys.hasOnboardingCompleted)
-
-                    await contentViewModel.readAuthTokenFromKeychain()
-                    await contentViewModel.loadUserInfo()
-
-                    await MainActor.run {
-                        isLoading = false
-                        UserDefaultManager.shared.saveValue(true, forKey: UserDefaultKeys.hasOnboardingCompleted)
-                        contentViewModel.hasOnboardingCompleted = true
-
-                        // Reset navigation to home after successful sign-up
-                        router.resetToHome()
-                    }
-                } else {
-                    // Reset password flow
-                    let authResponse = try await AuthService.shared.resetPassword(
-                        targetType: .EMAIL,
-                        targetValue: email,
-                        newPassword: newPassword,
-                        verificationCodeId: verificationId,
-                        verificationCode: verificationCode
-                    )
-
-                    // Load auth token and user info into content view model
-                    await contentViewModel.readAuthTokenFromKeychain()
-                    await contentViewModel.loadUserInfo()
-
-                    await MainActor.run {
-                        isLoading = false
-                        // Reset navigation to home after successful reset password
-                        router.resetToHome()
-                    }
+                await MainActor.run {
+                    isLoading = false
+                    // Navigate back to manage account view after successful password change
+                    router.goBack()
                 }
             } catch {
                 await MainActor.run {
@@ -326,8 +347,9 @@ struct CreateNewPasswordView: View {
 }
 
 #Preview {
-    CreateNewPasswordView(verificationId: "test-id", verificationCode: "123456", email: "test@test.com", fullName: nil)
-        .environmentObject(OnboardingRouter())
-        .environmentObject(ContentViewModel())
-        .environmentObject(Router())
+    NavigationStack {
+        ChangePasswordView()
+            .environmentObject(Router())
+            .environmentObject(ContentViewModel())
+    }
 }
