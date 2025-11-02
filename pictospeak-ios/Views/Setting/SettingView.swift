@@ -13,6 +13,8 @@ struct SettingView: View {
     @StateObject private var viewModel = SettingViewModel()
     @State private var showLogoutAlert = false
     @State private var showFeedbackEmail = false
+    @State private var showTermsOfUse = false
+    @State private var showPrivacyPolicy = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -107,7 +109,7 @@ struct SettingView: View {
                         icon: "doc.text",
                         title: "Terms of Use",
                         action: {
-                            // Navigate to terms of use
+                            showTermsOfUse = true
                         }
                     )
 
@@ -118,7 +120,7 @@ struct SettingView: View {
                         icon: "shield.lefthalf.filled",
                         title: "Privacy Policy",
                         action: {
-                            // Navigate to privacy policy
+                            showPrivacyPolicy = true
                         }
                     )
                 }
@@ -206,6 +208,12 @@ struct SettingView: View {
         .sheet(isPresented: $showFeedbackEmail) {
             FeedbackEmailView()
                 .environmentObject(contentViewModel)
+        }
+        .sheet(isPresented: $showTermsOfUse) {
+            PolicyView(policyType: .termsOfUse)
+        }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PolicyView(policyType: .privacyPolicy)
         }
         .onAppear {
             viewModel.loadUserInfo(from: contentViewModel)
