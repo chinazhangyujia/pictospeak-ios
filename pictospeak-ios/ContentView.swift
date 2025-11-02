@@ -55,6 +55,10 @@ struct ContentView: View {
                                         SettingView()
                                     case .editProfile:
                                         EditProfileView()
+                                    case .manageAccount:
+                                        ManageAccountView()
+                                    case .changePassword:
+                                        ChangePasswordView()
                                     default:
                                         EmptyView()
                                     }

@@ -33,6 +33,8 @@ enum AppRoute: Hashable {
     case subscription
     case settings
     case editProfile
+    case manageAccount
+    case changePassword
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -88,6 +90,10 @@ enum AppRoute: Hashable {
             hasher.combine(14)
         case .editProfile:
             hasher.combine(15)
+        case .manageAccount:
+            hasher.combine(16)
+        case .changePassword:
+            hasher.combine(17)
         }
     }
 
@@ -124,6 +130,10 @@ enum AppRoute: Hashable {
         case (.settings, .settings):
             return true
         case (.editProfile, .editProfile):
+            return true
+        case (.manageAccount, .manageAccount):
+            return true
+        case (.changePassword, .changePassword):
             return true
         default:
             return false

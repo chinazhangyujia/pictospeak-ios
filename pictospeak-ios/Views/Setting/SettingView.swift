@@ -28,7 +28,7 @@ struct SettingView: View {
                         icon: "person.circle",
                         title: "Manage Account",
                         action: {
-                            // Navigate to manage account
+                            router.goTo(.manageAccount)
                         }
                     )
 
