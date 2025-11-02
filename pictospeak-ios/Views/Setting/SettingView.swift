@@ -12,6 +12,7 @@ struct SettingView: View {
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @StateObject private var viewModel = SettingViewModel()
     @State private var showLogoutAlert = false
+    @State private var showFeedbackEmail = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -95,7 +96,7 @@ struct SettingView: View {
                         icon: "star.bubble",
                         title: "Feedback",
                         action: {
-                            // Navigate to feedback
+                            showFeedbackEmail = true
                         }
                     )
                 }
@@ -201,6 +202,10 @@ struct SettingView: View {
             }
         } message: {
             Text("Are you sure you want to log out?")
+        }
+        .sheet(isPresented: $showFeedbackEmail) {
+            FeedbackEmailView()
+                .environmentObject(contentViewModel)
         }
         .onAppear {
             viewModel.loadUserInfo(from: contentViewModel)
