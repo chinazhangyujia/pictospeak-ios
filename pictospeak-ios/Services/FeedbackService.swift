@@ -10,6 +10,12 @@ import UIKit
 
 class FeedbackService {
     private let baseURL = APIConfiguration.baseURL
+    private struct MultipartFormPart {
+        let name: String
+        let filename: String?
+        let contentType: String?
+        let data: Data
+    }
 
     // MARK: - Singleton
 
@@ -34,40 +40,116 @@ class FeedbackService {
         }
     }
 
+    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    try await streamVideoAPI(
+                        authToken: authToken,
+                        videoData: videoData,
+                        videoFileExtension: videoFileExtension,
+                        audioData: audioData
+                    ) { feedbackResponse in
+                        continuation.yield(feedbackResponse)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     private func streamImageAPI(authToken: String, image: UIImage, audioData: Data, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
-        guard let url = URL(string: baseURL + "/description/guidance/image") else {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw FeedbackError.encodingError
+        }
+
+        let parts = [
+            MultipartFormPart(name: "image", filename: "image.jpg", contentType: "image/jpeg", data: imageData),
+            MultipartFormPart(name: "audio", filename: "audio.wav", contentType: "audio/wav", data: audioData),
+        ]
+
+        try await streamFeedbackAPI(
+            authToken: authToken,
+            endpoint: "/description/guidance/image",
+            parts: parts,
+            onUpdate: onUpdate
+        )
+    }
+
+    private func streamVideoAPI(
+        authToken: String,
+        videoData: Data,
+        videoFileExtension: String?,
+        audioData: Data,
+        onUpdate: @escaping (FeedbackResponse) -> Void
+    ) async throws {
+        let normalizedExtension = videoFileExtension?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        let fileExtension = (normalizedExtension?.isEmpty == false) ? normalizedExtension! : "mp4"
+        let filename = "video.\(fileExtension)"
+        let mimeType = mimeTypeForVideoExtension(fileExtension)
+
+        let parts = [
+            MultipartFormPart(name: "video", filename: filename, contentType: mimeType, data: videoData),
+            MultipartFormPart(name: "audio", filename: "audio.wav", contentType: "audio/wav", data: audioData),
+        ]
+
+        try await streamFeedbackAPI(
+            authToken: authToken,
+            endpoint: "/description/guidance/video",
+            parts: parts,
+            onUpdate: onUpdate
+        )
+    }
+
+    private func mimeTypeForVideoExtension(_ fileExtension: String) -> String {
+        let normalizedExtension = fileExtension.lowercased()
+        guard normalizedExtension == "mp4" else {
+            return "video/mp4"
+        }
+        return "video/mp4"
+    }
+
+    private func streamFeedbackAPI(
+        authToken: String,
+        endpoint: String,
+        parts: [MultipartFormPart],
+        onUpdate: @escaping (FeedbackResponse) -> Void
+    ) async throws {
+        guard let url = URL(string: baseURL + endpoint) else {
             throw FeedbackError.invalidURL
         }
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
-
-        // Add Authorization header with Bearer token
         urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
-        // Create multipart form data
         let boundary = "Boundary-\(UUID().uuidString)"
         urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
 
-        // Add image data
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            throw FeedbackError.encodingError
+        for part in parts {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+
+            var disposition = "Content-Disposition: form-data; name=\"\(part.name)\""
+            if let filename = part.filename {
+                disposition += "; filename=\"\(filename)\""
+            }
+            body.append("\(disposition)\r\n".data(using: .utf8)!)
+
+            if let contentType = part.contentType {
+                body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
+            } else {
+                body.append("\r\n".data(using: .utf8)!)
+            }
+
+            body.append(part.data)
+            body.append("\r\n".data(using: .utf8)!)
         }
-
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n".data(using: .utf8)!)
-
-        // Add audio data
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"audio.wav\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
-        body.append(audioData)
-        body.append("\r\n".data(using: .utf8)!)
 
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 

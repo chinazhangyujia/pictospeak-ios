@@ -17,6 +17,8 @@ struct FeedbackView: View {
     @StateObject private var viewModel: FeedbackViewModel
     @State private var selectedTab: FeedbackTab = .aiRefined
     @State private var expandedCards: Set<UUID> = []
+    @State private var backgroundVideoPlayer: AVPlayer?
+    @State private var backgroundVideoObserver: NSObjectProtocol?
     let sessionId: UUID?
     var session: SessionItem? {
         pastSessionsViewModel.sessions.first { $0.id == sessionId }
@@ -47,6 +49,11 @@ struct FeedbackView: View {
         self.selectedVideo = selectedVideo
         self.audioData = audioData
         self.mediaType = mediaType
+        if let selectedVideo {
+            _backgroundVideoPlayer = State(initialValue: FeedbackView.makeBackgroundPlayer(for: selectedVideo))
+        } else {
+            _backgroundVideoPlayer = State(initialValue: nil)
+        }
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
         sessionId = nil
         _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
@@ -58,6 +65,11 @@ struct FeedbackView: View {
         self.selectedVideo = selectedVideo
         self.audioData = audioData
         self.mediaType = mediaType
+        if let selectedVideo {
+            _backgroundVideoPlayer = State(initialValue: FeedbackView.makeBackgroundPlayer(for: selectedVideo))
+        } else {
+            _backgroundVideoPlayer = State(initialValue: nil)
+        }
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel(), previewData: previewData))
         sessionId = nil
         _pastSessionsViewModel = ObservedObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
@@ -69,6 +81,7 @@ struct FeedbackView: View {
         selectedVideo = nil
         audioData = nil
         mediaType = nil
+        _backgroundVideoPlayer = State(initialValue: nil)
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
         _pastSessionsViewModel = ObservedObject(wrappedValue: pastSessionsViewModel)
     }
@@ -92,12 +105,16 @@ struct FeedbackView: View {
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
                         .ignoresSafeArea()
-                } else if let selectedVideo = selectedVideo {
-                    // Show directly passed video as background
-                    VideoPlayer(player: AVPlayer(url: selectedVideo))
+                } else if let player = backgroundVideoPlayer {
+                    // Show video as background from either a directly selected video or a session material
+                    VideoPlayer(player: player)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
                         .ignoresSafeArea()
+                        .disabled(true)
+                        .onAppear {
+                            player.play()
+                        }
                 } else if let session = session, let materialUrl = URL(string: session.materialUrl) {
                     // Show session's material as background - detect type from URL
                     let materialType = detectMaterialType(from: materialUrl)
@@ -119,10 +136,10 @@ struct FeedbackView: View {
                                 .ignoresSafeArea()
                         }
                     } else if materialType == .video {
-                        // Show session video as background
-                        VideoPlayer(player: AVPlayer(url: materialUrl))
+                        // Placeholder while the background video player is being prepared
+                        Rectangle()
+                            .fill(Color.black.opacity(0.8))
                             .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
                             .ignoresSafeArea()
                     } else {
                         // Unknown material type - show placeholder
@@ -197,14 +214,21 @@ struct FeedbackView: View {
             .interactiveDismissDisabled()
         }
         .onAppear {
+            configureBackgroundVideoIfNeeded()
+
             viewModel.contentViewModel = contentViewModel
             pastSessionsViewModel.contentViewModel = contentViewModel
 
             // Only load feedback if we don't already have preview data and we're in normal mode
             if session == nil && viewModel.feedbackResponse == nil {
                 startThinkingAnimation()
-                guard let selectedImage = selectedImage, let audioData = audioData, let mediaType = mediaType else { return }
-                viewModel.loadFeedback(image: selectedImage, audioData: audioData, mediaType: mediaType)
+                guard let audioData = audioData, let mediaType = mediaType else { return }
+                viewModel.loadFeedback(
+                    image: selectedImage,
+                    videoURL: selectedVideo,
+                    audioData: audioData,
+                    mediaType: mediaType
+                )
             }
         }
         .onChange(of: viewModel.feedbackResponse?.refinedText) { newValue in
@@ -213,9 +237,57 @@ struct FeedbackView: View {
                 stopThinkingAnimation()
             }
         }
+        .onChange(of: session?.materialUrl) { newValue in
+            guard let urlString = newValue,
+                  let url = URL(string: urlString)
+            else {
+                backgroundVideoPlayer?.pause()
+                if let observer = backgroundVideoObserver {
+                    NotificationCenter.default.removeObserver(observer)
+                    backgroundVideoObserver = nil
+                }
+                backgroundVideoPlayer = nil
+                return
+            }
+
+            let materialType = detectMaterialType(from: url)
+
+            guard materialType == .video else {
+                backgroundVideoPlayer?.pause()
+                if let observer = backgroundVideoObserver {
+                    NotificationCenter.default.removeObserver(observer)
+                    backgroundVideoObserver = nil
+                }
+                backgroundVideoPlayer = nil
+                return
+            }
+
+            if let existingAsset = backgroundVideoPlayer?.currentItem?.asset as? AVURLAsset,
+               existingAsset.url == url
+            {
+                backgroundVideoPlayer?.play()
+                return
+            }
+
+            backgroundVideoPlayer?.pause()
+            if let observer = backgroundVideoObserver {
+                NotificationCenter.default.removeObserver(observer)
+                backgroundVideoObserver = nil
+            }
+
+            let player = FeedbackView.makeBackgroundPlayer(for: url)
+            backgroundVideoPlayer = player
+            backgroundVideoObserver = makeLoopObserver(for: player)
+            player.play()
+        }
         .onDisappear {
             // Stop thinking animation timer
             stopThinkingAnimation()
+            backgroundVideoPlayer?.pause()
+            if let observer = backgroundVideoObserver {
+                NotificationCenter.default.removeObserver(observer)
+                backgroundVideoObserver = nil
+            }
         }
         .navigationBarHidden(true)
     }
@@ -779,6 +851,59 @@ struct FeedbackView: View {
             return .video
         } else {
             return .image // Default to image if unknown
+        }
+    }
+
+    private static func makeBackgroundPlayer(for url: URL) -> AVPlayer {
+        let player = AVPlayer(url: url)
+        player.actionAtItemEnd = .none
+        player.isMuted = true
+        player.allowsExternalPlayback = false
+        player.preventsDisplaySleepDuringVideoPlayback = false
+        return player
+    }
+
+    private func configureBackgroundVideoIfNeeded() {
+        if let player = backgroundVideoPlayer {
+            if backgroundVideoObserver == nil {
+                backgroundVideoObserver = makeLoopObserver(for: player)
+            }
+            player.play()
+            return
+        }
+
+        if let selectedVideo {
+            if let observer = backgroundVideoObserver {
+                NotificationCenter.default.removeObserver(observer)
+                backgroundVideoObserver = nil
+            }
+            let player = FeedbackView.makeBackgroundPlayer(for: selectedVideo)
+            backgroundVideoPlayer = player
+            backgroundVideoObserver = makeLoopObserver(for: player)
+            player.play()
+        } else if let session,
+                  let materialUrl = URL(string: session.materialUrl),
+                  detectMaterialType(from: materialUrl) == .video
+        {
+            if let observer = backgroundVideoObserver {
+                NotificationCenter.default.removeObserver(observer)
+                backgroundVideoObserver = nil
+            }
+            let player = FeedbackView.makeBackgroundPlayer(for: materialUrl)
+            backgroundVideoPlayer = player
+            backgroundVideoObserver = makeLoopObserver(for: player)
+            player.play()
+        }
+    }
+
+    private func makeLoopObserver(for player: AVPlayer) -> NSObjectProtocol? {
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem,
+            queue: .main
+        ) { _ in
+            player.seek(to: .zero)
+            player.play()
         }
     }
 

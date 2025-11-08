@@ -27,7 +27,7 @@ class FeedbackViewModel: ObservableObject {
         }
     }
 
-    func loadFeedback(image: UIImage, audioData: Data, mediaType: MediaType) {
+    func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data, mediaType: MediaType) {
         isLoading = true
         errorMessage = nil
 
@@ -35,7 +35,14 @@ class FeedbackViewModel: ObservableObject {
             do {
                 switch mediaType {
                 case .image:
-                    // Use streaming API for real-time updates
+                    guard let image = image else {
+                        await MainActor.run {
+                            self.errorMessage = "Missing image for feedback request."
+                            self.isLoading = false
+                        }
+                        return
+                    }
+
                     guard let authToken = contentViewModel.authToken else {
                         await MainActor.run {
                             self.errorMessage = "Authentication required"
@@ -51,8 +58,27 @@ class FeedbackViewModel: ObservableObject {
                         }
                     }
                 case .video:
-                    // For video, we would need the video URL from CaptureView
-                    // For now, we'll use the image method as a fallback
+                    guard let videoURL = videoURL else {
+                        await MainActor.run {
+                            self.errorMessage = "Missing video for feedback request."
+                            self.isLoading = false
+                        }
+                        return
+                    }
+
+                    let videoData: Data
+                    do {
+                        videoData = try await Task.detached(priority: .userInitiated) {
+                            try Data(contentsOf: videoURL)
+                        }.value
+                    } catch {
+                        await MainActor.run {
+                            self.errorMessage = "Unable to load the selected video."
+                            self.isLoading = false
+                        }
+                        return
+                    }
+
                     guard let authToken = contentViewModel.authToken else {
                         await MainActor.run {
                             self.errorMessage = "Authentication required"
@@ -61,7 +87,14 @@ class FeedbackViewModel: ObservableObject {
                         return
                     }
 
-                    for try await response in feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData) {
+                    let fileExtension = videoURL.pathExtension.isEmpty ? nil : videoURL.pathExtension
+
+                    for try await response in feedbackService.getFeedbackStreamForVideo(
+                        authToken: authToken,
+                        videoData: videoData,
+                        videoFileExtension: fileExtension,
+                        audioData: audioData
+                    ) {
                         await MainActor.run {
                             self.feedbackResponse = response
                             self.isLoading = false

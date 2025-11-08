@@ -276,21 +276,27 @@ struct CaptureView: View {
 
 // MARK: - Camera Preview View
 
+final class CameraPreviewUIView: UIView {
+    override class var layerClass: AnyClass {
+        AVCaptureVideoPreviewLayer.self
+    }
+
+    var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+}
+
 struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession
 
-    func makeUIView(context _: Context) -> UIView {
-        let view = UIView()
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        previewLayer.videoGravity = .resizeAspectFill
-        previewLayer.frame = view.bounds
-        view.layer.addSublayer(previewLayer)
+    func makeUIView(context _: Context) -> CameraPreviewUIView {
+        let view = CameraPreviewUIView()
+        view.previewLayer.videoGravity = .resizeAspectFill
+        view.previewLayer.session = session
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context _: Context) {
-        if let previewLayer = uiView.layer.sublayers?.first as? AVCaptureVideoPreviewLayer {
-            previewLayer.frame = uiView.bounds
+    func updateUIView(_ uiView: CameraPreviewUIView, context _: Context) {
+        if uiView.previewLayer.session !== session {
+            uiView.previewLayer.session = session
         }
     }
 }
@@ -389,19 +395,29 @@ class CameraManager: NSObject, ObservableObject {
     private var photoOutput = AVCapturePhotoOutput()
     private var videoDeviceInput: AVCaptureDeviceInput?
 
+    private let sessionQueue = DispatchQueue(label: "com.pictospeak.camera.session")
+    private var isSessionConfigured = false
+    private var audioDeviceInput: AVCaptureDeviceInput?
+    private var activeRecordingURL: URL?
+
     override init() {
         super.init()
-        setupSession()
     }
 
     func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             isCameraAuthorized = true
+            configureSessionIfNeeded()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 DispatchQueue.main.async {
                     self?.isCameraAuthorized = granted
+                    if granted {
+                        self?.configureSessionIfNeeded()
+                    } else {
+                        self?.showingPermissionAlert = true
+                    }
                 }
             }
         case .denied, .restricted:
@@ -411,79 +427,170 @@ class CameraManager: NSObject, ObservableObject {
         }
     }
 
-    private func setupSession() {
-        session.beginConfiguration()
+    private func configureSessionIfNeeded() {
+        sessionQueue.async { [weak self] in
+            self?.configureSessionIfNeededOnSessionQueue()
+        }
+    }
 
-        // Add video input
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else { return }
-
-        do {
-            let videoInput = try AVCaptureDeviceInput(device: videoDevice)
-            if session.canAddInput(videoInput) {
-                session.addInput(videoInput)
-                videoDeviceInput = videoInput
-            }
-        } catch {
-            print("Error setting up video input: \(error)")
+    private func configureSessionIfNeededOnSessionQueue() {
+        guard isCameraAuthorized else { return }
+        if isSessionConfigured {
+            return
         }
 
-        // Add photo output
-        if session.canAddOutput(photoOutput) {
+        session.beginConfiguration()
+        session.automaticallyConfiguresApplicationAudioSession = true
+        if session.canSetSessionPreset(.photo) {
+            session.sessionPreset = .photo
+        }
+
+        // Add video input
+        if videoDeviceInput == nil,
+           let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        {
+            do {
+                let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+                if session.canAddInput(videoInput) {
+                    session.addInput(videoInput)
+                    videoDeviceInput = videoInput
+                }
+            } catch {
+                print("Error setting up video input: \(error)")
+            }
+        }
+
+        // Add photo output by default
+        if !session.outputs.contains(where: { $0 === photoOutput }),
+           session.canAddOutput(photoOutput)
+        {
             session.addOutput(photoOutput)
         }
 
         // Add video output
-        if session.canAddOutput(videoOutput) {
+        if !session.outputs.contains(where: { $0 === videoOutput }),
+           session.canAddOutput(videoOutput)
+        {
             session.addOutput(videoOutput)
         }
 
         session.commitConfiguration()
-
-        // Start session after configuration is complete
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.session.startRunning()
-        }
+        isSessionConfigured = true
     }
 
     func startSession() {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.session.startRunning()
+        sessionQueue.async { [weak self] in
+            guard let self = self, self.isCameraAuthorized else { return }
+            self.configureSessionIfNeededOnSessionQueue()
+            if !self.session.isRunning {
+                self.session.startRunning()
+            }
+        }
+    }
+
+    func stopSession() {
+        sessionQueue.async { [weak self] in
+            guard let self = self, self.session.isRunning else { return }
+            self.session.stopRunning()
         }
     }
 
     func prepareForPhoto() {
-        session.beginConfiguration()
-        session.removeOutput(videoOutput)
-        if session.canAddOutput(photoOutput) {
-            session.addOutput(photoOutput)
+        sessionQueue.async { [weak self] in
+            guard let self = self, self.isSessionConfigured else { return }
+            self.configureSessionIfNeededOnSessionQueue()
+            if let audioInput = self.audioDeviceInput, self.session.inputs.contains(audioInput) {
+                self.session.removeInput(audioInput)
+                self.audioDeviceInput = nil
+            }
+            self.session.beginConfiguration()
+            if self.session.canSetSessionPreset(.photo) {
+                self.session.sessionPreset = .photo
+            }
+            self.session.commitConfiguration()
         }
-        session.commitConfiguration()
     }
 
     func prepareForVideo() {
-        session.beginConfiguration()
-        session.removeOutput(photoOutput)
-        if session.canAddOutput(videoOutput) {
-            session.addOutput(videoOutput)
+        let microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        if microphoneStatus == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                if granted {
+                    self?.prepareForVideo()
+                } else {
+                    print("Microphone access denied by user.")
+                }
+            }
+            return
         }
-        session.commitConfiguration()
+
+        sessionQueue.async { [weak self] in
+            guard let self = self, self.isSessionConfigured else { return }
+            self.configureSessionIfNeededOnSessionQueue()
+
+            self.session.beginConfiguration()
+            if self.session.canSetSessionPreset(.high) {
+                self.session.sessionPreset = .high
+            }
+            self.session.commitConfiguration()
+
+            let audioAuthorized = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+            if audioAuthorized {
+                if self.audioDeviceInput == nil,
+                   let audioDevice = AVCaptureDevice.default(for: .audio)
+                {
+                    do {
+                        let audioInput = try AVCaptureDeviceInput(device: audioDevice)
+                        if self.session.canAddInput(audioInput) {
+                            self.session.addInput(audioInput)
+                            self.audioDeviceInput = audioInput
+                        }
+                    } catch {
+                        print("Error setting up audio input: \(error)")
+                    }
+                }
+            } else if let audioInput = self.audioDeviceInput, self.session.inputs.contains(audioInput) {
+                self.session.removeInput(audioInput)
+                self.audioDeviceInput = nil
+            }
+        }
     }
 
     func capturePhoto() {
-        let settings = AVCapturePhotoSettings()
-        photoOutput.capturePhoto(with: settings, delegate: self)
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.configureSessionIfNeededOnSessionQueue()
+            let settings = AVCapturePhotoSettings()
+            self.photoOutput.capturePhoto(with: settings, delegate: self)
+        }
     }
 
     func startRecording() {
-        guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-        let videoName = "video_\(Date().timeIntervalSince1970).mov"
-        let videoURL = documentsPath.appendingPathComponent(videoName)
-        recordedVideoURL = videoURL
-        videoOutput.startRecording(to: videoURL, recordingDelegate: self)
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.configureSessionIfNeededOnSessionQueue()
+            guard self.session.outputs.contains(where: { $0 === self.videoOutput }) else {
+                print("Video output not configured; cannot start recording.")
+                return
+            }
+            guard !self.videoOutput.isRecording else { return }
+            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                print("Unable to access documents directory for recording.")
+                return
+            }
+
+            let videoName = "video_\(Date().timeIntervalSince1970).mov"
+            let videoURL = documentsPath.appendingPathComponent(videoName)
+            self.activeRecordingURL = videoURL
+            self.videoOutput.startRecording(to: videoURL, recordingDelegate: self)
+        }
     }
 
     func stopRecording() {
-        videoOutput.stopRecording()
+        sessionQueue.async { [weak self] in
+            guard let self = self, self.videoOutput.isRecording else { return }
+            self.videoOutput.stopRecording()
+        }
     }
 }
 
@@ -505,14 +612,16 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
 
 extension CameraManager: AVCaptureFileOutputRecordingDelegate {
     func fileOutput(_: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from _: [AVCaptureConnection], error: Error?) {
-        if error == nil {
-            // Handle successful video recording
+        if let error = error {
+            print("Video recording error: \(error.localizedDescription)")
+        } else {
             DispatchQueue.main.async {
                 self.recordedVideoURL = outputFileURL
                 print("Video saved to: \(outputFileURL)")
             }
-        } else {
-            print("Video recording error: \(error?.localizedDescription ?? "Unknown error")")
+        }
+        sessionQueue.async { [weak self] in
+            self?.activeRecordingURL = nil
         }
     }
 }
@@ -522,6 +631,7 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
 extension CaptureView {
     private func handleOnAppear() {
         cameraManager.checkPermissions()
+        cameraManager.startSession()
         // Reset recording state
         isRecording = false
         recordingTime = 0
@@ -531,6 +641,7 @@ extension CaptureView {
 
     private func handleImageChange(_ newValue: UIImage?) {
         if let image = newValue {
+            cameraManager.stopSession()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 router.goTo(.speakFromImage(selectedImage: image))
             }
@@ -543,6 +654,7 @@ extension CaptureView {
 
     private func handleRecordedVideoChange(_ newValue: URL?) {
         if let videoURL = newValue {
+            cameraManager.stopSession()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 router.goTo(.speakFromVideo(selectedVideo: videoURL))
             }
@@ -555,6 +667,7 @@ extension CaptureView {
 
     private func handleSelectedVideoChange(_ newValue: URL?) {
         if let videoURL = newValue {
+            cameraManager.stopSession()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 router.goTo(.speakFromVideo(selectedVideo: videoURL))
             }
@@ -567,6 +680,7 @@ extension CaptureView {
 
     private func handleOnDisappear() {
         timer?.invalidate()
+        cameraManager.stopSession()
     }
 
     private func fetchLatestImageFromGallery() {
