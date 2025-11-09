@@ -500,6 +500,8 @@ struct FeedbackView: View {
                                     return
                                 }
 
+                                viewModel.updateKeyTermFavoriteLocally(termId: termId, isFavorite: isFavorite)
+
                                 // Update server-side favorite status
                                 Task {
                                     do {
@@ -579,6 +581,8 @@ struct FeedbackView: View {
                                 guard !displaySuggestion.term.isEmpty, !displaySuggestion.refinement.isEmpty, !displaySuggestion.translation.isEmpty, !displaySuggestion.reason.isEmpty else {
                                     return
                                 }
+
+                                viewModel.updateSuggestionFavoriteLocally(suggestionId: suggestionId, isFavorite: isFavorite)
 
                                 // Update server-side favorite status
                                 Task {

@@ -129,7 +129,7 @@ struct Suggestion: Codable, Identifiable {
         translation = try container.decode(String.self, forKey: .translation)
         reason = try container.decode(String.self, forKey: .reason)
         favorite = try container.decode(Bool.self, forKey: .favorite)
-        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? .zero
         descriptionGuidanceId = try container.decodeIfPresent(UUID.self, forKey: .descriptionGuidanceId)
     }
 }
@@ -149,7 +149,7 @@ struct KeyTerm: Codable, Identifiable {
         self.translation = translation
         self.example = example
         self.favorite = favorite
-        self.id = id ?? UUID()
+        self.id = id ?? .zero
         self.descriptionGuidanceId = descriptionGuidanceId
     }
 
@@ -165,7 +165,7 @@ struct KeyTerm: Codable, Identifiable {
         translation = try container.decode(String.self, forKey: .translation)
         example = try container.decode(String.self, forKey: .example)
         favorite = try container.decode(Bool.self, forKey: .favorite)
-        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? .zero
         descriptionGuidanceId = try container.decodeIfPresent(UUID.self, forKey: .descriptionGuidanceId)
     }
 }

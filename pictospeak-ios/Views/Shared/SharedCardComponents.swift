@@ -124,7 +124,7 @@ struct KeyTermCard: View {
                     Spacer()
 
                     // Right side: Star button
-                    if keyTerm.term.isEmpty {
+                    if keyTerm.term.isEmpty || keyTerm.id == .zero {
                         SkeletonPlaceholder(width: 16, height: 16)
                             .modifier(ShimmerEffect())
                     } else {
@@ -137,7 +137,7 @@ struct KeyTermCard: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .frame(width: 22, height: 22)
-                        .disabled(keyTerm.term.isEmpty)
+                        .disabled(keyTerm.term.isEmpty || keyTerm.id == .zero)
                     }
                 }
 
@@ -294,7 +294,7 @@ struct SuggestionCard: View {
                     Spacer()
 
                     // Right side: Star button
-                    if suggestion.refinement.isEmpty {
+                    if suggestion.refinement.isEmpty || suggestion.id == .zero {
                         SkeletonPlaceholder(width: 16, height: 16)
                             .modifier(ShimmerEffect())
                     } else {
@@ -307,7 +307,7 @@ struct SuggestionCard: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .frame(width: 22, height: 22)
-                        .disabled(suggestion.refinement.isEmpty)
+                        .disabled(suggestion.refinement.isEmpty || suggestion.id == .zero)
                     }
                 }
 

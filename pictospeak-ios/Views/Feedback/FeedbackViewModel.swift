@@ -109,4 +109,61 @@ class FeedbackViewModel: ObservableObject {
             }
         }
     }
+
+    func updateKeyTermFavoriteLocally(termId: UUID, isFavorite: Bool) {
+        guard let currentFeedback = feedbackResponse else { return }
+
+        let updatedKeyTerms = currentFeedback.keyTerms.map { keyTerm -> KeyTerm in
+            guard keyTerm.id == termId else { return keyTerm }
+            return KeyTerm(
+                term: keyTerm.term,
+                translation: keyTerm.translation,
+                example: keyTerm.example,
+                favorite: isFavorite,
+                id: keyTerm.id,
+                descriptionGuidanceId: keyTerm.descriptionGuidanceId
+            )
+        }
+
+        feedbackResponse = FeedbackResponse(
+            originalText: currentFeedback.originalText,
+            refinedText: currentFeedback.refinedText,
+            suggestions: currentFeedback.suggestions,
+            keyTerms: updatedKeyTerms,
+            score: currentFeedback.score,
+            chosenKeyTerms: currentFeedback.chosenKeyTerms,
+            chosenRefinements: currentFeedback.chosenRefinements,
+            chosenItemsGenerated: currentFeedback.chosenItemsGenerated,
+            pronunciationUrl: currentFeedback.pronunciationUrl
+        )
+    }
+
+    func updateSuggestionFavoriteLocally(suggestionId: UUID, isFavorite: Bool) {
+        guard let currentFeedback = feedbackResponse else { return }
+
+        let updatedSuggestions = currentFeedback.suggestions.map { suggestion -> Suggestion in
+            guard suggestion.id == suggestionId else { return suggestion }
+            return Suggestion(
+                term: suggestion.term,
+                refinement: suggestion.refinement,
+                translation: suggestion.translation,
+                reason: suggestion.reason,
+                favorite: isFavorite,
+                id: suggestion.id,
+                descriptionGuidanceId: suggestion.descriptionGuidanceId
+            )
+        }
+
+        feedbackResponse = FeedbackResponse(
+            originalText: currentFeedback.originalText,
+            refinedText: currentFeedback.refinedText,
+            suggestions: updatedSuggestions,
+            keyTerms: currentFeedback.keyTerms,
+            score: currentFeedback.score,
+            chosenKeyTerms: currentFeedback.chosenKeyTerms,
+            chosenRefinements: currentFeedback.chosenRefinements,
+            chosenItemsGenerated: currentFeedback.chosenItemsGenerated,
+            pronunciationUrl: currentFeedback.pronunciationUrl
+        )
+    }
 }
