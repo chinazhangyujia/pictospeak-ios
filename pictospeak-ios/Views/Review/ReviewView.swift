@@ -61,7 +61,7 @@ struct ReviewView: View {
             }
         }
         .padding(.horizontal, 16)
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
         .navigationBarBackButtonHidden(true)
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)

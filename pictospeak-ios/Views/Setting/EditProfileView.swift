@@ -30,7 +30,7 @@ struct EditProfileView: View {
             .padding(.top, 32)
         }
         .padding(.horizontal, 16)
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)

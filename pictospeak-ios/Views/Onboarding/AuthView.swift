@@ -282,7 +282,7 @@ struct AuthView: View {
             .padding(.horizontal, 20)
         }
         .padding(.horizontal, 16)
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
         .navigationBarBackButtonHidden(contentViewModel.hasOnboardingCompleted)
         .toolbar(.hidden, for: .tabBar)
     }

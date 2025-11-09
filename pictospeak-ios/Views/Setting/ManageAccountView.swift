@@ -35,7 +35,7 @@ struct ManageAccountView: View {
             .padding(.top, 24)
         }
         .padding(.horizontal, 16)
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)

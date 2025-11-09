@@ -97,7 +97,7 @@ struct OnboardingNativeLanguageView: View {
             .padding(.vertical, 6)
             .padding(.horizontal, 20)
         }
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
     }
 
     private func toggleLanguage(_ language: String) {

@@ -208,7 +208,7 @@ struct MailNotAvailableView: View {
             .padding(.top, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
     }
 }
 

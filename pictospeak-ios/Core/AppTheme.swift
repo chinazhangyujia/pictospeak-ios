@@ -10,9 +10,16 @@ import SwiftUI
 // MARK: - Global App Theme Configuration
 
 enum AppTheme {
-    // MARK: - Colors
+    // MARK: - Backgrounds
 
-    static let viewBackgroundGray = Color(red: 0.965, green: 0.969, blue: 0.984)
+    static var backgroundGradient: some View {
+        Image("BackgroundGradient")
+            .resizable()
+            .scaledToFill()
+            .ignoresSafeArea()
+    }
+
+    // MARK: - Colors
 
     static let primaryBlue = Color(red: 0.247, green: 0.388, blue: 0.910)
     static let lightBlueBackground = Color(red: 0.914, green: 0.933, blue: 1.0, opacity: 0.6)

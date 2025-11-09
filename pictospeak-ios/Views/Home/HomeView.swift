@@ -38,7 +38,7 @@ struct HomeView: View {
                 .padding(.top, 20)
                 .padding(.bottom, 120) // Add bottom padding for navigation overlay
             }
-            .background(AppTheme.viewBackgroundGray)
+            .background(AppTheme.backgroundGradient)
 
             // Loading overlay for refresh
             if sessionsViewModel.isLoading {

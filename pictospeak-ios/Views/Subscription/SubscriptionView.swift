@@ -310,7 +310,7 @@ struct SubscriptionView: View {
             }
         }
         .padding(.horizontal, 16)
-        .background(AppTheme.viewBackgroundGray)
+        .background(AppTheme.backgroundGradient)
         .toolbar(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
