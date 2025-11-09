@@ -39,6 +39,21 @@ struct CaptureView: View {
             VStack {
                 Spacer()
 
+                if selectedMode == .video && isRecording {
+                    Text(String(format: "%02d:%02d", Int(recordingTime) / 60, Int(recordingTime) % 60))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.6))
+                        )
+                        .padding(.bottom, 12)
+                        .transition(.opacity.combined(with: .scale))
+                        .animation(.easeInOut(duration: 0.3), value: isRecording)
+                }
+
                 Button(action: {
                     if selectedMode == .photo {
                         cameraManager.capturePhoto()
@@ -56,14 +71,16 @@ struct CaptureView: View {
                             .frame(width: 72, height: 72)
                             .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
 
-                        if selectedMode == .video && isRecording {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 60, height: 60)
-                        } else if selectedMode == .video {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 60, height: 60)
+                        if selectedMode == .video {
+                            if isRecording {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.red)
+                                    .frame(width: 32, height: 32)
+                            } else {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 60, height: 60)
+                            }
                         } else {
                             Circle()
                                 .fill(
@@ -229,8 +246,11 @@ struct CaptureView: View {
     // MARK: - Recording Functions
 
     private func startRecording() {
+        guard selectedMode == .video, !isRecording else { return }
+
         isRecording = true
         recordingTime = 0
+        timer?.invalidate()
         cameraManager.startRecording()
 
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
@@ -242,6 +262,8 @@ struct CaptureView: View {
     }
 
     private func stopRecording() {
+        guard isRecording else { return }
+
         isRecording = false
         timer?.invalidate()
         timer = nil

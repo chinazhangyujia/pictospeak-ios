@@ -121,7 +121,11 @@ struct SpeakView: View {
                     }
 
                     Button(action: {
-                        // This will be handled by the gesture
+                        if isRecording {
+                            stopRecording()
+                        } else {
+                            startRecording()
+                        }
                     }) {
                         ZStack {
                             if isRecording {
@@ -151,17 +155,6 @@ struct SpeakView: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                if !isRecording {
-                                    startRecording()
-                                }
-                            }
-                            .onEnded { _ in
-                                stopRecording()
-                            }
-                    )
                     .padding(.bottom, 90)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
@@ -243,6 +236,8 @@ struct SpeakView: View {
     }
 
     private func startRecording() {
+        guard audioRecorder?.isRecording != true else { return }
+
         audioRecorder?.record()
         isRecording = true
         recordingTime = 0
