@@ -90,8 +90,14 @@ struct FeedbackView: View {
         case mine, aiRefined
     }
 
+    private enum PendingNavigation {
+        case goBack
+        case goHome
+    }
+
     @State private var showSheet = true
     @State private var selectedDetent: PresentationDetent = .fraction(0.5)
+    @State private var pendingNavigation: PendingNavigation?
 
     var body: some View {
         GeometryReader { geometry in
@@ -212,6 +218,9 @@ struct FeedbackView: View {
             .presentationDetents([.fraction(0.15), .fraction(0.5), .fraction(0.95)], selection: $selectedDetent)
             .presentationDragIndicator(.visible)
             .interactiveDismissDisabled()
+            .onDisappear {
+                handlePendingNavigation()
+            }
         }
         .onAppear {
             configureBackgroundVideoIfNeeded()
@@ -711,7 +720,10 @@ struct FeedbackView: View {
                 .glassEffect(.clear.tint(AppTheme.backButtonGray))
                 .blendMode(.multiply)
                 .onTapGesture {
-                    router.goBack()
+                    pendingNavigation = .goBack
+                    withAnimation {
+                        showSheet = false
+                    }
                 }
 
             Spacer()
@@ -730,11 +742,28 @@ struct FeedbackView: View {
                 .clipShape(Circle())
                 .glassEffect(.clear.tint(AppTheme.primaryBlue))
                 .onTapGesture {
-                    print("checkmark tapped")
+                    pendingNavigation = .goHome
+                    withAnimation {
+                        showSheet = false
+                    }
                 }
         }
         .padding(.horizontal, 16)
         .padding(.top, 30)
+    }
+
+    private func handlePendingNavigation() {
+        guard let action = pendingNavigation else { return }
+        pendingNavigation = nil
+
+        DispatchQueue.main.async {
+            switch action {
+            case .goBack:
+                router.goBack()
+            case .goHome:
+                router.resetToHome()
+            }
+        }
     }
 
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {

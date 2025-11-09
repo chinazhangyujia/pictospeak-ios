@@ -89,6 +89,18 @@ struct CaptureView: View {
         .onChange(of: selectedVideo) { _, newValue in
             handleSelectedVideoChange(newValue)
         }
+        .onChange(of: selectedMode) { _, newValue in
+            switch newValue {
+            case .photo:
+                cameraManager.prepareForPhoto()
+                cameraManager.selectedImage = nil
+                selectedVideo = nil
+            case .video:
+                cameraManager.prepareForVideo()
+                cameraManager.selectedImage = nil
+                selectedVideo = nil
+            }
+        }
         .onDisappear(perform: handleOnDisappear)
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoPicker(selectedImage: $cameraManager.selectedImage, selectedVideo: $selectedVideo, latestGalleryImage: $latestGalleryImage, selectedMode: selectedMode)
@@ -117,67 +129,36 @@ struct CaptureView: View {
                 }
             }
             ToolbarItem(placement: .bottomBar) {
-                Button(action: {
-                    showingPhotoLibrary = true
-                }) {
-                    if let latestImage = latestGalleryImage {
-                        Image(uiImage: latestImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 1)
-                            )
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.4))
-                            .frame(width: 24, height: 24)
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 18))
-                            )
-                    }
+                if let latestImage = latestGalleryImage {
+                    Image(uiImage: latestImage)
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                        .onTapGesture {
+                            showingPhotoLibrary = true
+                        }
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 24, height: 24)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .foregroundColor(.white)
+                                .font(.system(size: 18))
+                        )
+                        .onTapGesture {
+                            showingPhotoLibrary = true
+                        }
                 }
             }
             ToolbarItem(placement: .status) {
-                HStack(spacing: -20) {
-                    Button(action: {
-                        selectedMode = .photo
-                        cameraManager.prepareForPhoto()
-                        // Clear any selected media when switching modes
-                        cameraManager.selectedImage = nil
-                        selectedVideo = nil
-                    }) {
-                        Text("PHOTO")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(selectedMode == .photo ? AppTheme.primaryBlue : .black)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 8)
-                            .background(selectedMode == .photo ? Color(red: 0.929, green: 0.929, blue: 0.929) : Color.clear)
-                            .clipShape(Capsule())
-                            .frame(width: 90, height: 36)
-                    }
-
-                    Button(action: {
-                        selectedMode = .video
-                        cameraManager.prepareForVideo()
-                        // Clear any selected media when switching modes
-                        cameraManager.selectedImage = nil
-                        selectedVideo = nil
-                    }) {
-                        Text("VIDEO")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(selectedMode == .video ? AppTheme.primaryBlue : .black)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 8)
-                            .background(selectedMode == .video ? Color(red: 0.929, green: 0.929, blue: 0.929) : Color.clear)
-                            .clipShape(Capsule())
-                            .frame(width: 90, height: 36)
+                Picker("Capture Mode", selection: $selectedMode) {
+                    ForEach(CaptureMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue.uppercased()).tag(mode)
                     }
                 }
+                .pickerStyle(SegmentedPickerStyle())
+                .controlSize(.large)
+                .frame(width: 200)
             }
             ToolbarItem(placement: .bottomBar) {
                 Button(action: {}) {
