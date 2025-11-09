@@ -123,6 +123,8 @@ class SessionService {
             do {
                 let paginatedResponse = try decoder.decode(PaginatedSessionResponse.self, from: data)
 
+                print("📄 Paginated response: \(paginatedResponse)")
+
                 if let nextCursor = paginatedResponse.nextCursor {
                     print("📄 Next page cursor: \(nextCursor)")
                 } else {

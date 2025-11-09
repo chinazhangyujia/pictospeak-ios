@@ -14,6 +14,7 @@ struct HomeView: View {
     @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init(contentViewModel: ContentViewModel())
     @State private var selectedMode: NavigationMode = .home
     @State private var hasLoadedInitialData = false
+    @State private var isLoadingMoreSessions = false
 
     enum NavigationMode {
         case home
@@ -279,43 +280,24 @@ struct HomeView: View {
             }
 
             LazyVStack(spacing: 12) {
-                ForEach(Array(sessionsViewModel.sessions.prefix(10))) { session in
+                ForEach(Array(sessionsViewModel.sessions.enumerated()), id: \.element.id) { _, session in
                     Button(action: {
                         router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
                     }) {
                         SessionCard(session: session)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .onAppear {
+                        loadMoreSessionsIfNeeded(currentSession: session)
+                    }
                 }
 
-                // Show loading indicator if there are more sessions to load
-                if sessionsViewModel.hasMorePages && !sessionsViewModel.isLoading {
-                    Button(action: {
-                        Task {
-                            await sessionsViewModel.loadMoreSessions()
-                        }
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "plus.circle")
-                                .font(.system(size: 24))
-                                .foregroundColor(.blue)
-
-                            Text("Load More")
-                                .font(.body)
-                                .foregroundColor(.blue)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                } else if sessionsViewModel.isLoading {
-                    // Show loading indicator when loading
+                if (sessionsViewModel.isLoading || isLoadingMoreSessions) && !sessionsViewModel.sessions.isEmpty {
                     HStack(spacing: 8) {
                         ProgressView()
                             .scaleEffect(0.8)
 
-                        Text("Loading...")
+                        Text("Loading more...")
                             .font(.body)
                             .foregroundColor(.secondary)
                     }
@@ -324,6 +306,32 @@ struct HomeView: View {
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+            }
+        }
+    }
+
+    private func loadMoreSessionsIfNeeded(currentSession: SessionItem) {
+        guard let currentIndex = sessionsViewModel.sessions.firstIndex(where: { $0.id == currentSession.id }) else {
+            return
+        }
+
+        let totalItems = sessionsViewModel.sessions.count
+        let isNearEnd = currentIndex >= totalItems - 1
+
+        guard isNearEnd,
+              sessionsViewModel.hasMorePages,
+              !sessionsViewModel.isLoading,
+              !isLoadingMoreSessions
+        else {
+            return
+        }
+
+        isLoadingMoreSessions = true
+
+        Task {
+            await sessionsViewModel.loadMoreSessions()
+            await MainActor.run {
+                isLoadingMoreSessions = false
             }
         }
     }

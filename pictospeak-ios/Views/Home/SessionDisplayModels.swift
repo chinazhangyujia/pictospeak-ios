@@ -30,7 +30,7 @@ struct SessionDisplayItem: Identifiable {
         title = String(sessionItem.standardDescription.prefix(50))
         userDescription = sessionItem.userDescription
         standardDescription = sessionItem.standardDescription
-        imageUrl = sessionItem.materialUrl
+        imageUrl = sessionItem.materialThumbnailUrl ?? sessionItem.materialUrl
         keyTermsCount = sessionItem.keyTerms.count
         suggestionsCount = sessionItem.suggestions.count
         createdAt = nil // Could be parsed from materialUrl or added to API
