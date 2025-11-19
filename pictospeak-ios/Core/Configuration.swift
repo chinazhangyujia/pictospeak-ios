@@ -11,7 +11,6 @@ import Foundation
 
 enum AppEnvironment {
     case development
-    case staging
     case production
 
     static var current: AppEnvironment {
@@ -42,12 +41,9 @@ enum APIConfiguration {
                 // To find your Mac's IP: Open Terminal and run: ipconfig getifaddr en0
                 // Example: "http://192.168.1.5:8000"
                 return "http://192.168.0.12:8000"
-            case .staging:
-                // TODO: Add your staging server URL when ready
-                return "https://staging-api.pictospeak.com"
             case .production:
                 // TODO: Add your production server URL when ready
-                return "https://api.pictospeak.com"
+                return "https://api.peekspeak.babelo.io"
             }
         #endif
     }
