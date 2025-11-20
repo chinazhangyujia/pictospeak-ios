@@ -21,6 +21,18 @@ struct HomeView: View {
         case review
     }
 
+    var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5 ..< 12:
+            return "Good morning!"
+        case 12 ..< 17:
+            return "Good afternoon!"
+        default:
+            return "Good evening!"
+        }
+    }
+
     var body: some View {
         ZStack {
             ScrollView {
@@ -79,7 +91,7 @@ struct HomeView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("Good evening!")
+                Text(greeting)
                     .font(.system(size: 34, weight: .bold, design: .default))
                     .kerning(0.4)
                     .foregroundColor(.primary)

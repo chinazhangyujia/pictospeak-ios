@@ -735,8 +735,6 @@ struct FeedbackView: View {
             Text("AI feedback")
                 .font(.headline)
                 .fontWeight(.regular)
-                .foregroundColor(.primary)
-                .glassEffect(.clear)
 
             Spacer()
 

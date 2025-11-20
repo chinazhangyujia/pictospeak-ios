@@ -14,6 +14,9 @@ struct SpeakView: View {
     let selectedImage: UIImage?
     let selectedVideo: URL?
     let materialsModel: InternalUploadedMaterialsViewModel?
+
+    private let maxRecordingDuration: TimeInterval = 45.0
+
     @State private var isRecording = false
     @State private var audioRecorder: AVAudioRecorder?
     @State private var recordingURL: URL?
@@ -245,7 +248,7 @@ struct SpeakView: View {
         // Start timer to track recording time
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             recordingTime += 0.1
-            if recordingTime >= 10.0 {
+            if recordingTime >= maxRecordingDuration {
                 stopRecording()
             }
         }

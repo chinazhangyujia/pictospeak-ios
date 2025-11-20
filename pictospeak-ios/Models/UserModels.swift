@@ -25,14 +25,14 @@ struct User: Codable, Identifiable {
 
 // MARK: - Backend Response Models (Shared)
 
-struct BackendLanguageResponse: Codable {
+struct BackendLanguage: Codable {
     let code: String
     let name: String
 }
 
 struct BackendUserSettingResponse: Codable {
-    let nativeLanguage: BackendLanguageResponse
-    let targetLanguage: BackendLanguageResponse
+    let nativeLanguage: BackendLanguage
+    let targetLanguage: BackendLanguage
 
     private enum CodingKeys: String, CodingKey {
         case nativeLanguage = "native_language"

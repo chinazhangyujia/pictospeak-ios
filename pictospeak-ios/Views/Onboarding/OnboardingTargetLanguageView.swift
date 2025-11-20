@@ -11,7 +11,11 @@ struct OnboardingTargetLanguageView: View {
     @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var router: Router
     let sourceView: SourceView?
+
     @State private var selectedLanguage: String = "English"
+    @State private var targetLanguages: [BackendLanguage] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String? = nil
 
     init(sourceView: SourceView? = nil) {
         self.sourceView = sourceView
@@ -40,17 +44,30 @@ struct OnboardingTargetLanguageView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.bottom, 48)
+                .padding(.bottom, 24)
 
-                // Language selection box
-                VStack(spacing: 20) {
-                    // Flag icon
-                    LanguageSelectionRow(
-                        flag: "🇺🇸",
-                        language: "English",
-                        isSelected: selectedLanguage == "English",
-                        action: { toggleLanguage("English") }
-                    )
+                if isLoading {
+                    ProgressView()
+                        .padding(.vertical, 20)
+                } else if let error = errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        Task { await fetchLanguages() }
+                    }
+                } else {
+                    // Language selection box
+                    VStack(spacing: 20) {
+                        ForEach(targetLanguages, id: \.code) { language in
+                            LanguageSelectionRow(
+                                flag: getFlagEmoji(for: language.code),
+                                language: language.name,
+                                isSelected: selectedLanguage.lowercased() == language.name.lowercased(),
+                                action: { toggleLanguage(language.name) }
+                            )
+                        }
+                    }
                 }
 
                 // Coming soon text
@@ -83,10 +100,59 @@ struct OnboardingTargetLanguageView: View {
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 20)
+            .disabled(isLoading || errorMessage != nil)
+            .opacity(isLoading || errorMessage != nil ? 0.6 : 1.0)
         }
         .background(AppTheme.backgroundGradient)
         .navigationBarHidden(sourceView == nil)
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await fetchLanguages()
+        }
+    }
+
+    private func fetchLanguages() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let response = try await LanguageService.shared.fetchSupportedLanguages()
+            targetLanguages = response.targetLanguages
+
+            // Set initial selection if available, or default to first one
+            if !targetLanguages.isEmpty {
+                if !targetLanguages.contains(where: { $0.name.lowercased() == selectedLanguage.lowercased() }) {
+                    if let firstLanguage = targetLanguages.first {
+                        selectedLanguage = firstLanguage.name
+                    }
+                }
+            } else {
+                // Should keep loading if no languages, but typically we'd expect at least one
+                // For safety, we'll just stop loading so user isn't stuck, or you can choose to keep spinning
+                // isLoading = true; return // if you want strict "must have data" behavior
+            }
+            isLoading = false
+        } catch {
+            print("❌ Failed to fetch supported target languages: \(error)")
+            errorMessage = "Failed to load languages. Please check your connection."
+            isLoading = false
+        }
+    }
+
+    private func getFlagEmoji(for code: String) -> String {
+        // Map language codes to flag emojis
+        switch code.lowercased() {
+        case "zh": return "🇨🇳"
+        case "en": return "🇺🇸"
+        case "es": return "🇪🇸"
+        case "ja": return "🇯🇵"
+        case "fr": return "🇫🇷"
+        case "de": return "🇩🇪"
+        case "it": return "🇮🇹"
+        case "pt": return "🇵🇹"
+        case "ru": return "🇷🇺"
+        case "ko": return "🇰🇷"
+        default: return "🏳️"
+        }
     }
 
     private func toggleLanguage(_ language: String) {
