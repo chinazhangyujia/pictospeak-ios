@@ -13,6 +13,7 @@ struct SpeakView: View {
     @EnvironmentObject private var router: Router
     let selectedImage: UIImage?
     let selectedVideo: URL?
+    let frames: [Data]
     let materialsModel: InternalUploadedMaterialsViewModel?
 
     private let maxRecordingDuration: TimeInterval = 45.0
@@ -32,15 +33,17 @@ struct SpeakView: View {
         self.selectedImage = selectedImage
         print("SpeakView: init: selectedImage: \(selectedImage)")
         selectedVideo = nil
+        frames = []
         materialsModel = nil
         _currentImage = State(initialValue: selectedImage)
         _currentVideo = State(initialValue: nil)
         _videoPlayer = State(initialValue: nil)
     }
 
-    init(selectedVideo: URL) {
+    init(selectedVideo: URL, frames: [Data] = []) {
         selectedImage = nil
         self.selectedVideo = selectedVideo
+        self.frames = frames
         materialsModel = nil
         _currentImage = State(initialValue: nil)
         _currentVideo = State(initialValue: selectedVideo)
@@ -52,6 +55,7 @@ struct SpeakView: View {
     init(materialsModel: InternalUploadedMaterialsViewModel) {
         selectedImage = nil
         selectedVideo = nil
+        frames = []
         self.materialsModel = materialsModel
         _currentImage = State(initialValue: nil)
         _currentVideo = State(initialValue: nil)
@@ -188,9 +192,9 @@ struct SpeakView: View {
                     do {
                         recordedAudioData = try Data(contentsOf: url)
                         if let currentImage = currentImage {
-                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: recordedAudioData ?? Data(), mediaType: .image))
+                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, frames: [], audioData: recordedAudioData ?? Data(), mediaType: .image))
                         } else if let currentVideo = currentVideo {
-                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: recordedAudioData ?? Data(), mediaType: .video))
+                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, frames: frames, audioData: recordedAudioData ?? Data(), mediaType: .video))
                         }
                     } catch {
                         print("Failed to read audio data: \(error)")

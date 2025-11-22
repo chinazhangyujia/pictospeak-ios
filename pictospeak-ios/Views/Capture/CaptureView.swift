@@ -515,18 +515,6 @@ class CameraManager: NSObject, ObservableObject {
     }
 
     func prepareForVideo() {
-        let microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        if microphoneStatus == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
-                if granted {
-                    self?.prepareForVideo()
-                } else {
-                    print("Microphone access denied by user.")
-                }
-            }
-            return
-        }
-
         sessionQueue.async { [weak self] in
             guard let self = self, self.isSessionConfigured else { return }
             self.configureSessionIfNeededOnSessionQueue()
@@ -535,27 +523,14 @@ class CameraManager: NSObject, ObservableObject {
             if self.session.canSetSessionPreset(.high) {
                 self.session.sessionPreset = .high
             }
-            self.session.commitConfiguration()
 
-            let audioAuthorized = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-            if audioAuthorized {
-                if self.audioDeviceInput == nil,
-                   let audioDevice = AVCaptureDevice.default(for: .audio)
-                {
-                    do {
-                        let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-                        if self.session.canAddInput(audioInput) {
-                            self.session.addInput(audioInput)
-                            self.audioDeviceInput = audioInput
-                        }
-                    } catch {
-                        print("Error setting up audio input: \(error)")
-                    }
-                }
-            } else if let audioInput = self.audioDeviceInput, self.session.inputs.contains(audioInput) {
+            // Ensure no audio input is attached (we don't want to record sound)
+            if let audioInput = self.audioDeviceInput, self.session.inputs.contains(audioInput) {
                 self.session.removeInput(audioInput)
                 self.audioDeviceInput = nil
             }
+
+            self.session.commitConfiguration()
         }
     }
 
@@ -658,8 +633,11 @@ extension CaptureView {
     private func handleRecordedVideoChange(_ newValue: URL?) {
         if let videoURL = newValue {
             cameraManager.stopSession()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                router.goTo(.speakFromVideo(selectedVideo: videoURL))
+            Task {
+                let frames = await generateFrames(from: videoURL)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    router.goTo(.speakFromVideo(selectedVideo: videoURL, frames: frames))
+                }
             }
             // Clear the recorded video after navigation
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -671,14 +649,58 @@ extension CaptureView {
     private func handleSelectedVideoChange(_ newValue: URL?) {
         if let videoURL = newValue {
             cameraManager.stopSession()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                router.goTo(.speakFromVideo(selectedVideo: videoURL))
+            Task {
+                let frames = await generateFrames(from: videoURL)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    router.goTo(.speakFromVideo(selectedVideo: videoURL, frames: frames))
+                }
             }
             // Clear the selected video after navigation
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 selectedVideo = nil
             }
         }
+    }
+
+    private func generateFrames(from videoURL: URL, count: Int = 5) async -> [Data] {
+        let asset = AVAsset(url: videoURL)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
+
+        var frames: [Data] = []
+
+        do {
+            let duration = try await asset.load(.duration)
+            let durationSeconds = CMTimeGetSeconds(duration)
+
+            // Calculate evenly distributed timestamps (taking the middle of each segment)
+            let interval = durationSeconds / Double(count)
+
+            for i in 0 ..< count {
+                let timeSeconds = Double(i) * interval + (interval / 2)
+                let time = CMTime(seconds: timeSeconds, preferredTimescale: 600)
+
+                // Use the async image generation API if available (iOS 16+), or wrapper for older
+                if #available(iOS 16.0, *) {
+                    let (image, _) = try await generator.image(at: time)
+                    if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.7) {
+                        frames.append(data)
+                    }
+                } else {
+                    // Fallback for older iOS versions
+                    let image = try generator.copyCGImage(at: time, actualTime: nil)
+                    if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.7) {
+                        frames.append(data)
+                    }
+                }
+            }
+        } catch {
+            print("Error generating frames: \(error)")
+        }
+
+        return frames
     }
 
     private func handleOnDisappear() {

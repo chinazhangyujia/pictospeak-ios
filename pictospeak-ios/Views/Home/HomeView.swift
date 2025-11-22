@@ -478,4 +478,5 @@ extension HomeView {
 #Preview {
     HomeView()
         .environmentObject(Router())
+        .environmentObject(ContentViewModel())
 }

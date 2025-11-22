@@ -404,11 +404,15 @@ struct SessionCard: View {
                     .multilineTextAlignment(.leading)
                     .kerning(-0.4)
 
+                Spacer()
+
                 Text("Today")
                     .font(.system(size: 13, weight: .regular, design: .default))
                     .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
                     .kerning(-0.1)
             }
+
+            Spacer()
         }
         .padding(16)
         .background(Color.white)

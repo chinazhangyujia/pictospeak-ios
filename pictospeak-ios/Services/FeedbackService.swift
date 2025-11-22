@@ -40,7 +40,7 @@ class FeedbackService {
         }
     }
 
-    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, frames: [Data], audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
@@ -48,6 +48,7 @@ class FeedbackService {
                         authToken: authToken,
                         videoData: videoData,
                         videoFileExtension: videoFileExtension,
+                        frames: frames,
                         audioData: audioData
                     ) { feedbackResponse in
                         continuation.yield(feedbackResponse)
@@ -82,6 +83,7 @@ class FeedbackService {
         authToken: String,
         videoData: Data,
         videoFileExtension: String?,
+        frames: [Data],
         audioData: Data,
         onUpdate: @escaping (FeedbackResponse) -> Void
     ) async throws {
@@ -92,10 +94,14 @@ class FeedbackService {
         let filename = "video.\(fileExtension)"
         let mimeType = mimeTypeForVideoExtension(fileExtension)
 
-        let parts = [
+        var parts = [
             MultipartFormPart(name: "video", filename: filename, contentType: mimeType, data: videoData),
             MultipartFormPart(name: "audio", filename: "audio.wav", contentType: "audio/wav", data: audioData),
         ]
+
+        for (index, frameData) in frames.enumerated() {
+            parts.append(MultipartFormPart(name: "frames", filename: "frame_\(index).jpg", contentType: "image/jpeg", data: frameData))
+        }
 
         try await streamFeedbackAPI(
             authToken: authToken,
