@@ -11,6 +11,8 @@ struct ContentView: View {
     @StateObject private var router = Router()
     @StateObject private var onboardingRouter = OnboardingRouter()
     @StateObject private var contentViewModel = ContentViewModel()
+    @StateObject private var pastSessionsViewModel = PastSessionsViewModel(contentViewModel: ContentViewModel())
+    @StateObject private var reviewViewModel = ReviewViewModel(contentViewModel: ContentViewModel())
 
     var body: some View {
         VStack {
@@ -128,6 +130,16 @@ struct ContentView: View {
         .environmentObject(router)
         .environmentObject(onboardingRouter)
         .environmentObject(contentViewModel)
+        .environmentObject(pastSessionsViewModel)
+        .environmentObject(reviewViewModel)
+        .onAppear {
+            // Inject contentViewModel into pastSessionsViewModel
+            // We do this here to ensure they share the same state, although creating a new one above
+            // was temporary. Since contentViewModel is @StateObject here, we can just update the reference.
+            pastSessionsViewModel.contentViewModel = contentViewModel
+            reviewViewModel.contentViewModel = contentViewModel
+            pastSessionsViewModel.reviewViewModel = reviewViewModel
+        }
     }
 }
 

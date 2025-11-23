@@ -20,8 +20,8 @@ struct VisibilityPreferenceKey: PreferenceKey {
 struct ReviewView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var contentViewModel: ContentViewModel
-    @StateObject private var reviewViewModel: ReviewViewModel
-    @StateObject private var sessionsViewModel: PastSessionsViewModel
+    @EnvironmentObject private var sessionsViewModel: PastSessionsViewModel
+    @EnvironmentObject private var reviewViewModel: ReviewViewModel
     @State private var selectedTab: ReviewTab
     @State private var expandedKeyTerms: Set<UUID> = []
     @State private var expandedSuggestions: Set<UUID> = []
@@ -29,12 +29,10 @@ struct ReviewView: View {
     @State private var isLoadingMore = false
     @State private var hasUserScrolled = false
     @State private var isLoadingMoreSessions = false
+    @State private var showDeleteToast = false
 
     init(initialTab: ReviewTab = .vocabulary) {
         _selectedTab = State(initialValue: initialTab)
-        // Initialize with a temporary ContentViewModel - will be replaced by environment object
-        _reviewViewModel = StateObject(wrappedValue: ReviewViewModel(contentViewModel: ContentViewModel()))
-        _sessionsViewModel = StateObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
     }
 
     var body: some View {
@@ -76,12 +74,8 @@ struct ReviewView: View {
         }
         .onAppear {
             // Initialize ViewModels with the environment ContentViewModel
-            if reviewViewModel.contentViewModel !== contentViewModel {
-                reviewViewModel.contentViewModel = contentViewModel
-            }
-            if sessionsViewModel.contentViewModel !== contentViewModel {
-                sessionsViewModel.contentViewModel = contentViewModel
-            }
+            // reviewViewModel is now an EnvironmentObject, but we ensure it has the latest contentViewModel if needed
+            // although ContentView handles the wiring now.
 
             // Check if auth token is nil on initial load and redirect to auth
             if contentViewModel.authToken == nil {
@@ -92,10 +86,16 @@ struct ReviewView: View {
                 hasLoadedInitialData = true
                 Task {
                     await reviewViewModel.loadInitialReviewItems()
-                    await sessionsViewModel.loadInitialSessions()
+                    // We don't force load sessions here if they are already loaded,
+                    // but we check if they are empty or need refresh logic elsewhere.
+                    // Since it's shared, HomeView might have loaded them.
+                    if sessionsViewModel.sessions.isEmpty {
+                        await sessionsViewModel.loadInitialSessions()
+                    }
                 }
             }
         }
+        .toast(isPresented: $showDeleteToast, message: "Session deleted", icon: "trash.fill")
     }
 
     // MARK: - Vocabulary Content
@@ -355,12 +355,18 @@ struct ReviewView: View {
             if !sessionsViewModel.sessions.isEmpty {
                 List {
                     ForEach(Array(sessionsViewModel.sessions.enumerated()), id: \.element.id) { _, session in
-                        Button(action: {
+                        SwipeToDeleteContainer(cornerRadius: 26, onDelete: {
+                            let success = await sessionsViewModel.deleteSession(sessionId: session.id)
+                            if success {
+                                withAnimation {
+                                    showDeleteToast = true
+                                }
+                            }
+                        }, onTap: {
                             router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
                         }) {
                             SessionCard(session: session)
                         }
-                        .buttonStyle(PlainButtonStyle())
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())

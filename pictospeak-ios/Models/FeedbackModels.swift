@@ -72,12 +72,14 @@ struct DescriptionTeaching: Codable {
     let standardDescription: String
     let standardDescriptionPronunciationUrl: String?
     let id: UUID?
+    let createdAt: String
 
     private enum CodingKeys: String, CodingKey {
         case userDescription = "user_description"
         case standardDescription = "standard_description"
         case standardDescriptionPronunciationUrl = "standard_description_pronunciation_url"
         case id
+        case createdAt = "created_at"
     }
 }
 

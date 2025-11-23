@@ -406,7 +406,7 @@ struct SessionCard: View {
 
                 Spacer()
 
-                Text("Today")
+                Text(dateString)
                     .font(.system(size: 13, weight: .regular, design: .default))
                     .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
                     .kerning(-0.1)
@@ -418,5 +418,56 @@ struct SessionCard: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.02), radius: 16, x: 0, y: 1)
+    }
+
+    private var dateString: String {
+        let dateString = session.descriptionTeaching.createdAt
+
+        guard let date = parseDate(dateString) else { return "Today" }
+
+        let now = Date()
+        // Check if less than 24 hours
+        if abs(now.timeIntervalSince(date)) < 24 * 60 * 60 {
+            return "Today"
+        }
+
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: date)
+        let currentYear = calendar.component(.year, from: now)
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+
+        if year == currentYear {
+            formatter.dateFormat = "MMM d"
+        } else {
+            formatter.dateFormat = "MMM d, yyyy"
+        }
+
+        return formatter.string(from: date)
+    }
+
+    private func parseDate(_ string: String) -> Date? {
+        // Try standard ISO8601 with fractional seconds
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = isoFormatter.date(from: string) { return date }
+
+        // Try standard ISO8601 without fractional seconds
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        if let date = isoFormatter.date(from: string) { return date }
+
+        // Try custom formats (e.g. Python default string representation)
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        // Python str() format: 2025-08-24 01:51:30.509506+00:00
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSSZ"
+        if let date = dateFormatter.date(from: string) { return date }
+
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ssZ"
+        if let date = dateFormatter.date(from: string) { return date }
+
+        return nil
     }
 }

@@ -10,11 +10,12 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var contentViewModel: ContentViewModel
-    @StateObject private var sessionsViewModel: PastSessionsViewModel = .init(contentViewModel: ContentViewModel())
+    @EnvironmentObject private var sessionsViewModel: PastSessionsViewModel
     @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init(contentViewModel: ContentViewModel())
     @State private var selectedMode: NavigationMode = .home
     @State private var hasLoadedInitialData = false
     @State private var isLoadingMoreSessions = false
+    @State private var showDeleteToast = false
 
     enum NavigationMode {
         case home
@@ -131,32 +132,7 @@ struct HomeView: View {
                 }
             }
         }
-        .alert("Error Loading Sessions", isPresented: .constant(sessionsViewModel.errorMessage != nil)) {
-            Button("OK") {
-                sessionsViewModel.clearError()
-            }
-            Button("Retry") {
-                Task {
-                    sessionsViewModel.clearError() // Clear error before retrying
-                    await sessionsViewModel.loadInitialSessions()
-                }
-            }
-        } message: {
-            Text(sessionsViewModel.errorMessage ?? "")
-        }
-        .alert("Error Loading Materials", isPresented: .constant(materialsModel.errorMessage != nil)) {
-            Button("OK") {
-                materialsModel.errorMessage = nil
-            }
-            Button("Retry") {
-                Task {
-                    materialsModel.errorMessage = nil
-                    await materialsModel.refresh()
-                }
-            }
-        } message: {
-            Text(materialsModel.errorMessage ?? "")
-        }
+        .toast(isPresented: $showDeleteToast, message: "Session deleted", icon: "trash.fill")
     }
 
     private var internalMaterialsSection: some View {
@@ -293,12 +269,18 @@ struct HomeView: View {
 
             LazyVStack(spacing: 12) {
                 ForEach(Array(sessionsViewModel.sessions.enumerated()), id: \.element.id) { _, session in
-                    Button(action: {
+                    SwipeToDeleteContainer(cornerRadius: 26, onDelete: {
+                        let success = await sessionsViewModel.deleteSession(sessionId: session.id)
+                        if success {
+                            withAnimation {
+                                showDeleteToast = true
+                            }
+                        }
+                    }, onTap: {
                         router.goTo(.feedbackFromSession(sessionId: session.id, pastSessionsViewModel: sessionsViewModel))
                     }) {
                         SessionCard(session: session)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     .onAppear {
                         loadMoreSessionsIfNeeded(currentSession: session)
                     }

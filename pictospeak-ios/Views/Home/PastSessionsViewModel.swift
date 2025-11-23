@@ -19,6 +19,7 @@ class PastSessionsViewModel: ObservableObject {
     private let sessionService = SessionService.shared
     private var loadingTask: Task<Void, Never>?
     var contentViewModel: ContentViewModel
+    weak var reviewViewModel: ReviewViewModel?
 
     init(contentViewModel: ContentViewModel) {
         self.contentViewModel = contentViewModel
@@ -190,6 +191,59 @@ class PastSessionsViewModel: ObservableObject {
 
         // Load initial sessions
         await loadInitialSessions()
+    }
+
+    /// Deletes a session by ID from both remote and local storage
+    /// - Returns: Boolean indicating success
+    func deleteSession(sessionId: UUID) async -> Bool {
+        guard let authToken = contentViewModel.authToken else {
+            errorMessage = "Authentication required"
+            return false
+        }
+
+        do {
+            try await sessionService.deleteSession(authToken: authToken, sessionId: sessionId.uuidString)
+
+            // Remove review items associated with this session
+            await MainActor.run {
+                reviewViewModel?.reviewItems.removeAll { $0.descriptionGuidanceId == sessionId }
+            }
+
+            // Remove from local list upon success
+            if let index = sessions.firstIndex(where: { $0.id == sessionId }) {
+                sessions.remove(at: index)
+            }
+
+            return true
+        } catch {
+            let errorDescription: String
+            if let sessionError = error as? SessionError {
+                switch sessionError {
+                case .networkError:
+                    errorDescription = "Network connection issue."
+                case .serverError:
+                    errorDescription = "Server error. Please try again later."
+                case .sessionNotFound:
+                    errorDescription = "Session not found."
+                    // If it's not found on server, remove it locally to sync up
+                    if let index = sessions.firstIndex(where: { $0.id == sessionId }) {
+                        sessions.remove(at: index)
+                    }
+                    // Return true since it's effectively deleted (gone from list)
+                    return true
+                default:
+                    errorDescription = "Failed to delete session."
+                }
+            } else {
+                errorDescription = error.localizedDescription
+            }
+
+            // Only show error if it's not a "not found" error (which we handled by removing)
+            if (error as? SessionError) != .sessionNotFound {
+                errorMessage = errorDescription
+            }
+            return false
+        }
     }
 
     func updateKeyTermFavorite(sessionId: UUID, termId: UUID, favorite: Bool) {

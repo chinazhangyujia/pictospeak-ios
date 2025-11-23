@@ -152,6 +152,53 @@ class SessionService {
         }
     }
 
+    /// Deletes a session (description guidance) by ID
+    func deleteSession(authToken: String, sessionId: String) async throws {
+        guard let url = URL(string: baseURL + "/description/guidance/\(sessionId)") else {
+            throw SessionError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "DELETE"
+        urlRequest.timeoutInterval = 30
+
+        // Add Authorization header with Bearer token
+        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+
+        print("🌐 Making DELETE request to session endpoint: \(url)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type: \(type(of: response))")
+                throw SessionError.serverError
+            }
+
+            guard httpResponse.statusCode == 200 || httpResponse.statusCode == 204 else {
+                print("❌ Session deletion API error: \(httpResponse.statusCode)")
+                // Try to read error response body
+                if let errorData = String(data: data, encoding: .utf8) {
+                    print("❌ Error response body: \(errorData)")
+                }
+                if httpResponse.statusCode == 404 {
+                    throw SessionError.sessionNotFound
+                }
+                throw SessionError.serverError
+            }
+
+            print("✅ Successfully deleted session ID: \(sessionId)")
+
+        } catch let urlError as URLError {
+            print("❌ URL Error: \(urlError.localizedDescription)")
+            print("❌ URL Error code: \(urlError.code.rawValue)")
+            throw SessionError.networkError
+        } catch {
+            print("❌ Unexpected error deleting session: \(error)")
+            throw SessionError.networkError
+        }
+    }
+
     /// Converts sessions to display items for UI
     func convertToDisplayItems(_ sessions: [SessionItem]) -> [SessionDisplayItem] {
         return sessions.map { SessionDisplayItem(from: $0) }
