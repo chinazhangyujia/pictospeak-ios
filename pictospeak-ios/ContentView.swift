@@ -37,8 +37,8 @@ struct ContentView: View {
                                         FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                                     case let .feedbackFromSpeak(selectedImage, selectedVideo, frames, audioData, mediaType):
                                         FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, frames: frames, audioData: audioData, mediaType: mediaType)
-                                    case .review:
-                                        ReviewView()
+                                    case let .review(initialTab):
+                                        ReviewView(initialTab: initialTab ?? .vocabulary)
                                     case .auth:
                                         AuthView()
                                     case let .onboardingTargetLanguage(sourceView):
@@ -71,8 +71,8 @@ struct ContentView: View {
                             ReviewView()
                                 .navigationDestination(for: AppRoute.self) { route in
                                     switch route {
-                                    case .review:
-                                        ReviewView()
+                                    case let .review(initialTab):
+                                        ReviewView(initialTab: initialTab ?? .vocabulary)
                                     case let .feedbackFromSession(sessionId, pastSessionsViewModel):
                                         FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
                                     default:

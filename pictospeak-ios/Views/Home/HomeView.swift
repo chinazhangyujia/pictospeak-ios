@@ -246,7 +246,7 @@ struct HomeView: View {
                 Spacer()
 
                 Button("Start review") {
-                    router.goTo(.review)
+                    router.goTo(.review(initialTab: .vocabulary))
                 }
                 .font(.system(size: 15, weight: .semibold, design: .default))
                 .kerning(-0.23)
@@ -277,7 +277,7 @@ struct HomeView: View {
                 Spacer()
 
                 Button(action: {
-                    // See all action
+                    router.goTo(.review(initialTab: .sessions))
                 }) {
                     HStack(spacing: 4) {
                         Text("See All")
@@ -360,7 +360,7 @@ struct MaterialPreviewCard: View {
                 // Material content based on type
                 if material.type == .image {
                     // Image content
-                    AsyncImage(url: URL(string: material.materialUrl)) { image in
+                    CachedAsyncImage(url: URL(string: material.materialUrl)) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -380,7 +380,7 @@ struct MaterialPreviewCard: View {
                     // Video or Audio content - show thumbnail with play button
                     if let thumbnailUrl = material.thumbnailUrl, !thumbnailUrl.isEmpty {
                         // Use thumbnail if available
-                        AsyncImage(url: URL(string: thumbnailUrl)) { image in
+                        CachedAsyncImage(url: URL(string: thumbnailUrl)) { image in
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)

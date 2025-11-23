@@ -380,8 +380,8 @@ struct SessionCard: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // AsyncImage for loading actual session image
-            AsyncImage(url: URL(string: session.materialThumbnailUrl ?? session.materialUrl)) { image in
+            // CachedAsyncImage for loading actual session image
+            CachedAsyncImage(url: URL(string: session.materialThumbnailUrl ?? session.materialUrl)) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)

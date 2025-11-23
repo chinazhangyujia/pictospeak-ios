@@ -12,13 +12,18 @@ enum NavTab: Hashable {
     case capture
 }
 
+enum ReviewTab: String, CaseIterable, Hashable {
+    case vocabulary = "Vocabulary"
+    case sessions = "Sessions"
+}
+
 enum SourceView: Hashable {
     case settings
 }
 
 enum AppRoute: Hashable {
     case home
-    case review
+    case review(initialTab: ReviewTab?)
     case capture
     case speakFromImage(selectedImage: UIImage)
     case speakFromVideo(selectedVideo: URL, frames: [Data])
@@ -40,8 +45,9 @@ enum AppRoute: Hashable {
         switch self {
         case .home:
             hasher.combine(0)
-        case .review:
+        case let .review(initialTab):
             hasher.combine(1)
+            hasher.combine(initialTab)
         case .capture:
             hasher.combine(2)
         case let .speakFromImage(selectedImage):
@@ -103,8 +109,8 @@ enum AppRoute: Hashable {
         switch (lhs, rhs) {
         case (.home, .home):
             return true
-        case (.review, .review):
-            return true
+        case let (.review(lhsTab), .review(rhsTab)):
+            return lhsTab == rhsTab
         case (.capture, .capture):
             return true
         case let (.speakFromImage(lhsImage), .speakFromImage(rhsImage)):

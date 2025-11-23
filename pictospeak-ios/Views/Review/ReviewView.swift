@@ -22,7 +22,7 @@ struct ReviewView: View {
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @StateObject private var reviewViewModel: ReviewViewModel
     @StateObject private var sessionsViewModel: PastSessionsViewModel
-    @State private var selectedTab: ReviewTab = .vocabulary
+    @State private var selectedTab: ReviewTab
     @State private var expandedKeyTerms: Set<UUID> = []
     @State private var expandedSuggestions: Set<UUID> = []
     @State private var hasLoadedInitialData = false
@@ -30,12 +30,8 @@ struct ReviewView: View {
     @State private var hasUserScrolled = false
     @State private var isLoadingMoreSessions = false
 
-    enum ReviewTab: String, CaseIterable {
-        case vocabulary = "Vocabulary"
-        case sessions = "Sessions"
-    }
-
-    init() {
+    init(initialTab: ReviewTab = .vocabulary) {
+        _selectedTab = State(initialValue: initialTab)
         // Initialize with a temporary ContentViewModel - will be replaced by environment object
         _reviewViewModel = StateObject(wrappedValue: ReviewViewModel(contentViewModel: ContentViewModel()))
         _sessionsViewModel = StateObject(wrappedValue: PastSessionsViewModel(contentViewModel: ContentViewModel()))
@@ -115,12 +111,14 @@ struct ReviewView: View {
 
             // Loading State
             if reviewViewModel.isLoading && reviewViewModel.reviewItems.isEmpty {
-                VStack(spacing: 16) {
+                HStack {
+                    Spacer()
                     ProgressView()
-                        .scaleEffect(1.2)
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
+                .padding(.vertical, 10)
+
+                Spacer()
             }
 
             // Error State
@@ -324,14 +322,14 @@ struct ReviewView: View {
 
             // Loading State
             if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
-                VStack(spacing: 16) {
+                HStack {
+                    Spacer()
                     ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Loading sessions...")
-                        .foregroundColor(.secondary)
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+                .padding(.vertical, 10)
+
+                Spacer()
             }
 
             // Error State

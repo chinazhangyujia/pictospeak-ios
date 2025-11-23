@@ -111,6 +111,8 @@ class FeedbackViewModel: ObservableObject {
         }
     }
 
+    // we don't want to use the raw streaming response to override the existing response object in the memory
+    // this is because while streaming, the user could favorite an item. If we do the override, the favorite state will be reset to false
     private func createNewStreamingResponse(newResponse: FeedbackResponse) -> FeedbackResponse {
         guard let oldResponse = feedbackResponse else { return newResponse }
 
