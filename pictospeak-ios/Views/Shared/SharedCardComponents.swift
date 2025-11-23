@@ -16,7 +16,7 @@ struct ShimmerEffect: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(
-                Rectangle()
+                RoundedRectangle(cornerRadius: 4)
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
@@ -39,7 +39,7 @@ struct ShimmerEffect: ViewModifier {
             .onAppear {
                 phase = 200
             }
-            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
 

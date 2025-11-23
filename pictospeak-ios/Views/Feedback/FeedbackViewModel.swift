@@ -53,7 +53,7 @@ class FeedbackViewModel: ObservableObject {
 
                     for try await response in feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData) {
                         await MainActor.run {
-                            self.feedbackResponse = response
+                            self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
                             self.isLoading = false
                         }
                     }
@@ -97,7 +97,7 @@ class FeedbackViewModel: ObservableObject {
                         audioData: audioData
                     ) {
                         await MainActor.run {
-                            self.feedbackResponse = response
+                            self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
                             self.isLoading = false
                         }
                     }
@@ -109,6 +109,59 @@ class FeedbackViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func createNewStreamingResponse(newResponse: FeedbackResponse) -> FeedbackResponse {
+        guard let oldResponse = feedbackResponse else { return newResponse }
+
+        // Create sets of favorited IDs from the old response, ignoring .zero IDs
+        let favoritedKeyTermIds = Set(oldResponse.keyTerms.filter { $0.favorite && $0.id != .zero }.map { $0.id })
+        let favoritedSuggestionIds = Set(oldResponse.suggestions.filter { $0.favorite && $0.id != .zero }.map { $0.id })
+
+        if favoritedKeyTermIds.isEmpty && favoritedSuggestionIds.isEmpty {
+            return newResponse
+        }
+
+        let updatedKeyTerms = newResponse.keyTerms.map { item -> KeyTerm in
+            if favoritedKeyTermIds.contains(item.id) {
+                return KeyTerm(
+                    term: item.term,
+                    translation: item.translation,
+                    example: item.example,
+                    favorite: true,
+                    id: item.id,
+                    descriptionGuidanceId: item.descriptionGuidanceId
+                )
+            }
+            return item
+        }
+
+        let updatedSuggestions = newResponse.suggestions.map { item -> Suggestion in
+            if favoritedSuggestionIds.contains(item.id) {
+                return Suggestion(
+                    term: item.term,
+                    refinement: item.refinement,
+                    translation: item.translation,
+                    reason: item.reason,
+                    favorite: true,
+                    id: item.id,
+                    descriptionGuidanceId: item.descriptionGuidanceId
+                )
+            }
+            return item
+        }
+
+        return FeedbackResponse(
+            originalText: newResponse.originalText,
+            refinedText: newResponse.refinedText,
+            suggestions: updatedSuggestions,
+            keyTerms: updatedKeyTerms,
+            score: newResponse.score,
+            chosenKeyTerms: newResponse.chosenKeyTerms,
+            chosenRefinements: newResponse.chosenRefinements,
+            chosenItemsGenerated: newResponse.chosenItemsGenerated,
+            pronunciationUrl: newResponse.pronunciationUrl
+        )
     }
 
     func updateKeyTermFavoriteLocally(termId: UUID, isFavorite: Bool) {

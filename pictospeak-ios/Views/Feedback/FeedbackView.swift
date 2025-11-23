@@ -450,12 +450,7 @@ struct FeedbackView: View {
     private func suggestionsAndKeyTermsSection(_ feedback: FeedbackResponse) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             // Section title - show waving placeholder if no chosen items loaded yet
-            let chosenItemsGenerated = feedback.chosenItemsGenerated
-            if !chosenItemsGenerated {
-                SkeletonPlaceholder(width: 200, height: 24)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 20)
-            } else if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements, chosenKeyTerms.isEmpty && chosenRefinements.isEmpty {
+            if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements, chosenKeyTerms.isEmpty && chosenRefinements.isEmpty {
                 // don't show anything
             } else {
                 Text("Vocabulary")
@@ -467,11 +462,8 @@ struct FeedbackView: View {
 
             // Combined section with key terms and suggestions
             VStack(alignment: .leading, spacing: 20) {
-                // Check if chosen items are generated
-                let chosenItemsGenerated = feedback.chosenItemsGenerated
-
                 // Key Terms - show chosenKeyTerms if available and generated, otherwise show skeleton
-                if let chosenKeyTerms = feedback.chosenKeyTerms, chosenItemsGenerated {
+                if let chosenKeyTerms = feedback.chosenKeyTerms {
                     // Show cards based on chosen items when they are generated
                     ForEach(Array(chosenKeyTerms.enumerated()), id: \.offset) { index, chosenTerm in
                         // Find matching real keyTerm if available
@@ -550,7 +542,7 @@ struct FeedbackView: View {
                 }
 
                 // Suggestions - show chosenRefinements if available and generated, otherwise show skeleton
-                if let chosenRefinements = feedback.chosenRefinements, chosenItemsGenerated {
+                if let chosenRefinements = feedback.chosenRefinements {
                     // Show cards based on chosen items when they are generated
                     ForEach(Array(chosenRefinements.enumerated()), id: \.offset) { index, chosenRefinement in
                         // Find matching real suggestion if available
