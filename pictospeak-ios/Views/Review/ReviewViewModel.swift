@@ -170,21 +170,52 @@ class ReviewViewModel: ObservableObject {
     func updateReviewItemFavorite(itemId: UUID, favorite: Bool) {
         // Find and update the ReviewItem in the array
         if let itemIndex = reviewItems.firstIndex(where: { $0.id == itemId }) {
+            let item = reviewItems[itemIndex]
+            
             // Create updated ReviewItem with new favorite status
             let updatedItem = ReviewItem(
-                id: reviewItems[itemIndex].id,
-                type: reviewItems[itemIndex].type,
-                term: reviewItems[itemIndex].term,
-                translation: reviewItems[itemIndex].translation,
+                id: item.id,
+                type: item.type,
+                term: item.term,
+                translation: item.translation,
                 favorite: favorite,
-                detail: reviewItems[itemIndex].detail,
-                updatedAt: reviewItems[itemIndex].updatedAt
+                detail: item.detail,
+                updatedAt: item.updatedAt,
+                descriptionGuidanceId: item.descriptionGuidanceId,
+                userOriginalTerm: item.userOriginalTerm
             )
 
             // Update the review items array
             reviewItems[itemIndex] = updatedItem
-
-            print("✅ Updated ReviewItem favorite status: \(itemId) -> \(favorite)")
+            
+            // Update server-side favorite status
+            Task {
+                guard let authToken = contentViewModel.authToken else {
+                    print("❌ No auth token available for updating favorite")
+                    return
+                }
+                
+                do {
+                    switch item.type {
+                    case .keyTerm:
+                        try await FavoriteService.shared.updateKeyTermFavorite(
+                            authToken: authToken,
+                            termId: itemId.uuidString,
+                            favorite: favorite
+                        )
+                    case .suggestion:
+                        try await FavoriteService.shared.updateSuggestionFavorite(
+                            authToken: authToken,
+                            suggestionId: itemId.uuidString,
+                            favorite: favorite
+                        )
+                    }
+                    print("✅ Successfully updated \(item.type) favorite on server: \(itemId) -> \(favorite)")
+                } catch {
+                    print("❌ Failed to update \(item.type) favorite on server: \(error)")
+                    // Optionally revert local change here if needed
+                }
+            }
         } else {
             print("❌ ReviewItem not found with ID: \(itemId)")
         }
