@@ -31,14 +31,14 @@ struct ContentView: View {
                                         CaptureView()
                                     case let .speakFromImage(selectedImage):
                                         SpeakView(selectedImage: selectedImage)
-                                    case let .speakFromVideo(selectedVideo, frames):
-                                        SpeakView(selectedVideo: selectedVideo, frames: frames)
+                                    case let .speakFromVideo(selectedVideo):
+                                        SpeakView(selectedVideo: selectedVideo)
                                     case let .speakFromMaterials(materialsModel):
                                         SpeakView(materialsModel: materialsModel)
                                     case let .feedbackFromSession(sessionId, pastSessionsViewModel):
                                         FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
-                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, frames, audioData, mediaType):
-                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, frames: frames, audioData: audioData, mediaType: mediaType)
+                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
+                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType)
                                     case let .review(initialTab):
                                         ReviewView(initialTab: initialTab ?? .vocabulary)
                                     case .auth:
@@ -93,10 +93,10 @@ struct ContentView: View {
                                         CaptureView()
                                     case let .speakFromImage(selectedImage):
                                         SpeakView(selectedImage: selectedImage)
-                                    case let .speakFromVideo(selectedVideo, frames):
-                                        SpeakView(selectedVideo: selectedVideo, frames: frames)
-                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, frames, audioData, mediaType):
-                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, frames: frames, audioData: audioData, mediaType: mediaType)
+                                    case let .speakFromVideo(selectedVideo):
+                                        SpeakView(selectedVideo: selectedVideo)
+                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
+                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType)
                                     default:
                                         EmptyView()
                                     }

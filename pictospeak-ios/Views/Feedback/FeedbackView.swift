@@ -40,15 +40,13 @@ struct FeedbackView: View {
     // For normal feedback mode
     let selectedImage: UIImage?
     let selectedVideo: URL?
-    let frames: [Data]
     let audioData: Data?
     let mediaType: MediaType?
 
     // Default initializer for normal use
-    init(selectedImage: UIImage?, selectedVideo: URL?, frames: [Data] = [], audioData: Data, mediaType: MediaType) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType) {
         self.selectedImage = selectedImage
         self.selectedVideo = selectedVideo
-        self.frames = frames
         self.audioData = audioData
         self.mediaType = mediaType
         if let selectedVideo {
@@ -62,10 +60,9 @@ struct FeedbackView: View {
     }
 
     // Initializer for previews with fake data
-    init(selectedImage: UIImage?, selectedVideo: URL?, frames: [Data] = [], audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
         self.selectedImage = selectedImage
         self.selectedVideo = selectedVideo
-        self.frames = frames
         self.audioData = audioData
         self.mediaType = mediaType
         if let selectedVideo {
@@ -82,7 +79,6 @@ struct FeedbackView: View {
         self.sessionId = sessionId
         selectedImage = nil
         selectedVideo = nil
-        frames = []
         audioData = nil
         mediaType = nil
         _backgroundVideoPlayer = State(initialValue: nil)
@@ -239,7 +235,6 @@ struct FeedbackView: View {
                 viewModel.loadFeedback(
                     image: selectedImage,
                     videoURL: selectedVideo,
-                    frames: frames,
                     audioData: audioData,
                     mediaType: mediaType
                 )

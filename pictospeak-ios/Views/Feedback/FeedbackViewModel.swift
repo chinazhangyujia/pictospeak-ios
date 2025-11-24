@@ -27,7 +27,7 @@ class FeedbackViewModel: ObservableObject {
         }
     }
 
-    func loadFeedback(image: UIImage?, videoURL: URL?, frames: [Data] = [], audioData: Data, mediaType: MediaType) {
+    func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data, mediaType: MediaType) {
         isLoading = true
         errorMessage = nil
 
@@ -93,7 +93,6 @@ class FeedbackViewModel: ObservableObject {
                         authToken: authToken,
                         videoData: videoData,
                         videoFileExtension: fileExtension,
-                        frames: frames,
                         audioData: audioData
                     ) {
                         await MainActor.run {

@@ -5,6 +5,7 @@
 //  Created by Yujia Zhang on 8/4/25.
 //
 
+import AVFoundation
 import Foundation
 import UIKit
 
@@ -40,10 +41,20 @@ class FeedbackService {
         }
     }
 
-    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, frames: [Data], audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
+                    // Create temp file for video data to generate frames
+                    let tempDir = FileManager.default.temporaryDirectory
+                    let tempVideoURL = tempDir.appendingPathComponent("temp_video_frames_\(UUID().uuidString).\(videoFileExtension ?? "mp4")")
+                    try videoData.write(to: tempVideoURL)
+
+                    let frames = await self.generateFrames(from: tempVideoURL)
+
+                    // Cleanup temp file
+                    try? FileManager.default.removeItem(at: tempVideoURL)
+
                     try await streamVideoAPI(
                         authToken: authToken,
                         videoData: videoData,
@@ -59,6 +70,47 @@ class FeedbackService {
                 }
             }
         }
+    }
+
+    private func generateFrames(from videoURL: URL, count: Int = 5) async -> [Data] {
+        let asset = AVAsset(url: videoURL)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
+
+        var frames: [Data] = []
+
+        do {
+            let duration = try await asset.load(.duration)
+            let durationSeconds = CMTimeGetSeconds(duration)
+
+            // Calculate evenly distributed timestamps (taking the middle of each segment)
+            let interval = durationSeconds / Double(count)
+
+            for i in 0 ..< count {
+                let timeSeconds = Double(i) * interval + (interval / 2)
+                let time = CMTime(seconds: timeSeconds, preferredTimescale: 600)
+
+                // Use the async image generation API if available (iOS 16+), or wrapper for older
+                if #available(iOS 16.0, *) {
+                    let (image, _) = try await generator.image(at: time)
+                    if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.7) {
+                        frames.append(data)
+                    }
+                } else {
+                    // Fallback for older iOS versions
+                    let image = try generator.copyCGImage(at: time, actualTime: nil)
+                    if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.7) {
+                        frames.append(data)
+                    }
+                }
+            }
+        } catch {
+            print("Error generating frames: \(error)")
+        }
+
+        return frames
     }
 
     private func streamImageAPI(authToken: String, image: UIImage, audioData: Data, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {

@@ -26,10 +26,10 @@ enum AppRoute: Hashable {
     case review(initialTab: ReviewTab?)
     case capture
     case speakFromImage(selectedImage: UIImage)
-    case speakFromVideo(selectedVideo: URL, frames: [Data])
+    case speakFromVideo(selectedVideo: URL)
     case speakFromMaterials(materialsModel: InternalUploadedMaterialsViewModel)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
-    case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, frames: [Data], audioData: Data, mediaType: MediaType)
+    case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType)
     case onboardingTargetLanguage(sourceView: SourceView?)
     case onboardingNativeLanguage(selectedTargetLanguage: String, sourceView: SourceView?)
     case auth(initialMode: AuthMode)
@@ -53,10 +53,9 @@ enum AppRoute: Hashable {
         case let .speakFromImage(selectedImage):
             hasher.combine(3)
             hasher.combine(selectedImage.hashValue)
-        case let .speakFromVideo(selectedVideo, frames):
+        case let .speakFromVideo(selectedVideo):
             hasher.combine(4)
             hasher.combine(selectedVideo.hashValue)
-            hasher.combine(frames.count) // Approximate hash for frames
         case let .speakFromMaterials(materialsModel):
             hasher.combine(5)
             hasher.combine(ObjectIdentifier(materialsModel))
@@ -64,11 +63,10 @@ enum AppRoute: Hashable {
             hasher.combine(6)
             hasher.combine(sessionId)
             hasher.combine(ObjectIdentifier(pastSessionsViewModel))
-        case let .feedbackFromSpeak(selectedImage, selectedVideo, frames, audioData, mediaType):
+        case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
             hasher.combine(7)
             hasher.combine(selectedImage?.hashValue ?? 0)
             hasher.combine(selectedVideo?.hashValue ?? 0)
-            hasher.combine(frames.count) // Approximate hash for frames
             hasher.combine(audioData.hashValue)
             hasher.combine(mediaType)
         case let .onboardingTargetLanguage(sourceView):
@@ -115,14 +113,14 @@ enum AppRoute: Hashable {
             return true
         case let (.speakFromImage(lhsImage), .speakFromImage(rhsImage)):
             return lhsImage.hashValue == rhsImage.hashValue
-        case let (.speakFromVideo(lhsVideo, lhsFrames), .speakFromVideo(rhsVideo, rhsFrames)):
-            return lhsVideo.hashValue == rhsVideo.hashValue && lhsFrames == rhsFrames
+        case let (.speakFromVideo(lhsVideo), .speakFromVideo(rhsVideo)):
+            return lhsVideo.hashValue == rhsVideo.hashValue
         case let (.speakFromMaterials(lhsMaterialsModel), .speakFromMaterials(rhsMaterialsModel)):
             return lhsMaterialsModel === rhsMaterialsModel
         case let (.feedbackFromSession(lhsSessionId, lhsPastSessionsViewModel), .feedbackFromSession(rhsSessionId, rhsPastSessionsViewModel)):
             return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
-        case let (.feedbackFromSpeak(lhsImage, lhsVideo, lhsFrames, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsVideo, rhsFrames, rhsAudioData, rhsMediaType)):
-            return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsFrames == rhsFrames && lhsAudioData.hashValue == rhsAudioData.hashValue && lhsMediaType == rhsMediaType
+        case let (.feedbackFromSpeak(lhsImage, lhsVideo, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsVideo, rhsAudioData, rhsMediaType)):
+            return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsAudioData.hashValue == rhsAudioData.hashValue && lhsMediaType == rhsMediaType
         case let (.onboardingTargetLanguage(lhsSourceView), .onboardingTargetLanguage(rhsSourceView)):
             return lhsSourceView == rhsSourceView
         case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage, lhsSourceView), .onboardingNativeLanguage(rhsSelectedTargetLanguage, rhsSourceView)):

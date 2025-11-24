@@ -171,7 +171,7 @@ class ReviewViewModel: ObservableObject {
         // Find and update the ReviewItem in the array
         if let itemIndex = reviewItems.firstIndex(where: { $0.id == itemId }) {
             let item = reviewItems[itemIndex]
-            
+
             // Create updated ReviewItem with new favorite status
             let updatedItem = ReviewItem(
                 id: item.id,
@@ -187,14 +187,14 @@ class ReviewViewModel: ObservableObject {
 
             // Update the review items array
             reviewItems[itemIndex] = updatedItem
-            
+
             // Update server-side favorite status
             Task {
                 guard let authToken = contentViewModel.authToken else {
                     print("❌ No auth token available for updating favorite")
                     return
                 }
-                
+
                 do {
                     switch item.type {
                     case .keyTerm:
