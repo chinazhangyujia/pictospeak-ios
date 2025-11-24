@@ -388,7 +388,7 @@ struct FeedbackView: View {
                         Text(feedback.originalText)
                             .font(.system(size: 17, weight: .regular))
                             .foregroundColor(.black)
-                            .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                            .lineSpacing(7)
                             .kerning(-0.43) // Letter spacing -0.43px
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
@@ -423,7 +423,7 @@ struct FeedbackView: View {
                         }
                         .font(.system(size: 17, weight: .regular))
                         .foregroundColor(.black)
-                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .lineSpacing(7)
                         .kerning(-0.43) // Letter spacing -0.43px
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -678,7 +678,7 @@ struct FeedbackView: View {
                     Text(session.userDescription)
                         .font(.system(size: 17, weight: .regular))
                         .foregroundColor(.black)
-                        .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                        .lineSpacing(7)
                         .kerning(-0.43) // Letter spacing -0.43px
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -691,7 +691,7 @@ struct FeedbackView: View {
                     }
                     .font(.system(size: 17, weight: .regular))
                     .foregroundColor(.black)
-                    .lineSpacing(10) // 27 - 17 = 10pt line spacing for 27px line height
+                    .lineSpacing(7)
                     .kerning(-0.43) // Letter spacing -0.43px
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1209,10 +1209,16 @@ struct FeedbackView: View {
         private func createAttributedString() -> NSAttributedString {
             let attributedString = NSMutableAttributedString(string: text)
 
-            // Set base attributes
+            // Create paragraph style for line spacing
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.lineSpacing = 7
+
+            // Set base attributes matching the SwiftUI Text configuration
             let baseAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 17, weight: .regular),
-                .foregroundColor: UIColor.label,
+                .foregroundColor: UIColor.black,
+                .paragraphStyle: paragraphStyle,
+                .kern: -0.43,
             ]
             attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: text.count))
 
@@ -1229,6 +1235,7 @@ struct FeedbackView: View {
 
                 // Make it look clickable
                 attributedString.addAttribute(.foregroundColor, value: UIColor(AppTheme.primaryBlue), range: range)
+                attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 17, weight: .medium), range: range)
             }
 
             return attributedString
