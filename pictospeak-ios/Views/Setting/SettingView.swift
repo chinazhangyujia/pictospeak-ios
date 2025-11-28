@@ -35,15 +35,15 @@ struct SettingView: View {
                         }
                     )
 
-                    Divider()
+                    // Divider()
 
-                    settingRow(
-                        icon: "creditcard",
-                        title: "Subscription",
-                        action: {
-                            router.goTo(.subscription)
-                        }
-                    )
+                    // settingRow(
+                    //     icon: "creditcard",
+                    //     title: "Subscription",
+                    //     action: {
+                    //         router.goTo(.subscription)
+                    //     }
+                    // )
                 }
 
                 // Language & Learning Section
