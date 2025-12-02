@@ -70,20 +70,22 @@ struct KeyTermCard: View {
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
     let onClickDetailText: (() -> Void)?
+    let languageCode: String
 
-    init(keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil) {
+    init(keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US") {
         self.keyTerm = keyTerm
         self.isExpanded = isExpanded
         self.onToggle = onToggle
         self.onFavoriteToggle = onFavoriteToggle
         self.onClickDetailText = onClickDetailText
+        self.languageCode = languageCode
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
 
     private func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.voice = AVSpeechSynthesisVoice(language: languageCode)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         speechSynthesizer.speak(utterance)
     }
@@ -211,20 +213,22 @@ struct SuggestionCard: View {
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
     let onClickDetailText: (() -> Void)?
+    let languageCode: String
 
-    init(suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil) {
+    init(suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US") {
         self.suggestion = suggestion
         self.isExpanded = isExpanded
         self.onToggle = onToggle
         self.onFavoriteToggle = onFavoriteToggle
         self.onClickDetailText = onClickDetailText
+        self.languageCode = languageCode
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
 
     private func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.voice = AVSpeechSynthesisVoice(language: languageCode)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         speechSynthesizer.speak(utterance)
     }

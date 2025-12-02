@@ -44,7 +44,7 @@ struct FeedbackView: View {
     let mediaType: MediaType?
 
     // Default initializer for normal use
-    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType) {
         self.selectedImage = selectedImage
         self.selectedVideo = selectedVideo
         self.audioData = audioData
@@ -60,7 +60,7 @@ struct FeedbackView: View {
     }
 
     // Initializer for previews with fake data
-    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType, previewData: FeedbackResponse) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType, previewData: FeedbackResponse) {
         self.selectedImage = selectedImage
         self.selectedVideo = selectedVideo
         self.audioData = audioData
@@ -98,6 +98,11 @@ struct FeedbackView: View {
     @State private var showSheet = true
     @State private var selectedDetent: PresentationDetent = .fraction(0.5)
     @State private var pendingNavigation: PendingNavigation?
+
+    private var targetLanguageCode: String {
+        let languageName = contentViewModel.userInfo.userSetting?.targetLanguage ?? "English"
+        return LanguageService.getBCP47Code(for: languageName)
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -231,7 +236,7 @@ struct FeedbackView: View {
             // Only load feedback if we don't already have preview data and we're in normal mode
             if session == nil && viewModel.feedbackResponse == nil {
                 startThinkingAnimation()
-                guard let audioData = audioData, let mediaType = mediaType else { return }
+                guard let mediaType = mediaType else { return }
                 viewModel.loadFeedback(
                     image: selectedImage,
                     videoURL: selectedVideo,
@@ -507,7 +512,8 @@ struct FeedbackView: View {
                                         print("❌ Failed to update key term favorite on server: \(error)")
                                     }
                                 }
-                            }
+                            },
+                            languageCode: targetLanguageCode
                         )
                         .id("chosen-keyterm-\(index)")
                     }
@@ -589,7 +595,8 @@ struct FeedbackView: View {
                                         print("❌ Failed to update suggestion favorite on server: \(error)")
                                     }
                                 }
-                            }
+                            },
+                            languageCode: targetLanguageCode
                         )
                         .id("chosen-suggestion-\(index)")
                     }
@@ -808,7 +815,8 @@ struct FeedbackView: View {
                                     print("❌ Failed to update key term favorite on server: \(error)")
                                 }
                             }
-                        }
+                        },
+                        languageCode: targetLanguageCode
                     )
                     .id(keyTerm.id)
                 }
@@ -850,7 +858,8 @@ struct FeedbackView: View {
                                     print("❌ Failed to update suggestion favorite on server: \(error)")
                                 }
                             }
-                        }
+                        },
+                        languageCode: targetLanguageCode
                     )
                     .id(suggestion.id)
                 }

@@ -27,7 +27,7 @@ class FeedbackViewModel: ObservableObject {
         }
     }
 
-    func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data, mediaType: MediaType) {
+    func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data?, mediaType: MediaType) {
         isLoading = true
         errorMessage = nil
 

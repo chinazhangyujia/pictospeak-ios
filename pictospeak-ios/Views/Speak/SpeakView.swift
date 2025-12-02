@@ -178,6 +178,9 @@ struct SpeakView: View {
         }
         .onChange(of: isRecording) { _, newValue in
             if !newValue {
+                // Capture duration before reset
+                let finalDuration = recordingTime
+
                 // Stop recording
                 recordingTimer?.invalidate()
                 recordingTimer = nil
@@ -186,11 +189,21 @@ struct SpeakView: View {
                 // Get recorded audio data and navigate to feedback
                 if let url = recordingURL {
                     do {
-                        recordedAudioData = try Data(contentsOf: url)
+                        let audioDataToSend: Data?
+
+                        if finalDuration < 2.0 {
+                            print("Recording too short (< 2s), sending without audio")
+                            audioDataToSend = nil
+                        } else {
+                            audioDataToSend = try Data(contentsOf: url)
+                        }
+
+                        recordedAudioData = audioDataToSend
+
                         if let currentImage = currentImage {
-                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: recordedAudioData ?? Data(), mediaType: .image))
+                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: audioDataToSend, mediaType: .image))
                         } else if let currentVideo = currentVideo {
-                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: recordedAudioData ?? Data(), mediaType: .video))
+                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: audioDataToSend, mediaType: .video))
                         }
                     } catch {
                         print("Failed to read audio data: \(error)")

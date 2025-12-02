@@ -31,6 +31,11 @@ struct ReviewView: View {
     @State private var isLoadingMoreSessions = false
     @State private var showDeleteToast = false
 
+    private var targetLanguageCode: String {
+        let languageName = contentViewModel.userInfo.userSetting?.targetLanguage ?? "English"
+        return LanguageService.getBCP47Code(for: languageName)
+    }
+
     init(initialTab: ReviewTab = .vocabulary) {
         _selectedTab = State(initialValue: initialTab)
     }
@@ -169,7 +174,8 @@ struct ReviewView: View {
                                             router.goTo(.feedbackFromSession(sessionId: sessionItem.id, pastSessionsViewModel: sessionsViewModel))
                                         }
                                     }
-                                }
+                                },
+                                languageCode: targetLanguageCode
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -201,7 +207,8 @@ struct ReviewView: View {
                                             router.goTo(.feedbackFromSession(sessionId: sessionItem.id, pastSessionsViewModel: sessionsViewModel))
                                         }
                                     }
-                                }
+                                },
+                                languageCode: targetLanguageCode
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)

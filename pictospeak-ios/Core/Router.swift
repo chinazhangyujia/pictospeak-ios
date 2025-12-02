@@ -29,7 +29,7 @@ enum AppRoute: Hashable {
     case speakFromVideo(selectedVideo: URL)
     case speakFromMaterials(materialsModel: InternalUploadedMaterialsViewModel)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
-    case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data, mediaType: MediaType)
+    case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType)
     case onboardingTargetLanguage(sourceView: SourceView?)
     case onboardingNativeLanguage(selectedTargetLanguage: String, sourceView: SourceView?)
     case auth(initialMode: AuthMode)
@@ -67,7 +67,7 @@ enum AppRoute: Hashable {
             hasher.combine(7)
             hasher.combine(selectedImage?.hashValue ?? 0)
             hasher.combine(selectedVideo?.hashValue ?? 0)
-            hasher.combine(audioData.hashValue)
+            hasher.combine(audioData?.hashValue ?? 0)
             hasher.combine(mediaType)
         case let .onboardingTargetLanguage(sourceView):
             hasher.combine(8)
@@ -120,7 +120,7 @@ enum AppRoute: Hashable {
         case let (.feedbackFromSession(lhsSessionId, lhsPastSessionsViewModel), .feedbackFromSession(rhsSessionId, rhsPastSessionsViewModel)):
             return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
         case let (.feedbackFromSpeak(lhsImage, lhsVideo, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsVideo, rhsAudioData, rhsMediaType)):
-            return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsAudioData.hashValue == rhsAudioData.hashValue && lhsMediaType == rhsMediaType
+            return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsAudioData?.hashValue == rhsAudioData?.hashValue && lhsMediaType == rhsMediaType
         case let (.onboardingTargetLanguage(lhsSourceView), .onboardingTargetLanguage(rhsSourceView)):
             return lhsSourceView == rhsSourceView
         case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage, lhsSourceView), .onboardingNativeLanguage(rhsSelectedTargetLanguage, rhsSourceView)):

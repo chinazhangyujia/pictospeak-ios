@@ -29,6 +29,25 @@ class LanguageService {
 
     // MARK: - Public Methods
 
+    /// Maps language name (case-insensitive) to BCP-47 language code
+    /// - Parameter languageName: The name of the language (e.g., "English", "Spanish")
+    /// - Returns: The BCP-47 language code (e.g., "en-US", "es-ES")
+    static func getBCP47Code(for languageName: String) -> String {
+        switch languageName.uppercased() {
+        case "ENGLISH": return "en-US"
+        case "SPANISH": return "es-ES"
+        case "FRENCH": return "fr-FR"
+        case "GERMAN": return "de-DE"
+        case "ITALIAN": return "it-IT"
+        case "PORTUGUESE": return "pt-BR"
+        case "RUSSIAN": return "ru-RU"
+        case "CHINESE": return "zh-CN"
+        case "JAPANESE": return "ja-JP"
+        case "KOREAN": return "ko-KR"
+        default: return "en-US"
+        }
+    }
+
     /// Fetches the supported languages from the backend
     /// - Returns: LanguageSupportedResponse containing lists of target and native languages
     func fetchSupportedLanguages() async throws -> LanguageSupportedResponse {

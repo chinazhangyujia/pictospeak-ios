@@ -26,11 +26,22 @@ class FeedbackService {
     // MARK: - Helper Methods
 
     // New streaming method that emits updates as they arrive
-    func getFeedbackStreamForImage(authToken: String, image: UIImage, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForImage(authToken: String, image: UIImage, audioData: Data?) -> AsyncThrowingStream<FeedbackResponse, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
-                    try await streamImageAPI(authToken: authToken, image: image, audioData: audioData) { feedbackResponse in
+                    // Compress audio if present
+                    var finalAudioData = audioData
+                    if let audio = audioData {
+                        print("🎵 Original audio size: \(ByteCountFormatter.string(fromByteCount: Int64(audio.count), countStyle: .file))")
+                        finalAudioData = try? await self.compressAudio(data: audio)
+                        if let compressed = finalAudioData {
+                            let ratio = Double(audio.count) / Double(compressed.count)
+                            print("🎵 Compressed audio size: \(ByteCountFormatter.string(fromByteCount: Int64(compressed.count), countStyle: .file)) (Ratio: \(String(format: "%.1f", ratio))x)")
+                        }
+                    }
+
+                    try await streamImageAPI(authToken: authToken, image: image, audioData: finalAudioData) { feedbackResponse in
                         continuation.yield(feedbackResponse)
                     }
                     continuation.finish()
@@ -41,26 +52,49 @@ class FeedbackService {
         }
     }
 
-    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data?) -> AsyncThrowingStream<FeedbackResponse, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
-                    // Create temp file for video data to generate frames
+                    print("📹 Original video size: \(ByteCountFormatter.string(fromByteCount: Int64(videoData.count), countStyle: .file))")
+
+                    // Create temp file for original video data
                     let tempDir = FileManager.default.temporaryDirectory
-                    let tempVideoURL = tempDir.appendingPathComponent("temp_video_frames_\(UUID().uuidString).\(videoFileExtension ?? "mp4")")
-                    try videoData.write(to: tempVideoURL)
+                    let originalFilename = "temp_video_original_\(UUID().uuidString).\(videoFileExtension ?? "mp4")"
+                    let tempOriginalURL = tempDir.appendingPathComponent(originalFilename)
+                    try videoData.write(to: tempOriginalURL)
 
-                    let frames = await self.generateFrames(from: tempVideoURL)
+                    // Compress Video
+                    let compressedVideoURL = try await self.compressVideo(inputURL: tempOriginalURL)
+                    let compressedVideoData = try Data(contentsOf: compressedVideoURL)
 
-                    // Cleanup temp file
-                    try? FileManager.default.removeItem(at: tempVideoURL)
+                    let videoRatio = Double(videoData.count) / Double(compressedVideoData.count)
+                    print("📹 Compressed video size: \(ByteCountFormatter.string(fromByteCount: Int64(compressedVideoData.count), countStyle: .file)) (Ratio: \(String(format: "%.1f", videoRatio))x)")
+
+                    // Generate Frames from Compressed Video (efficient)
+                    let frames = await self.generateFrames(from: compressedVideoURL)
+
+                    // Compress Audio if present
+                    var finalAudioData = audioData
+                    if let audio = audioData {
+                        print("🎵 Original audio size: \(ByteCountFormatter.string(fromByteCount: Int64(audio.count), countStyle: .file))")
+                        finalAudioData = try? await self.compressAudio(data: audio)
+                        if let compressed = finalAudioData {
+                            let ratio = Double(audio.count) / Double(compressed.count)
+                            print("🎵 Compressed audio size: \(ByteCountFormatter.string(fromByteCount: Int64(compressed.count), countStyle: .file)) (Ratio: \(String(format: "%.1f", ratio))x)")
+                        }
+                    }
+
+                    // Cleanup temp files
+                    try? FileManager.default.removeItem(at: tempOriginalURL)
+                    try? FileManager.default.removeItem(at: compressedVideoURL)
 
                     try await streamVideoAPI(
                         authToken: authToken,
-                        videoData: videoData,
-                        videoFileExtension: videoFileExtension,
+                        videoData: compressedVideoData,
+                        videoFileExtension: "mp4", // Compressed output is always mp4
                         frames: frames,
-                        audioData: audioData
+                        audioData: finalAudioData
                     ) { feedbackResponse in
                         continuation.yield(feedbackResponse)
                     }
@@ -79,6 +113,9 @@ class FeedbackService {
         generator.requestedTimeToleranceBefore = .zero
         generator.requestedTimeToleranceAfter = .zero
 
+        // Limit frame size to reducing upload size
+        generator.maximumSize = CGSize(width: 512, height: 512)
+
         var frames: [Data] = []
 
         do {
@@ -92,18 +129,10 @@ class FeedbackService {
                 let timeSeconds = Double(i) * interval + (interval / 2)
                 let time = CMTime(seconds: timeSeconds, preferredTimescale: 600)
 
-                // Use the async image generation API if available (iOS 16+), or wrapper for older
-                if #available(iOS 16.0, *) {
-                    let (image, _) = try await generator.image(at: time)
-                    if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.7) {
-                        frames.append(data)
-                    }
-                } else {
-                    // Fallback for older iOS versions
-                    let image = try generator.copyCGImage(at: time, actualTime: nil)
-                    if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.7) {
-                        frames.append(data)
-                    }
+                let (image, _) = try await generator.image(at: time)
+                // High compression for frames as they are just context
+                if let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.5) {
+                    frames.append(data)
                 }
             }
         } catch {
@@ -113,15 +142,35 @@ class FeedbackService {
         return frames
     }
 
-    private func streamImageAPI(authToken: String, image: UIImage, audioData: Data, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+    private func streamImageAPI(authToken: String, image: UIImage, audioData: Data?, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
+        // 1. Resize Image
+        let originalSize = image.jpegData(compressionQuality: 1.0)?.count ?? 0
+        print("🖼️ Original image size (est. full quality): \(ByteCountFormatter.string(fromByteCount: Int64(originalSize), countStyle: .file))")
+
+        let resizedImage = resizeImage(image: image, targetSize: CGSize(width: 1024, height: 1024))
+
+        // 2. Compress Image (0.6 is usually good balance)
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.6) else {
             throw FeedbackError.encodingError
         }
 
-        let parts = [
+        if originalSize > 0 {
+            let ratio = Double(originalSize) / Double(imageData.count)
+            print("🖼️ Compressed image size: \(ByteCountFormatter.string(fromByteCount: Int64(imageData.count), countStyle: .file)) (Ratio: \(String(format: "%.1f", ratio))x)")
+        }
+
+        var parts = [
             MultipartFormPart(name: "image", filename: "image.jpg", contentType: "image/jpeg", data: imageData),
-            MultipartFormPart(name: "audio", filename: "audio.wav", contentType: "audio/wav", data: audioData),
         ]
+
+        if let audioData = audioData {
+            // Check if it's likely M4A (starts with ftypM4A usually, or based on our compression)
+            // For now assuming the compression helper returns m4a or original wav
+            let isM4A = audioData.count < 1_000_000 // Simple heuristic or rely on our compressAudio
+            let ext = "m4a" // We are aggressively converting to m4a
+            let type = "audio/mp4"
+            parts.append(MultipartFormPart(name: "audio", filename: "audio.\(ext)", contentType: type, data: audioData))
+        }
 
         try await streamFeedbackAPI(
             authToken: authToken,
@@ -136,7 +185,7 @@ class FeedbackService {
         videoData: Data,
         videoFileExtension: String?,
         frames: [Data],
-        audioData: Data,
+        audioData: Data?,
         onUpdate: @escaping (FeedbackResponse) -> Void
     ) async throws {
         let normalizedExtension = videoFileExtension?
@@ -148,8 +197,11 @@ class FeedbackService {
 
         var parts = [
             MultipartFormPart(name: "video", filename: filename, contentType: mimeType, data: videoData),
-            MultipartFormPart(name: "audio", filename: "audio.wav", contentType: "audio/wav", data: audioData),
         ]
+
+        if let audioData = audioData {
+            parts.append(MultipartFormPart(name: "audio", filename: "audio.m4a", contentType: "audio/mp4", data: audioData))
+        }
 
         for (index, frameData) in frames.enumerated() {
             parts.append(MultipartFormPart(name: "frames", filename: "frame_\(index).jpg", contentType: "image/jpeg", data: frameData))
@@ -216,8 +268,15 @@ class FeedbackService {
         print("🌐 Making request to FastAPI endpoint: \(url)")
         print("📦 Request body size: \(body.count) bytes")
 
+        let startTime = Date()
+        print("⏱️ Start time: \(startTime)")
+
         do {
             let (bytes, response) = try await URLSession.shared.bytes(for: urlRequest)
+
+            let endTime = Date()
+            let latency = endTime.timeIntervalSince(startTime)
+            print("⏱️ Latency (headers received): \(String(format: "%.3f", latency)) seconds")
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw FeedbackError.serverError
@@ -295,7 +354,7 @@ class FeedbackService {
                                         // Try to decode as StreamingFeedbackResponse
                                         let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: jsonData)
                                         chunkCount += 1
-                                        print("📦 Streamed Object \(chunkCount): \(jsonString)")
+                                        // print("📦 Streamed Object \(chunkCount): \(jsonString)")
 
                                         // Convert to FeedbackResponse and emit update
                                         let feedbackResponse = streamingResponse.toFeedbackResponse()
@@ -354,6 +413,95 @@ class FeedbackService {
         } catch {
             print("❌ Network error: \(error)")
             throw FeedbackError.networkError
+        }
+    }
+
+    // MARK: - Compression Helpers
+
+    private func resizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
+        let size = image.size
+
+        let widthRatio = targetSize.width / size.width
+        let heightRatio = targetSize.height / size.height
+
+        // Figure out what our orientation is, and use that to form the rectangle
+        var newSize: CGSize
+        if widthRatio > heightRatio {
+            newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+        } else {
+            newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
+        }
+
+        // This is the rect that we've calculated out and this is what is actually used below
+        let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+
+        // Actually do the resizing to the rect using the ImageContext stuff
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: rect)
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return newImage ?? image
+    }
+
+    private func compressVideo(inputURL: URL) async throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let outputURL = tempDir.appendingPathComponent("compressed_video_\(UUID().uuidString).mp4")
+
+        let asset = AVAsset(url: inputURL)
+        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetMediumQuality) else {
+            throw FeedbackError.encodingError
+        }
+
+        exportSession.outputURL = outputURL
+        exportSession.outputFileType = .mp4
+        exportSession.shouldOptimizeForNetworkUse = true
+
+        await exportSession.export()
+
+        if exportSession.status == .completed {
+            return outputURL
+        } else {
+            print("Video compression failed: \(String(describing: exportSession.error))")
+            throw exportSession.error ?? FeedbackError.encodingError
+        }
+    }
+
+    private func compressAudio(data: Data) async throws -> Data {
+        let tempDir = FileManager.default.temporaryDirectory
+        let inputURL = tempDir.appendingPathComponent("temp_audio_in_\(UUID().uuidString).wav")
+        let outputURL = tempDir.appendingPathComponent("temp_audio_out_\(UUID().uuidString).m4a")
+
+        do {
+            try data.write(to: inputURL)
+
+            let asset = AVAsset(url: inputURL)
+            guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
+                // Fallback to original data if session creation fails
+                try? FileManager.default.removeItem(at: inputURL)
+                return data
+            }
+
+            exportSession.outputURL = outputURL
+            exportSession.outputFileType = .m4a
+
+            await exportSession.export()
+
+            if exportSession.status == .completed {
+                let compressedData = try Data(contentsOf: outputURL)
+                // Cleanup
+                try? FileManager.default.removeItem(at: inputURL)
+                try? FileManager.default.removeItem(at: outputURL)
+                return compressedData
+            } else {
+                print("Audio compression failed: \(String(describing: exportSession.error))")
+                // Cleanup and fallback
+                try? FileManager.default.removeItem(at: inputURL)
+                return data
+            }
+        } catch {
+            print("Audio compression error: \(error)")
+            return data
         }
     }
 

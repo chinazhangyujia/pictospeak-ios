@@ -40,7 +40,7 @@ enum APIConfiguration {
                 // TODO: Update this with your Mac's IP address when testing on device
                 // To find your Mac's IP: Open Terminal and run: ipconfig getifaddr en0
                 // Example: "http://192.168.1.5:8000"
-                return "http://192.168.0.12:8000"
+                return "http://192.168.0.17:8000"
             case .production:
                 // TODO: Add your production server URL when ready
                 return "https://api.peekspeak.babelo.io"
