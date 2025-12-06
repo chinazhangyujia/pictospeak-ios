@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct CreateNewPasswordView: View {
-    @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @EnvironmentObject private var router: Router
     @State private var newPassword: String = ""
@@ -231,6 +230,7 @@ struct CreateNewPasswordView: View {
         }
         .padding(.horizontal, 16)
         .background(AppTheme.backgroundGradient)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     // MARK: - Actions
@@ -327,7 +327,6 @@ struct CreateNewPasswordView: View {
 
 #Preview {
     CreateNewPasswordView(verificationId: "test-id", verificationCode: "123456", email: "test@test.com", fullName: nil)
-        .environmentObject(OnboardingRouter())
         .environmentObject(ContentViewModel())
         .environmentObject(Router())
 }

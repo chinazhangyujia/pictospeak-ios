@@ -30,7 +30,7 @@ class InternalUploadedMaterialService {
     /// Fetches internal uploaded materials with pagination support
     /// - Parameter cursor: Optional cursor for pagination. Pass nil for the first page.
     /// - Returns: InternalUploadedMaterialsResponse containing materials and next cursor
-    func fetchInternalUploadedMaterials(authToken: String, cursor: String? = nil) async throws -> InternalUploadedMaterialsResponse {
+    func fetchInternalUploadedMaterials(cursor: String? = nil) async throws -> InternalUploadedMaterialsResponse {
         var urlComponents = URLComponents(string: baseURL + "/material/internal-uploaded")!
 
         // Add cursor as query parameters if provided
@@ -45,9 +45,6 @@ class InternalUploadedMaterialService {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.timeoutInterval = 30
-
-        // Add Authorization header with Bearer token
-        urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
         print("🌐 Making request to internal uploaded materials endpoint: \(url)")
 

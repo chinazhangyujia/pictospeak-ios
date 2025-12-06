@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct AuthView: View {
-    @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @EnvironmentObject private var router: Router
     @State private var fullName: String = ""
@@ -284,6 +283,20 @@ struct AuthView: View {
         .padding(.horizontal, 16)
         .background(AppTheme.backgroundGradient)
         .navigationBarBackButtonHidden(contentViewModel.hasOnboardingCompleted)
+        .toolbar(content: {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    router.resetToHome()
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.black)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                }
+            }
+        })
         .toolbar(.hidden, for: .tabBar)
     }
 
@@ -328,11 +341,7 @@ struct AuthView: View {
             await MainActor.run {
                 isLoading = false
                 // Navigate to verification code view for sign-up flow
-                if contentViewModel.hasOnboardingCompleted {
-                    router.goTo(.verificationCode(email: email, flowType: .signUp, fullName: fullName))
-                } else {
-                    onboardingRouter.goTo(.verificationCode(email: email, flowType: .signUp, fullName: fullName))
-                }
+                router.goTo(.verificationCode(email: email, flowType: .signUp, fullName: fullName))
             }
         } catch {
             await MainActor.run {
@@ -383,12 +392,7 @@ struct AuthView: View {
             await MainActor.run {
                 isLoading = false
                 // Navigate to verification code view after successful send
-                // Use the appropriate router based on onboarding status
-                if contentViewModel.hasOnboardingCompleted {
-                    router.goTo(.verificationCode(email: email, flowType: .resetPassword, fullName: nil))
-                } else {
-                    onboardingRouter.goTo(.verificationCode(email: email, flowType: .resetPassword, fullName: nil))
-                }
+                router.goTo(.verificationCode(email: email, flowType: .resetPassword, fullName: nil))
             }
         } catch {
             await MainActor.run {
@@ -401,6 +405,5 @@ struct AuthView: View {
 
 #Preview {
     AuthView()
-        .environmentObject(OnboardingRouter())
         .environmentObject(ContentViewModel())
 }

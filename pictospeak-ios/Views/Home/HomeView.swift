@@ -11,7 +11,7 @@ struct HomeView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @EnvironmentObject private var sessionsViewModel: PastSessionsViewModel
-    @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init(contentViewModel: ContentViewModel())
+    @StateObject private var materialsModel: InternalUploadedMaterialsViewModel = .init()
     @State private var selectedMode: NavigationMode = .home
     @State private var hasLoadedInitialData = false
     @State private var isLoadingMoreSessions = false
@@ -69,20 +69,17 @@ struct HomeView: View {
         }
         .onAppear {
             sessionsViewModel.contentViewModel = contentViewModel
-            materialsModel.contentViewModel = contentViewModel
-
-            // Check if auth token is nil on initial load and redirect to auth
-            if contentViewModel.authToken == nil {
-                print("🔐 No auth token on initial load, navigating to auth view")
-                router.goTo(.auth(initialMode: .signIn))
-            }
         }
         .task {
-            // Only load data if we have an auth token and haven't loaded initial data yet
+            // Load internal materials if not yet loaded (public content)
+            if materialsModel.materials.isEmpty && !materialsModel.isLoading {
+                await materialsModel.loadInitialMaterials()
+            }
+
+            // Only load sessions if we have an auth token and haven't loaded initial data yet
             if contentViewModel.authToken != nil && !hasLoadedInitialData {
                 sessionsViewModel.clearError() // Clear any stale errors
                 await sessionsViewModel.loadInitialSessions()
-                await materialsModel.loadInitialMaterials()
                 hasLoadedInitialData = true
             }
         }
@@ -117,13 +114,8 @@ struct HomeView: View {
             await materialsModel.refresh()
         }
         .onChange(of: contentViewModel.authToken) { oldValue, newValue in
-            // Auto-route to auth when token becomes null
-            if oldValue != nil && newValue == nil {
-                print("🔐 Auth token became null, navigating to auth view")
-                router.goTo(.auth(initialMode: .signIn))
-            }
             // When token becomes available, load data
-            else if oldValue == nil && newValue != nil {
+            if oldValue == nil && newValue != nil {
                 print("🔐 Auth token became available, loading data")
                 Task {
                     sessionsViewModel.clearError()
