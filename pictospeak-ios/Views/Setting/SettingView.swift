@@ -26,24 +26,16 @@ struct SettingView: View {
                 currentlyLearningSection
 
                 // Account Section
-                sectionGroup(title: "Account") {
-                    settingRow(
-                        icon: "person.circle",
-                        title: "Manage Account",
-                        action: {
-                            router.goTo(.manageAccount)
-                        }
-                    )
-
-                    // Divider()
-
-                    // settingRow(
-                    //     icon: "creditcard",
-                    //     title: "Subscription",
-                    //     action: {
-                    //         router.goTo(.subscription)
-                    //     }
-                    // )
+                if contentViewModel.authToken != nil {
+                    sectionGroup(title: "Account") {
+                        settingRow(
+                            icon: "person.circle",
+                            title: "Manage Account",
+                            action: {
+                                router.goTo(.manageAccount)
+                            }
+                        )
+                    }
                 }
 
                 // Language & Learning Section
@@ -51,7 +43,7 @@ struct SettingView: View {
                     settingRowWithValue(
                         icon: "globe",
                         title: "System Language",
-                        value: viewModel.systemLanguage ?? "Loading...",
+                        value: viewModel.systemLanguage ?? (viewModel.isLoading ? "Loading..." : "Unknown"),
                         action: {
                             // Navigate to system language settings
                         }
@@ -63,7 +55,7 @@ struct SettingView: View {
                     settingRowWithValue(
                         icon: "character.textbox",
                         title: "Teaching Language",
-                        value: viewModel.teachingLanguage ?? "Loading...",
+                        value: viewModel.teachingLanguage ?? (viewModel.isLoading ? "Loading..." : "Not set"),
                         action: {
                             // Navigate to teaching language settings
                         }
@@ -149,20 +141,22 @@ struct SettingView: View {
                 }
 
                 // Log out Button
-                Button(action: {
-                    showLogoutAlert = true
-                }) {
-                    Text("Log out")
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            RoundedRectangle(cornerRadius: 100)
-                                .fill(AppTheme.logoutButtonGray)
-                        )
+                if contentViewModel.authToken != nil {
+                    Button(action: {
+                        showLogoutAlert = true
+                    }) {
+                        Text("Log out")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(
+                                RoundedRectangle(cornerRadius: 100)
+                                    .fill(AppTheme.logoutButtonGray)
+                            )
+                    }
+                    .padding(.vertical, 6)
                 }
-                .padding(.vertical, 6)
 
                 // Copyright Text
                 Text("© 2025 Babelo")
@@ -297,6 +291,11 @@ struct SettingView: View {
                 if let flag = viewModel.targetLanguageFlag {
                     Text(flag)
                         .font(.system(size: 28, weight: .regular))
+                } else if viewModel.targetLanguage == nil && !viewModel.isLoading {
+                    // Placeholder when no language is set
+                    Image(systemName: "globe")
+                        .font(.system(size: 24))
+                        .foregroundColor(AppTheme.grayc7c7cc)
                 } else {
                     // Loading placeholder
                     Circle()
@@ -312,6 +311,10 @@ struct SettingView: View {
 
                     if let targetLanguage = viewModel.targetLanguage {
                         Text(targetLanguage)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.primary)
+                    } else if !viewModel.isLoading {
+                        Text("Select Language")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.primary)
                     } else {

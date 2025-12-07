@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct OnboardingTargetLanguageView: View {
-    @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var router: Router
     let sourceView: SourceView?
 
@@ -85,7 +84,7 @@ struct OnboardingTargetLanguageView: View {
                 if sourceView == .settings {
                     router.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage, sourceView: .settings))
                 } else {
-                    onboardingRouter.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage, sourceView: nil))
+                    router.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage, sourceView: nil))
                 }
             }) {
                 Text("Continue")
@@ -109,6 +108,21 @@ struct OnboardingTargetLanguageView: View {
         .task {
             await fetchLanguages()
         }
+        .toolbar(content: {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    router.resetToHome()
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.black)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                }
+            }
+        })
+        .toolbar(.hidden, for: .tabBar)
     }
 
     private func fetchLanguages() async {

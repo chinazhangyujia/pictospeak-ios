@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct VerificationCodeView: View {
-    @EnvironmentObject private var onboardingRouter: OnboardingRouter
     @EnvironmentObject private var contentViewModel: ContentViewModel
     @EnvironmentObject private var router: Router
 
@@ -149,6 +148,7 @@ struct VerificationCodeView: View {
         }
         .padding(.horizontal, 16)
         .background(AppTheme.backgroundGradient)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     // MARK: - Actions
@@ -189,21 +189,12 @@ struct VerificationCodeView: View {
                 await MainActor.run {
                     isVerifying = false
                     // Navigate to create new password screen with verification ID and code
-                    if contentViewModel.hasOnboardingCompleted {
-                        router.goTo(.createNewPassword(
-                            verificationId: response.id,
-                            verificationCode: response.code,
-                            email: email,
-                            fullName: fullName
-                        ))
-                    } else {
-                        onboardingRouter.goTo(.createNewPassword(
-                            verificationId: response.id,
-                            verificationCode: response.code,
-                            email: email,
-                            fullName: fullName
-                        ))
-                    }
+                    router.goTo(.createNewPassword(
+                        verificationId: response.id,
+                        verificationCode: response.code,
+                        email: email,
+                        fullName: fullName
+                    ))
                 }
             } catch {
                 await MainActor.run {
@@ -270,7 +261,6 @@ struct VerificationCodeDigitField: View {
 #Preview {
     NavigationView {
         VerificationCodeView(email: "johndoe@gmail.com", flowType: .signUp, fullName: "John Doe")
-            .environmentObject(OnboardingRouter())
             .environmentObject(ContentViewModel())
             .environmentObject(Router())
     }

@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var router = Router()
-    @StateObject private var onboardingRouter = OnboardingRouter()
     @StateObject private var contentViewModel = ContentViewModel()
     @StateObject private var pastSessionsViewModel = PastSessionsViewModel(contentViewModel: ContentViewModel())
     @StateObject private var reviewViewModel = ReviewViewModel(contentViewModel: ContentViewModel())
@@ -18,7 +17,7 @@ struct ContentView: View {
         VStack {
             if contentViewModel.isLoading {
                 LoadingView()
-            } else if contentViewModel.hasOnboardingCompleted {
+            } else {
                 TabView(selection: $router.selectedTab) {
                     Tab("Home", systemImage: "house", value: NavTab.home) {
                         NavigationStack(path: $router.homePath) {
@@ -28,19 +27,19 @@ struct ContentView: View {
                                     case .home:
                                         HomeView()
                                     case .capture:
-                                        CaptureView()
+                                        guarded(CaptureView())
                                     case let .speakFromImage(selectedImage):
-                                        SpeakView(selectedImage: selectedImage)
+                                        guarded(SpeakView(selectedImage: selectedImage))
                                     case let .speakFromVideo(selectedVideo):
-                                        SpeakView(selectedVideo: selectedVideo)
+                                        guarded(SpeakView(selectedVideo: selectedVideo))
                                     case let .speakFromMaterials(materialsModel):
-                                        SpeakView(materialsModel: materialsModel)
+                                        guarded(SpeakView(materialsModel: materialsModel))
                                     case let .feedbackFromSession(sessionId, pastSessionsViewModel):
-                                        FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
+                                        guarded(FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel))
                                     case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
-                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType)
+                                        guarded(FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType))
                                     case let .review(initialTab):
-                                        ReviewView(initialTab: initialTab ?? .vocabulary)
+                                        guarded(ReviewView(initialTab: initialTab ?? .vocabulary))
                                     case .auth:
                                         AuthView()
                                     case let .onboardingTargetLanguage(sourceView):
@@ -52,15 +51,15 @@ struct ContentView: View {
                                     case let .createNewPassword(verificationId, verificationCode, email, fullName):
                                         CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
                                     case .subscription:
-                                        SubscriptionView()
+                                        guarded(SubscriptionView())
                                     case .settings:
                                         SettingView()
                                     case .editProfile:
-                                        EditProfileView()
+                                        guarded(EditProfileView())
                                     case .manageAccount:
-                                        ManageAccountView()
+                                        guarded(ManageAccountView())
                                     case .changePassword:
-                                        ChangePasswordView()
+                                        guarded(ChangePasswordView())
                                     default:
                                         EmptyView()
                                     }
@@ -70,13 +69,21 @@ struct ContentView: View {
 
                     Tab("Review", systemImage: "book", value: NavTab.review) {
                         NavigationStack(path: $router.reviewPath) {
-                            ReviewView()
+                            guarded(ReviewView())
                                 .navigationDestination(for: AppRoute.self) { route in
                                     switch route {
                                     case let .review(initialTab):
-                                        ReviewView(initialTab: initialTab ?? .vocabulary)
+                                        guarded(ReviewView(initialTab: initialTab ?? .vocabulary))
                                     case let .feedbackFromSession(sessionId, pastSessionsViewModel):
-                                        FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel)
+                                        guarded(FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel))
+                                    case let .verificationCode(email, flowType, fullName):
+                                        VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
+                                    case let .createNewPassword(verificationId, verificationCode, email, fullName):
+                                        CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
+                                    case let .onboardingNativeLanguage(selectedTargetLanguage, sourceView):
+                                        OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage, sourceView: sourceView)
+                                    case let .auth(initialMode):
+                                        AuthView(initialMode: initialMode)
                                     default:
                                         EmptyView()
                                     }
@@ -86,17 +93,25 @@ struct ContentView: View {
 
                     Tab("Capture", systemImage: "camera", value: NavTab.capture, role: .search) {
                         NavigationStack(path: $router.capturePath) {
-                            CaptureView()
+                            guarded(CaptureView())
                                 .navigationDestination(for: AppRoute.self) { route in
                                     switch route {
                                     case .capture:
-                                        CaptureView()
+                                        guarded(CaptureView())
                                     case let .speakFromImage(selectedImage):
-                                        SpeakView(selectedImage: selectedImage)
+                                        guarded(SpeakView(selectedImage: selectedImage))
                                     case let .speakFromVideo(selectedVideo):
-                                        SpeakView(selectedVideo: selectedVideo)
+                                        guarded(SpeakView(selectedVideo: selectedVideo))
                                     case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
-                                        FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType)
+                                        guarded(FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType))
+                                    case let .verificationCode(email, flowType, fullName):
+                                        VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
+                                    case let .createNewPassword(verificationId, verificationCode, email, fullName):
+                                        CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
+                                    case let .onboardingNativeLanguage(selectedTargetLanguage, sourceView):
+                                        OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage, sourceView: sourceView)
+                                    case let .auth(initialMode):
+                                        AuthView(initialMode: initialMode)
                                     default:
                                         EmptyView()
                                     }
@@ -105,30 +120,9 @@ struct ContentView: View {
                     }
                 }
                 .tint(AppTheme.primaryBlue)
-            } else {
-                NavigationStack(path: $onboardingRouter.path) {
-                    OnboardingTargetLanguageView()
-                        .navigationDestination(for: AppRoute.self) { route in
-                            switch route {
-                            case let .onboardingTargetLanguage(sourceView):
-                                OnboardingTargetLanguageView(sourceView: sourceView)
-                            case let .onboardingNativeLanguage(selectedTargetLanguage, sourceView):
-                                OnboardingNativeLanguageView(selectedTargetLanguage: selectedTargetLanguage, sourceView: sourceView)
-                            case let .auth(initialMode):
-                                AuthView(initialMode: initialMode)
-                            case let .verificationCode(email, flowType, fullName):
-                                VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
-                            case let .createNewPassword(verificationId, verificationCode, email, fullName):
-                                CreateNewPasswordView(verificationId: verificationId, verificationCode: verificationCode, email: email, fullName: fullName)
-                            default:
-                                EmptyView()
-                            }
-                        }
-                }
             }
         }
         .environmentObject(router)
-        .environmentObject(onboardingRouter)
         .environmentObject(contentViewModel)
         .environmentObject(pastSessionsViewModel)
         .environmentObject(reviewViewModel)
@@ -139,6 +133,17 @@ struct ContentView: View {
             pastSessionsViewModel.contentViewModel = contentViewModel
             reviewViewModel.contentViewModel = contentViewModel
             pastSessionsViewModel.reviewViewModel = reviewViewModel
+        }
+    }
+
+    @ViewBuilder
+    private func guarded<Content: View>(_ content: Content) -> some View {
+        if contentViewModel.authToken != nil {
+            content
+        } else if contentViewModel.hasOnboardingCompleted {
+            AuthView(initialMode: .signIn)
+        } else {
+            OnboardingTargetLanguageView()
         }
     }
 }

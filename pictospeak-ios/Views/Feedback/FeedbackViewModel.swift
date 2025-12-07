@@ -51,12 +51,9 @@ class FeedbackViewModel: ObservableObject {
                         return
                     }
 
-                    for try await response in feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData) {
-                        await MainActor.run {
-                            self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
-                            self.isLoading = false
-                        }
-                    }
+                    let stream = feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData)
+                    try await consumeStream(stream)
+
                 case .video:
                     guard let videoURL = videoURL else {
                         await MainActor.run {
@@ -89,23 +86,46 @@ class FeedbackViewModel: ObservableObject {
 
                     let fileExtension = videoURL.pathExtension.isEmpty ? nil : videoURL.pathExtension
 
-                    for try await response in feedbackService.getFeedbackStreamForVideo(
+                    let stream = feedbackService.getFeedbackStreamForVideo(
                         authToken: authToken,
                         videoData: videoData,
                         videoFileExtension: fileExtension,
                         audioData: audioData
-                    ) {
-                        await MainActor.run {
-                            self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
-                            self.isLoading = false
-                        }
-                    }
+                    )
+                    try await consumeStream(stream)
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                 }
+            }
+        }
+    }
+
+    private func consumeStream(_ stream: AsyncThrowingStream<FeedbackResponse, Error>) async throws {
+        var lastResponse: FeedbackResponse?
+        var lastUpdateTime = Date.distantPast
+        
+        for try await response in stream {
+            lastResponse = response
+            let now = Date()
+            
+            // Throttle updates to ~20 FPS (50ms) to prevent UI blocking
+            if now.timeIntervalSince(lastUpdateTime) >= 0.05 {
+                await MainActor.run {
+                    self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
+                    self.isLoading = false
+                }
+                lastUpdateTime = now
+            }
+        }
+        
+        // Ensure final update is applied
+        if let finalResponse = lastResponse {
+            await MainActor.run {
+                self.feedbackResponse = self.createNewStreamingResponse(newResponse: finalResponse)
+                self.isLoading = false
             }
         }
     }

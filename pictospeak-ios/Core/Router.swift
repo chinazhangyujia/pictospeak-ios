@@ -229,21 +229,3 @@ final class Router: ObservableObject {
         }
     }
 }
-
-final class OnboardingRouter: ObservableObject {
-    @Published var path = NavigationPath() {
-        didSet {
-            print("🧭 Navigation stack changed:")
-            print("   Previous count: \(oldValue.count)")
-            print("   New count: \(path.count)")
-        }
-    }
-
-    func goTo(_ route: AppRoute) {
-        path.append(route)
-    }
-
-    func goBack() {
-        path.removeLast()
-    }
-}
