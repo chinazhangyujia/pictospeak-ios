@@ -295,95 +295,68 @@ class FeedbackService {
             print("🚀 Starting real-time streaming - processing object by object...")
 
             // Process streaming response object by object
+            var bracketCount = 0
+            var inString = false
+            var isEscaped = false
+            
+            // Byte constants for performance
+            let braceOpen = UInt8(ascii: "{")
+            let braceClose = UInt8(ascii: "}")
+            let quote = UInt8(ascii: "\"")
+            let backslash = UInt8(ascii: "\\")
+            
             for try await byte in bytes {
+                // If we haven't started an object yet, we look for the opening brace
+                if bracketCount == 0 {
+                    if byte == braceOpen {
+                        bracketCount = 1
+                        buffer.append(byte)
+                    }
+                    // Ignore whitespace/garbage between objects
+                    continue
+                }
+                
+                // We are inside an object
                 buffer.append(byte)
-
-                // Try to extract complete JSON objects from buffer using bracket matching
-                if let bufferString = String(data: buffer, encoding: .utf8) {
-                    var startIndex = 0
-
-                    while startIndex < bufferString.count {
-                        // Find the start of a JSON object
-                        if let jsonStart = bufferString.firstIndex(of: "{") {
-                            let searchStart = bufferString.index(jsonStart, offsetBy: 0)
-
-                            // Use bracket counting to find complete JSON object
-                            var bracketCount = 0
-                            var inString = false
-                            var escapeNext = false
-                            var jsonEnd: String.Index?
-
-                            for (index, char) in bufferString[searchStart...].enumerated() {
-                                let currentIndex = bufferString.index(searchStart, offsetBy: index)
-
-                                if escapeNext {
-                                    escapeNext = false
-                                    continue
-                                }
-
-                                if char == "\\" {
-                                    escapeNext = true
-                                    continue
-                                }
-
-                                if char == "\"" {
-                                    inString.toggle()
-                                    continue
-                                }
-
-                                if !inString {
-                                    if char == "{" {
-                                        bracketCount += 1
-                                    } else if char == "}" {
-                                        bracketCount -= 1
-                                        if bracketCount == 0 {
-                                            jsonEnd = bufferString.index(after: currentIndex)
-                                            break
-                                        }
-                                    }
+                
+                if isEscaped {
+                    isEscaped = false
+                    continue
+                }
+                
+                if byte == backslash {
+                    isEscaped = true
+                    continue
+                }
+                
+                if byte == quote {
+                    inString.toggle()
+                    continue
+                }
+                
+                if !inString {
+                    if byte == braceOpen {
+                        bracketCount += 1
+                    } else if byte == braceClose {
+                        bracketCount -= 1
+                        
+                        // If we closed the outermost bracket, we have a complete object candidate
+                        if bracketCount == 0 {
+                            // Try to decode this chunk
+                            do {
+                                let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: buffer)
+                                chunkCount += 1
+                                
+                                let feedbackResponse = streamingResponse.toFeedbackResponse()
+                                onUpdate(feedbackResponse)
+                            } catch {
+                                print("⚠️ Failed to decode JSON chunk: \(error)")
+                                if let jsonString = String(data: buffer, encoding: .utf8) {
+                                    print("📦 Invalid JSON content: \(jsonString)")
                                 }
                             }
-
-                            // If we found a complete JSON object
-                            if let jsonEnd = jsonEnd {
-                                let jsonString = String(bufferString[jsonStart ..< jsonEnd])
-
-                                // Validate it's proper JSON and parse it
-                                if let jsonData = jsonString.data(using: .utf8) {
-                                    do {
-                                        // Try to decode as StreamingFeedbackResponse
-                                        let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: jsonData)
-                                        chunkCount += 1
-                                        // print("📦 Streamed Object \(chunkCount): \(jsonString)")
-
-                                        // Convert to FeedbackResponse and emit update
-                                        let feedbackResponse = streamingResponse.toFeedbackResponse()
-                                        onUpdate(feedbackResponse)
-
-                                        // Remove processed JSON from buffer
-                                        let remainingString = String(bufferString[jsonEnd...])
-                                        buffer = remainingString.data(using: .utf8) ?? Data()
-                                        break
-                                    } catch {
-                                        print("⚠️ Failed to decode JSON as StreamingFeedbackResponse: \(error)")
-                                        // Try basic JSON validation
-                                        do {
-                                            let _ = try JSONSerialization.jsonObject(with: jsonData, options: [])
-                                            print("📦 Valid JSON but not expected format: \(jsonString)")
-                                        } catch {
-                                            print("❌ Invalid JSON: \(error)")
-                                        }
-                                        break
-                                    }
-                                }
-                            } else {
-                                // Incomplete JSON object, wait for more data
-                                break
-                            }
-                        } else {
-                            // No JSON start found, clear buffer of any junk
-                            buffer = Data()
-                            break
+                            // Clear buffer for next object
+                            buffer.removeAll(keepingCapacity: true)
                         }
                     }
                 }
