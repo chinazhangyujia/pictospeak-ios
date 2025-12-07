@@ -106,11 +106,11 @@ class FeedbackViewModel: ObservableObject {
     private func consumeStream(_ stream: AsyncThrowingStream<FeedbackResponse, Error>) async throws {
         var lastResponse: FeedbackResponse?
         var lastUpdateTime = Date.distantPast
-        
+
         for try await response in stream {
             lastResponse = response
             let now = Date()
-            
+
             // Throttle updates to ~20 FPS (50ms) to prevent UI blocking
             if now.timeIntervalSince(lastUpdateTime) >= 0.05 {
                 await MainActor.run {
@@ -120,7 +120,7 @@ class FeedbackViewModel: ObservableObject {
                 lastUpdateTime = now
             }
         }
-        
+
         // Ensure final update is applied
         if let finalResponse = lastResponse {
             await MainActor.run {

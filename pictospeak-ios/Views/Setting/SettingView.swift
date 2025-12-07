@@ -57,7 +57,7 @@ struct SettingView: View {
                         title: "Teaching Language",
                         value: viewModel.teachingLanguage ?? (viewModel.isLoading ? "Loading..." : "Not set"),
                         action: {
-                            // Navigate to teaching language settings
+                            router.goTo(.onboardingTargetLanguage(sourceView: .settings))
                         }
                     )
                 }
@@ -68,7 +68,7 @@ struct SettingView: View {
                         icon: "person.crop.circle.badge.questionmark",
                         title: "Contact Support",
                         action: {
-                            // Navigate to contact support
+                            showFeedbackEmail = true
                         }
                     )
 

@@ -298,13 +298,13 @@ class FeedbackService {
             var bracketCount = 0
             var inString = false
             var isEscaped = false
-            
+
             // Byte constants for performance
             let braceOpen = UInt8(ascii: "{")
             let braceClose = UInt8(ascii: "}")
             let quote = UInt8(ascii: "\"")
             let backslash = UInt8(ascii: "\\")
-            
+
             for try await byte in bytes {
                 // If we haven't started an object yet, we look for the opening brace
                 if bracketCount == 0 {
@@ -315,38 +315,38 @@ class FeedbackService {
                     // Ignore whitespace/garbage between objects
                     continue
                 }
-                
+
                 // We are inside an object
                 buffer.append(byte)
-                
+
                 if isEscaped {
                     isEscaped = false
                     continue
                 }
-                
+
                 if byte == backslash {
                     isEscaped = true
                     continue
                 }
-                
+
                 if byte == quote {
                     inString.toggle()
                     continue
                 }
-                
+
                 if !inString {
                     if byte == braceOpen {
                         bracketCount += 1
                     } else if byte == braceClose {
                         bracketCount -= 1
-                        
+
                         // If we closed the outermost bracket, we have a complete object candidate
                         if bracketCount == 0 {
                             // Try to decode this chunk
                             do {
                                 let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: buffer)
                                 chunkCount += 1
-                                
+
                                 let feedbackResponse = streamingResponse.toFeedbackResponse()
                                 onUpdate(feedbackResponse)
                             } catch {
