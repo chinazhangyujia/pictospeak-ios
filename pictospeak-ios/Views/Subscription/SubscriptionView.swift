@@ -26,8 +26,8 @@ struct SubscriptionView: View {
 
         var title: String {
             switch self {
-            case .monthly: return "Monthly"
-            case .yearly: return "Yearly"
+            case .monthly: return NSLocalizedString("subscription.plan.monthly", comment: "Monthly")
+            case .yearly: return NSLocalizedString("subscription.plan.yearly", comment: "Yearly")
             }
         }
 
@@ -47,8 +47,8 @@ struct SubscriptionView: View {
 
         var period: String {
             switch self {
-            case .monthly: return "per month"
-            case .yearly: return "per year"
+            case .monthly: return NSLocalizedString("subscription.period.month", comment: "per month")
+            case .yearly: return NSLocalizedString("subscription.period.year", comment: "per year")
             }
         }
 
@@ -56,7 +56,7 @@ struct SubscriptionView: View {
             guard let policyData = policyData else {
                 switch self {
                 case .monthly: return nil
-                case .yearly: return "≈ $5.83 / month"
+                case .yearly: return String(format: NSLocalizedString("subscription.monthlyEquivalent", comment: "approx monthly"), "$5.83")
                 }
             }
 
@@ -64,7 +64,8 @@ struct SubscriptionView: View {
             case .monthly: return nil
             case .yearly:
                 let monthlyPrice = policyData.price.yearly / 12.0
-                return String(format: "≈ $%.2f / month", monthlyPrice)
+                let formattedPrice = String(format: "$%.2f", monthlyPrice)
+                return String(format: NSLocalizedString("subscription.monthlyEquivalent", comment: "approx monthly"), formattedPrice)
             }
         }
 
@@ -72,7 +73,7 @@ struct SubscriptionView: View {
             guard let policyData = policyData else {
                 switch self {
                 case .monthly: return nil
-                case .yearly: return "Save 27%"
+                case .yearly: return String(format: NSLocalizedString("subscription.savePercent", comment: "save percent"), 27.0)
                 }
             }
 
@@ -81,7 +82,7 @@ struct SubscriptionView: View {
             case .yearly:
                 let yearlyMonthly = policyData.price.yearly / 12.0
                 let savingsPercent = ((policyData.price.monthly - yearlyMonthly) / policyData.price.monthly) * 100
-                return String(format: "Save %.0f%%", savingsPercent)
+                return String(format: NSLocalizedString("subscription.savePercent", comment: "save percent"), savingsPercent)
             }
         }
 
@@ -99,7 +100,7 @@ struct SubscriptionView: View {
                 VStack(spacing: 20) {
                     ProgressView()
                         .scaleEffect(1.5)
-                    Text("Loading subscription details...")
+                    Text("subscription.loading")
                         .font(.system(size: 17))
                         .foregroundColor(AppTheme.gray3c3c3c60)
                 }
@@ -109,7 +110,7 @@ struct SubscriptionView: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 48))
                         .foregroundColor(.orange)
-                    Text("Error loading subscription")
+                    Text("subscription.error.title")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.black)
                     Text(errorMessage)
@@ -122,7 +123,7 @@ struct SubscriptionView: View {
                             await loadSubscriptionPolicy()
                         }
                     }) {
-                        Text("Try Again")
+                        Text("subscription.error.tryAgain")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(width: 200, height: 52)
@@ -136,12 +137,12 @@ struct SubscriptionView: View {
                     VStack(spacing: 24) {
                         // Header Section
                         VStack(spacing: 12) {
-                            Text("Learn faster with AI feedback")
+                            Text("subscription.title")
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.black)
                                 .multilineTextAlignment(.center)
 
-                            Text("Get quick, useful feedback with image-based practice.")
+                            Text("subscription.subtitle")
                                 .font(.system(size: 17))
                                 .foregroundColor(AppTheme.gray3c3c4360)
                                 .multilineTextAlignment(.center)
@@ -180,7 +181,7 @@ struct SubscriptionView: View {
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                             .scaleEffect(0.8)
                                     }
-                                    Text(isPurchasing ? "Processing..." : trialButtonText)
+                                    Text(isPurchasing ? NSLocalizedString("subscription.processing", comment: "Processing") : trialButtonText)
                                         .font(.system(size: 17, weight: .medium))
                                         .foregroundColor(.white)
                                 }
@@ -200,7 +201,7 @@ struct SubscriptionView: View {
 
                         // What's Included Section
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("What's included:")
+                            Text("subscription.included")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(.black)
 
@@ -218,7 +219,7 @@ struct SubscriptionView: View {
 
                         // Usage Limits Section
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Usage limits:")
+                            Text("subscription.limits")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(.black)
 
@@ -260,7 +261,7 @@ struct SubscriptionView: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.primaryBlue))
                                         .scaleEffect(0.8)
                                 }
-                                Text("Restore Purchases")
+                                Text("subscription.restore")
                                     .font(.system(size: 17, weight: .medium))
                                     .foregroundColor(AppTheme.primaryBlue)
                             }
@@ -271,7 +272,7 @@ struct SubscriptionView: View {
                             Button(action: {
                                 // Handle terms of use
                             }) {
-                                Text("Terms of Use")
+                                Text("settings.termsOfUse")
                                     .font(.system(size: 15))
                                     .foregroundColor(AppTheme.primaryBlue)
                             }
@@ -279,7 +280,7 @@ struct SubscriptionView: View {
                             Button(action: {
                                 // Handle privacy policy
                             }) {
-                                Text("Privacy Policy")
+                                Text("settings.privacyPolicy")
                                     .font(.system(size: 15))
                                     .foregroundColor(AppTheme.primaryBlue)
                             }
@@ -314,17 +315,17 @@ struct SubscriptionView: View {
         .toolbar(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .alert("Purchase Successful", isPresented: $showPurchaseSuccess) {
-            Button("OK") {
+        .alert("subscription.success.title", isPresented: $showPurchaseSuccess) {
+            Button("common.done") {
                 dismiss()
             }
         } message: {
-            Text("Your subscription has been activated. Enjoy unlimited access!")
+            Text("subscription.success.message")
         }
-        .alert("Purchase Failed", isPresented: $showPurchaseError) {
-            Button("OK") {}
+        .alert("subscription.failed.title", isPresented: $showPurchaseError) {
+            Button("common.done") {}
         } message: {
-            Text(purchaseErrorMessage ?? "An error occurred during purchase. Please try again.")
+            Text(purchaseErrorMessage ?? NSLocalizedString("subscription.failed.message", comment: "Purchase failed message"))
         }
         .onAppear {
             Task {
@@ -337,19 +338,25 @@ struct SubscriptionView: View {
 
     var trialButtonText: String {
         guard let trialDays = policyData?.freeTrial.days else {
-            return "Start 7-day free trial"
+            return NSLocalizedString("subscription.trial.default", comment: "Start 7-day free trial")
         }
-        return "Start \(trialDays)-day free trial"
+        return String(format: NSLocalizedString("subscription.trial.start", comment: "Start N-day free trial"), trialDays)
     }
 
     var subscriptionDetailsText: String {
         guard let policyData = policyData else {
-            return "Then $69.99/year, cancel anytime."
+            return String(format: NSLocalizedString("subscription.details.yearly", comment: ""), "$69.99")
         }
 
         let price = selectedPlan == .yearly ? policyData.price.yearly : policyData.price.monthly
         let period = selectedPlan == .yearly ? "year" : "month"
-        return String(format: "Then $%.2f/%@, cancel anytime.", price, period)
+        let formattedPrice = String(format: "$%.2f", price)
+
+        if selectedPlan == .yearly {
+            return String(format: NSLocalizedString("subscription.details.yearly", comment: ""), formattedPrice)
+        } else {
+            return String(format: NSLocalizedString("subscription.details.monthly", comment: ""), formattedPrice)
+        }
     }
 
     // MARK: - Helper Methods
@@ -384,7 +391,7 @@ struct SubscriptionView: View {
             }
 
             guard let selectedProduct = product else {
-                purchaseErrorMessage = "Product not available. Please try again later."
+                purchaseErrorMessage = NSLocalizedString("subscription.failed.productNotAvailable", comment: "Product not available")
                 showPurchaseError = true
                 isPurchasing = false
                 return
@@ -398,7 +405,7 @@ struct SubscriptionView: View {
                 showPurchaseSuccess = true
             } else {
                 // Purchase was cancelled or is pending
-                purchaseErrorMessage = "Purchase was cancelled or is pending approval."
+                purchaseErrorMessage = NSLocalizedString("subscription.failed.cancelled", comment: "Purchase cancelled")
                 showPurchaseError = true
             }
 
@@ -420,10 +427,10 @@ struct SubscriptionView: View {
             try await storeKitManager.restorePurchases(authToken: contentViewModel.authToken)
 
             if storeKitManager.hasActiveSubscription {
-                purchaseErrorMessage = "Purchases restored successfully!"
+                purchaseErrorMessage = NSLocalizedString("subscription.restore.success", comment: "Restore success")
                 showPurchaseSuccess = true
             } else {
-                purchaseErrorMessage = "No active subscriptions found to restore."
+                purchaseErrorMessage = NSLocalizedString("subscription.restore.none", comment: "No subscriptions")
                 showPurchaseError = true
             }
         } catch {
@@ -489,7 +496,7 @@ struct SubscriptionPlanCard: View {
                     VStack {
                         HStack {
                             Spacer()
-                            Text("Recommended")
+                            Text("subscription.recommended")
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(.white)
                                 .frame(width: 89, height: 24)

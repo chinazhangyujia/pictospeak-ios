@@ -30,11 +30,11 @@ struct FeedbackView: View {
     @State private var currentThinkingStep = 0
     @State private var thinkingTimer: Timer?
     private let thinkingSteps = [
-        "Organizing your input…",
-        "Distilling key ideas…",
-        "Polishing for natural phrasing…",
-        "Picking & highlighting keywords…",
-        "Almost ready…",
+        NSLocalizedString("feedback.thinking.organizing", comment: ""),
+        NSLocalizedString("feedback.thinking.distilling", comment: ""),
+        NSLocalizedString("feedback.thinking.polishing", comment: ""),
+        NSLocalizedString("feedback.thinking.highlighting", comment: ""),
+        NSLocalizedString("feedback.thinking.ready", comment: ""),
     ]
 
     // For normal feedback mode
@@ -323,7 +323,7 @@ struct FeedbackView: View {
                                 SkeletonPlaceholder(width: 60, height: 20)
                                     .frame(maxWidth: .infinity)
                             } else {
-                                Text("Mine")
+                                Text("feedback.tab.mine")
                                     .font(.body)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.primary)
@@ -340,7 +340,7 @@ struct FeedbackView: View {
                                 SkeletonPlaceholder(width: 80, height: 20)
                                     .frame(maxWidth: .infinity)
                             } else {
-                                Text("AI Refined")
+                                Text("feedback.tab.aiRefined")
                                     .font(.body)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.primary)
@@ -453,7 +453,7 @@ struct FeedbackView: View {
             if let chosenKeyTerms = feedback.chosenKeyTerms, let chosenRefinements = feedback.chosenRefinements, chosenKeyTerms.isEmpty && chosenRefinements.isEmpty {
                 // don't show anything
             } else {
-                Text("Vocabulary")
+                Text("review.section.vocabulary")
                     .font(.system(size: 20, weight: .semibold))
                     .padding(.horizontal, 22)
                     .padding(.top, 5)
@@ -640,7 +640,7 @@ struct FeedbackView: View {
 
                     // Content sits inside with padding
                     HStack(spacing: 0) {
-                        Text("Mine")
+                        Text("feedback.tab.mine")
                             .font(.body)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -650,7 +650,7 @@ struct FeedbackView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 100))
                             .onTapGesture { selectedTab = .mine }
 
-                        Text("AI Refined")
+                        Text("feedback.tab.aiRefined")
                             .font(.body)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -731,7 +731,7 @@ struct FeedbackView: View {
 
             Spacer()
 
-            Text("AI feedback")
+            Text("feedback.title")
                 .font(.headline)
                 .fontWeight(.regular)
 
@@ -770,7 +770,7 @@ struct FeedbackView: View {
     private func suggestionsAndKeyTermsSectionForSession(_ session: SessionItem) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             // Section title - always show since session data is already loaded
-            Text("Vocabulary")
+            Text("review.section.vocabulary")
                 .font(.system(size: 20, weight: .semibold))
                 .padding(.horizontal, 22)
                 .padding(.top, 5)

@@ -29,7 +29,7 @@ struct OnboardingTargetLanguageView: View {
             VStack {
                 // Title and subtitle
                 VStack(spacing: 12) {
-                    Text("What language do you want to learn?")
+                    Text("onboarding.targetLanguage.title")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
@@ -37,7 +37,7 @@ struct OnboardingTargetLanguageView: View {
                         .tracking(0.38)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("You can change this later in Settings")
+                    Text("onboarding.targetLanguage.subtitle")
                         .font(.body)
                         .foregroundColor(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -52,7 +52,7 @@ struct OnboardingTargetLanguageView: View {
                     Text(error)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
-                    Button("Retry") {
+                    Button("common.retry") {
                         Task { await fetchLanguages() }
                     }
                 } else {
@@ -70,7 +70,7 @@ struct OnboardingTargetLanguageView: View {
                 }
 
                 // Coming soon text
-                Text("More languages coming soon")
+                Text("onboarding.targetLanguage.moreComingSoon")
                     .font(.body)
                     .foregroundColor(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6))
                     .padding(.top, 20)
@@ -87,7 +87,7 @@ struct OnboardingTargetLanguageView: View {
                     router.goTo(.onboardingNativeLanguage(selectedTargetLanguage: selectedLanguage, sourceView: nil))
                 }
             }) {
-                Text("Continue")
+                Text("common.continue")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

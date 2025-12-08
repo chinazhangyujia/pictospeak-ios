@@ -26,36 +26,36 @@ struct AuthView: View {
 
     // MARK: - Computed Properties
 
-    private var titleText: String {
+    private var titleText: LocalizedStringKey {
         switch authMode {
         case .signUp:
-            return "Create account"
+            return "auth.createAccount"
         case .signIn:
-            return "Welcome back"
+            return "auth.welcomeBack"
         case .resetPassword:
-            return "Reset password"
+            return "auth.resetPassword"
         }
     }
 
-    private var subtitleText: String {
+    private var subtitleText: LocalizedStringKey {
         switch authMode {
         case .signUp:
-            return "Save your words and sessions"
+            return "auth.subtitle.signup"
         case .signIn:
-            return "Sign in to continue your learning journey"
+            return "auth.subtitle.signin"
         case .resetPassword:
-            return "Enter your email to receive a reset link"
+            return "auth.subtitle.reset"
         }
     }
 
-    private var buttonText: String {
+    private var buttonText: LocalizedStringKey {
         switch authMode {
         case .signUp:
-            return "Continue"
+            return "common.continue"
         case .signIn:
-            return "Sign in"
+            return "auth.login"
         case .resetPassword:
-            return "Send reset link"
+            return "auth.sendResetLink"
         }
     }
 
@@ -108,11 +108,11 @@ struct AuthView: View {
                     // Full Name field (only for sign-up)
                     if authMode == .signUp {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Full Name")
+                            Text("auth.fullName")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(AppTheme.gray333333)
 
-                            TextField("Enter your full name", text: $fullName)
+                            TextField("auth.enterFullName", text: $fullName)
                                 .textFieldStyle(PlainTextFieldStyle())
                                 .font(.system(size: 16))
                                 .padding(.vertical, 14)
@@ -131,11 +131,11 @@ struct AuthView: View {
 
                     // Email field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Email")
+                        Text("auth.email")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
 
-                        TextField("Enter your email", text: $email)
+                        TextField("auth.enterEmail", text: $email)
                             .textFieldStyle(PlainTextFieldStyle())
                             .font(.system(size: 16))
                             .padding(.vertical, 14)
@@ -155,16 +155,16 @@ struct AuthView: View {
                     // Password field (only for sign in)
                     if authMode == .signIn {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Password")
+                            Text("auth.password")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(AppTheme.gray333333)
 
                             HStack {
                                 if isPasswordVisible {
-                                    TextField("Enter your password", text: $password)
+                                    TextField("auth.enterPassword", text: $password)
                                         .textFieldStyle(PlainTextFieldStyle())
                                 } else {
-                                    SecureField("Enter your password", text: $password)
+                                    SecureField("auth.enterPassword", text: $password)
                                         .textFieldStyle(PlainTextFieldStyle())
                                 }
 
@@ -199,7 +199,7 @@ struct AuthView: View {
 
                 if authMode == .signIn {
                     // Forgot password text
-                    Text("Forgot password?")
+                    Text("auth.forgotPassword")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(AppTheme.primaryBlue)
                         .onTapGesture {
@@ -211,7 +211,7 @@ struct AuthView: View {
                 // Account status and toggle (only for sign up and sign in)
                 if authMode != .resetPassword {
                     HStack(spacing: 10) {
-                        Text(authMode == .signUp ? "Already have an account?" : "Don't have an account?")
+                        Text(authMode == .signUp ? "auth.haveAccount" : "auth.noAccount")
                             .font(.system(size: 17))
                             .foregroundColor(AppTheme.gray3c3c4360)
 
@@ -220,7 +220,7 @@ struct AuthView: View {
                             errorMessage = nil
                             clearForm()
                         }) {
-                            Text(authMode == .signUp ? "Sign in" : "Sign up")
+                            Text(authMode == .signUp ? "auth.login" : "auth.signup")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(AppTheme.primaryBlue)
                         }
@@ -228,7 +228,7 @@ struct AuthView: View {
                 } else {
                     // Sign up link for reset password mode
                     HStack(spacing: 10) {
-                        Text("Don't have an account?")
+                        Text("auth.noAccount")
                             .font(.system(size: 17))
                             .foregroundColor(AppTheme.gray3c3c4360)
 
@@ -236,7 +236,7 @@ struct AuthView: View {
                             authMode = .signUp
                             clearForm()
                         }) {
-                            Text("Sign up")
+                            Text("auth.signup")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(AppTheme.primaryBlue)
                         }

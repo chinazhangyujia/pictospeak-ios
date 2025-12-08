@@ -146,19 +146,19 @@ enum SubscriptionError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            return NSLocalizedString("error.invalidURL", comment: "Invalid URL")
         case .decodingError:
-            return "Failed to decode response"
+            return NSLocalizedString("error.decoding", comment: "Decoding error")
         case .serverError:
-            return "Server error occurred"
+            return NSLocalizedString("error.server", comment: "Server error")
         case .networkError:
-            return "Network error occurred"
+            return NSLocalizedString("error.network", comment: "Network error")
         case .unknownError:
-            return "Unknown error occurred"
+            return NSLocalizedString("error.unknown", comment: "Unknown error")
         case .purchaseFailed:
-            return "Purchase failed. Please try again."
+            return NSLocalizedString("error.subscription.purchaseFailed", comment: "Purchase failed")
         case .purchaseCancelled:
-            return "Purchase was cancelled"
+            return NSLocalizedString("error.subscription.purchaseCancelled", comment: "Purchase cancelled")
         }
     }
 }

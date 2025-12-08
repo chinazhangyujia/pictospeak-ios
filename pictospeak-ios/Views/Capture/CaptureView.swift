@@ -12,8 +12,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum CaptureMode: String, CaseIterable {
-    case photo = "Photo"
-    case video = "Video"
+    case photo = "capture.mode.photo"
+    case video = "capture.mode.video"
 }
 
 struct CaptureView: View {
@@ -122,15 +122,15 @@ struct CaptureView: View {
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoPicker(selectedImage: $cameraManager.selectedImage, selectedVideo: $selectedVideo, latestGalleryImage: $latestGalleryImage, selectedMode: selectedMode)
         }
-        .alert("Camera Access Required", isPresented: $cameraManager.showingPermissionAlert) {
-            Button("Settings") {
+        .alert(NSLocalizedString("capture.permission.title", comment: ""), isPresented: $cameraManager.showingPermissionAlert) {
+            Button("settings.title") {
                 if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(settingsUrl)
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button("common.cancel", role: .cancel) {}
         } message: {
-            Text("Please enable camera access in Settings to use this feature.")
+            Text("capture.permission.message")
         }
         .ignoresSafeArea()
         .toolbar(.hidden, for: .tabBar)
@@ -170,7 +170,7 @@ struct CaptureView: View {
             ToolbarItem(placement: .status) {
                 Picker("Capture Mode", selection: $selectedMode) {
                     ForEach(CaptureMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue.uppercased()).tag(mode)
+                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
@@ -211,7 +211,7 @@ struct CaptureView: View {
                                         .scaleEffect(isRecording ? 1.2 : 1.0)
                                         .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isRecording)
 
-                                    Text("REC")
+                                    Text("common.rec")
                                         .font(.caption)
                                         .fontWeight(.bold)
                                         .foregroundColor(.red)
@@ -233,7 +233,7 @@ struct CaptureView: View {
                         .font(.system(size: 48))
                         .foregroundColor(.gray)
 
-                    Text("Access camera permission to use this feature")
+                    Text("capture.permission.placeholder")
                         .font(.body)
                         .foregroundColor(.white)
                 }

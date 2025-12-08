@@ -27,10 +27,10 @@ struct SettingView: View {
 
                 // Account Section
                 if contentViewModel.authToken != nil {
-                    sectionGroup(title: "Account") {
+                    sectionGroup(title: "settings.account") {
                         settingRow(
                             icon: "person.circle",
-                            title: "Manage Account",
+                            title: "settings.manageAccount",
                             action: {
                                 router.goTo(.manageAccount)
                             }
@@ -39,13 +39,16 @@ struct SettingView: View {
                 }
 
                 // Language & Learning Section
-                sectionGroup(title: "Language & Learning") {
+                sectionGroup(title: "settings.languageAndLearning") {
                     settingRowWithValue(
                         icon: "globe",
-                        title: "System Language",
-                        value: viewModel.systemLanguage ?? (viewModel.isLoading ? "Loading..." : "Unknown"),
+                        title: "settings.systemLanguage",
+                        value: viewModel.systemLanguage ?? (viewModel.isLoading ? NSLocalizedString("common.loading", comment: "") : NSLocalizedString("common.unknown", comment: "")),
                         action: {
-                            // Navigate to system language settings
+                            // Open iOS Settings app to language preferences
+                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(settingsUrl)
+                            }
                         }
                     )
 
@@ -54,21 +57,21 @@ struct SettingView: View {
 
                     settingRowWithValue(
                         icon: "character.textbox",
-                        title: "Teaching Language",
-                        value: viewModel.teachingLanguage ?? (viewModel.isLoading ? "Loading..." : "Not set"),
+                        title: "settings.teachingLanguage",
+                        value: viewModel.teachingLanguage ?? (viewModel.isLoading ? NSLocalizedString("common.loading", comment: "") : NSLocalizedString("common.notSet", comment: "")),
                         action: {
-                            // Navigate to teaching language settings
+                            router.goTo(.onboardingTargetLanguage(sourceView: .settings))
                         }
                     )
                 }
 
                 // Support Section
-                sectionGroup(title: "Support") {
+                sectionGroup(title: "settings.support") {
                     settingRow(
                         icon: "person.crop.circle.badge.questionmark",
-                        title: "Contact Support",
+                        title: "settings.contactSupport",
                         action: {
-                            // Navigate to contact support
+                            showFeedbackEmail = true
                         }
                     )
 
@@ -77,7 +80,7 @@ struct SettingView: View {
 
                     settingRow(
                         icon: "questionmark.bubble",
-                        title: "FAQ",
+                        title: "settings.faq",
                         action: {
                             // Navigate to FAQ
                         }
@@ -88,7 +91,7 @@ struct SettingView: View {
 
                     settingRow(
                         icon: "star.bubble",
-                        title: "Feedback",
+                        title: "settings.feedback",
                         action: {
                             showFeedbackEmail = true
                         }
@@ -96,10 +99,10 @@ struct SettingView: View {
                 }
 
                 // Legal Section
-                sectionGroup(title: "Legal") {
+                sectionGroup(title: "settings.legal") {
                     settingRow(
                         icon: "doc.text",
-                        title: "Terms of Use",
+                        title: "settings.termsOfUse",
                         action: {
                             showTermsOfUse = true
                         }
@@ -110,7 +113,7 @@ struct SettingView: View {
 
                     settingRow(
                         icon: "shield.lefthalf.filled",
-                        title: "Privacy Policy",
+                        title: "settings.privacyPolicy",
                         action: {
                             showPrivacyPolicy = true
                         }
@@ -118,10 +121,10 @@ struct SettingView: View {
                 }
 
                 // About Section
-                sectionGroup(title: "About") {
+                sectionGroup(title: "settings.about") {
                     settingRowWithValue(
                         icon: "info.circle",
-                        title: "App Info",
+                        title: "settings.appInfo",
                         value: viewModel.appVersion,
                         action: {
                             // Navigate to app info
@@ -133,7 +136,7 @@ struct SettingView: View {
 
                     settingRow(
                         icon: "book",
-                        title: "Our story",
+                        title: "settings.ourStory",
                         action: {
                             // Navigate to our story
                         }
@@ -145,7 +148,7 @@ struct SettingView: View {
                     Button(action: {
                         showLogoutAlert = true
                     }) {
-                        Text("Log out")
+                        Text("auth.logout")
                             .font(.system(size: 17, weight: .regular))
                             .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
@@ -186,18 +189,18 @@ struct SettingView: View {
             }
 
             ToolbarItem(placement: .principal) {
-                Text("Settings")
+                Text("settings.title")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.primary)
             }
         }
-        .alert("Log Out", isPresented: $showLogoutAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Log Out", role: .destructive) {
+        .alert("auth.logoutAlert.title", isPresented: $showLogoutAlert) {
+            Button("common.cancel", role: .cancel) {}
+            Button("auth.logout", role: .destructive) {
                 contentViewModel.signOut()
             }
         } message: {
-            Text("Are you sure you want to log out?")
+            Text("auth.logoutAlert.message")
         }
         .sheet(isPresented: $showFeedbackEmail) {
             FeedbackEmailView()
@@ -253,7 +256,7 @@ struct SettingView: View {
                     }
 
                     if let learningDays = viewModel.learningDays {
-                        Text("Learning for \(learningDays) days")
+                        Text(String(format: NSLocalizedString("settings.learningDays", comment: ""), learningDays))
                             .font(.system(size: 15, weight: .regular))
                             .kerning(-0.24)
                             .foregroundColor(AppTheme.gray3c3c4360)
@@ -305,7 +308,7 @@ struct SettingView: View {
 
                 // Learning Info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Currently Learning")
+                    Text("settings.currentlyLearning")
                         .font(.system(size: 13, weight: .regular))
                         .foregroundColor(AppTheme.gray3c3c4360)
 
@@ -314,7 +317,7 @@ struct SettingView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.primary)
                     } else if !viewModel.isLoading {
-                        Text("Select Language")
+                        Text("settings.selectLanguage")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.primary)
                     } else {
@@ -342,7 +345,7 @@ struct SettingView: View {
 
     // MARK: - Section Group
 
-    private func sectionGroup<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func sectionGroup<Content: View>(title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 15, weight: .medium))
@@ -360,7 +363,7 @@ struct SettingView: View {
 
     // MARK: - Setting Row
 
-    private func settingRow(icon: String, title: String, action: @escaping () -> Void) -> some View {
+    private func settingRow(icon: String, title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
@@ -386,7 +389,7 @@ struct SettingView: View {
 
     // MARK: - Setting Row with Value
 
-    private func settingRowWithValue(icon: String, title: String, value: String, action: @escaping () -> Void) -> some View {
+    private func settingRowWithValue(icon: String, title: LocalizedStringKey, value: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)

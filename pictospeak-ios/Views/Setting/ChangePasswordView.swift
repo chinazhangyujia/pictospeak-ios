@@ -39,12 +39,12 @@ struct ChangePasswordView: View {
             VStack(spacing: 24) {
                 // Title and subtitle
                 VStack(spacing: 12) {
-                    Text("Change Password")
+                    Text("onboarding.newPassword.title")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 
-                    Text("Enter a new password for your account")
+                    Text("onboarding.newPassword.subtitle")
                         .font(.system(size: 17))
                         .foregroundColor(AppTheme.gray3c3c3c60)
                         .multilineTextAlignment(.center)
@@ -54,16 +54,16 @@ struct ChangePasswordView: View {
                 VStack(spacing: 20) {
                     // Current Password field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Current password")
+                        Text("auth.password")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
 
                         HStack {
                             if isCurrentPasswordVisible {
-                                TextField("Enter current password", text: $currentPassword)
+                                TextField("auth.enterPassword", text: $currentPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             } else {
-                                SecureField("Enter current password", text: $currentPassword)
+                                SecureField("auth.enterPassword", text: $currentPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             }
 
@@ -92,7 +92,7 @@ struct ChangePasswordView: View {
                             Button(action: {
                                 handleForgotPassword()
                             }) {
-                                Text("Forgot password?")
+                                Text("auth.forgotPassword")
                                     .font(.system(size: 17, weight: .medium))
                                     .foregroundColor(AppTheme.primaryBlue)
                             }
@@ -102,16 +102,16 @@ struct ChangePasswordView: View {
 
                     // New Password field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("New password")
+                        Text("onboarding.newPassword.new")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
 
                         HStack {
                             if isNewPasswordVisible {
-                                TextField("Enter new password", text: $newPassword)
+                                TextField("onboarding.newPassword.placeholder.new", text: $newPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             } else {
-                                SecureField("Enter new password", text: $newPassword)
+                                SecureField("onboarding.newPassword.placeholder.new", text: $newPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             }
 
@@ -138,16 +138,16 @@ struct ChangePasswordView: View {
 
                     // Confirm Password field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Confirm password")
+                        Text("onboarding.newPassword.confirm")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
 
                         HStack {
                             if isConfirmPasswordVisible {
-                                TextField("Confirm new password", text: $confirmPassword)
+                                TextField("onboarding.newPassword.placeholder.confirm", text: $confirmPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             } else {
-                                SecureField("Confirm new password", text: $confirmPassword)
+                                SecureField("onboarding.newPassword.placeholder.confirm", text: $confirmPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             }
 
@@ -194,7 +194,7 @@ struct ChangePasswordView: View {
                             }
                         }
 
-                        Text("At least 8 characters")
+                        Text("onboarding.newPassword.requirement.length")
                             .font(.system(size: 16))
                             .foregroundColor(isPasswordValid ? Color.green : AppTheme.gray3c3c4360)
 
@@ -214,7 +214,7 @@ struct ChangePasswordView: View {
                             }
                         }
 
-                        Text("Passwords match")
+                        Text("onboarding.newPassword.requirement.match")
                             .font(.system(size: 16))
                             .foregroundColor(doPasswordsMatch ? Color.green : AppTheme.gray3c3c4360)
 
@@ -247,7 +247,7 @@ struct ChangePasswordView: View {
                             .scaleEffect(0.8)
                     }
 
-                    Text("Reset password")
+                    Text("auth.resetPassword")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(isResetButtonEnabled ? .white : AppTheme.grayd9d9d9)
                 }

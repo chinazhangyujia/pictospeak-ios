@@ -427,12 +427,12 @@ struct SessionCard: View {
     private var dateString: String {
         let dateString = session.descriptionTeaching.createdAt
 
-        guard let date = parseDate(dateString) else { return "Today" }
+        guard let date = parseDate(dateString) else { return NSLocalizedString("common.unknown", comment: "Unknown") } // Or Today?
 
         let now = Date()
         // Check if less than 24 hours
         if abs(now.timeIntervalSince(date)) < 24 * 60 * 60 {
-            return "Today"
+            return NSLocalizedString("common.today", comment: "Today")
         }
 
         let calendar = Calendar.current
@@ -440,7 +440,7 @@ struct SessionCard: View {
         let currentYear = calendar.component(.year, from: now)
 
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
+        formatter.locale = Locale.current
 
         if year == currentYear {
             formatter.dateFormat = "MMM d"

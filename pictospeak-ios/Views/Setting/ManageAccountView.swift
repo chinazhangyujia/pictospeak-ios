@@ -16,7 +16,7 @@ struct ManageAccountView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
                 // Account Information Section
-                sectionGroup(title: "Account Information") {
+                sectionGroup(title: NSLocalizedString("settings.account", comment: "")) {
                     // Email Row
                     emailRow
 
@@ -52,14 +52,14 @@ struct ManageAccountView: View {
             }
 
             ToolbarItem(placement: .principal) {
-                Text("Manage Account")
+                Text("settings.manageAccount")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.primary)
             }
         }
-        .alert("Delete Account", isPresented: $showDeleteAccountAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
+        .alert("common.delete", isPresented: $showDeleteAccountAlert) {
+            Button("common.cancel", role: .cancel) {}
+            Button("common.delete", role: .destructive) {
                 // Handle account deletion
                 handleDeleteAccount()
             }
@@ -77,7 +77,7 @@ struct ManageAccountView: View {
                 .foregroundColor(AppTheme.gray8c8c8c)
                 .frame(width: 24, height: 24)
 
-            Text("Email")
+            Text("auth.email")
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(.primary)
 
@@ -95,7 +95,7 @@ struct ManageAccountView: View {
     private var changePasswordRow: some View {
         settingRow(
             icon: "lock",
-            title: "Change Password",
+            title: NSLocalizedString("auth.resetPassword", comment: ""),
             action: {
                 handleChangePassword()
             }
@@ -107,7 +107,7 @@ struct ManageAccountView: View {
     private var deleteAccountRow: some View {
         settingRow(
             icon: "trash",
-            title: "Delete Account",
+            title: NSLocalizedString("common.delete", comment: ""),
             iconColor: .red,
             textColor: .red,
             action: {

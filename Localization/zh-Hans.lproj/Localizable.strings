@@ -1,0 +1,183 @@
+/* Common */
+"common.loading" = "加载中...";
+"common.unknown" = "未知";
+"common.notSet" = "未设置";
+"common.cancel" = "取消";
+"common.retry" = "重试";
+"common.save" = "保存";
+"common.getStarted" = "开始使用";
+"common.continue" = "继续";
+"common.dismiss" = "忽略";
+"common.delete" = "删除";
+"common.edit" = "编辑";
+"common.done" = "完成";
+"common.next" = "下一步";
+"common.seeAll" = "查看全部";
+"common.rec" = "录制";
+"common.today" = "今天";
+
+/* Settings View */
+"settings.title" = "设置";
+"settings.account" = "账户";
+"settings.manageAccount" = "管理账户";
+"settings.languageAndLearning" = "语言与学习";
+"settings.systemLanguage" = "系统语言";
+"settings.teachingLanguage" = "教学语言";
+"settings.support" = "支持";
+"settings.contactSupport" = "联系支持";
+"settings.faq" = "常见问题";
+"settings.feedback" = "反馈";
+"settings.legal" = "法律";
+"settings.termsOfUse" = "使用条款";
+"settings.privacyPolicy" = "隐私政策";
+"settings.about" = "关于";
+"settings.appInfo" = "应用信息";
+"settings.ourStory" = "我们的故事";
+"settings.learningDays" = "已学习 %lld 天";
+"settings.currentlyLearning" = "正在学习";
+"settings.selectLanguage" = "选择语言";
+
+/* Auth & Onboarding */
+"auth.logout" = "退出登录";
+"auth.logoutAlert.title" = "退出登录";
+"auth.logoutAlert.message" = "确定要退出登录吗？";
+"auth.login" = "登录";
+"auth.signup" = "注册";
+"auth.email" = "邮箱";
+"auth.password" = "密码";
+"auth.forgotPassword" = "忘记密码？";
+"auth.haveAccount" = "已有账号？";
+"auth.noAccount" = "还没有账号？";
+"auth.fullName" = "全名";
+"auth.enterEmail" = "输入您的邮箱";
+"auth.enterPassword" = "输入您的密码";
+"auth.enterFullName" = "输入您的全名";
+"auth.createAccount" = "创建账号";
+"auth.welcomeBack" = "欢迎回来";
+"auth.resetPassword" = "重置密码";
+"auth.subtitle.signup" = "保存您的单词和会话";
+"auth.subtitle.signin" = "登录以继续您的学习之旅";
+"auth.subtitle.reset" = "输入邮箱以接收重置链接";
+"auth.sendResetLink" = "发送重置链接";
+
+"onboarding.targetLanguage.title" = "您想学习什么语言？";
+"onboarding.targetLanguage.subtitle" = "您可以稍后在设置中更改";
+"onboarding.targetLanguage.moreComingSoon" = "更多语言即将推出";
+
+"onboarding.nativeLanguage.title" = "您想用什么语言学习？";
+"onboarding.nativeLanguage.subtitle" = "选择用于解释和翻译的语言";
+"onboarding.nativeLanguage.requestOthers" = "请求其他语言";
+
+"onboarding.verification.title" = "输入验证码";
+"onboarding.verification.subtitle" = "发送至 %@ 的6位验证码";
+"onboarding.verification.label" = "验证码";
+"onboarding.verification.resend" = "重新发送";
+"onboarding.verification.noCode" = "没有收到验证码？";
+"onboarding.verification.verify" = "验证";
+"onboarding.verification.resentSuccess" = "验证码已重新发送至 %@";
+"onboarding.verification.resendError" = "重新发送失败，请重试。";
+
+"onboarding.newPassword.title" = "创建新密码";
+"onboarding.newPassword.subtitle" = "为您的账户输入新密码";
+"onboarding.newPassword.new" = "新密码";
+"onboarding.newPassword.confirm" = "确认密码";
+"onboarding.newPassword.placeholder.new" = "输入新密码";
+"onboarding.newPassword.placeholder.confirm" = "确认新密码";
+"onboarding.newPassword.requirement.length" = "至少8个字符";
+"onboarding.newPassword.requirement.match" = "密码匹配";
+"onboarding.newPassword.set" = "设置密码";
+"onboarding.newPassword.error.fullName" = "全名是必填项";
+"onboarding.newPassword.error.settings" = "未找到用户设置";
+
+/* Home View */
+"home.greeting.morning" = "早上好！";
+"home.greeting.afternoon" = "下午好！";
+"home.greeting.evening" = "晚上好！";
+"home.startTalking" = "开始对话";
+"home.loadingMaterials" = "加载教材中...";
+"home.review.title" = "今日复习";
+"home.review.subtitle" = "您保存的词汇";
+"home.review.start" = "开始复习";
+"home.recentSessions.title" = "最近会话";
+"home.loadingSessions" = "加载会话中...";
+"home.loadingMore" = "加载更多...";
+"home.sessionDeleted" = "会话已删除";
+
+/* Review View */
+"review.title" = "复习";
+"review.tab.review" = "复习";
+"review.section.vocabulary" = "词汇";
+"review.section.sessions" = "所有会话";
+"review.empty.vocabulary.title" = "暂无复习项目";
+"review.empty.vocabulary.subtitle" = "完成一些会话后，您的词汇和建议将显示在这里";
+"review.empty.sessions.title" = "暂无会话";
+"review.empty.sessions.subtitle" = "完成一些口语会话后，它们将显示在这里";
+
+/* Capture View */
+"capture.mode.photo" = "拍照";
+"capture.mode.video" = "视频";
+"capture.permission.title" = "需要相机权限";
+"capture.permission.message" = "请在设置中启用相机访问权限以使用此功能。";
+"capture.permission.placeholder" = "访问相机权限以使用此功能";
+
+/* Feedback View */
+"feedback.title" = "AI 反馈";
+"feedback.tab.mine" = "我的";
+"feedback.tab.aiRefined" = "AI 润色";
+"feedback.thinking.organizing" = "正在整理您的输入…";
+"feedback.thinking.distilling" = "提炼关键思想…";
+"feedback.thinking.polishing" = "润色以更自然表达…";
+"feedback.thinking.highlighting" = "挑选并高亮关键词…";
+"feedback.thinking.ready" = "即将完成…";
+
+/* Subscription View */
+"subscription.title" = "通过 AI 反馈学得更快";
+"subscription.subtitle" = "通过基于图片的练习获得快速、有用的反馈。";
+"subscription.plan.monthly" = "月度";
+"subscription.plan.yearly" = "年度";
+"subscription.period.month" = "每月";
+"subscription.period.year" = "每年";
+"subscription.monthlyEquivalent" = "≈ %@ / 月";
+"subscription.savePercent" = "节省 %.0f%%";
+"subscription.recommended" = "推荐";
+"subscription.trial.start" = "开始 %d 天免费试用";
+"subscription.trial.default" = "开始 7 天免费试用";
+"subscription.details.monthly" = "之后 %@/月，随时取消。";
+"subscription.details.yearly" = "之后 %@/年，随时取消。";
+"subscription.processing" = "处理中...";
+"subscription.restore" = "恢复购买";
+"subscription.included" = "包含内容：";
+"subscription.limits" = "使用限制：";
+"subscription.loading" = "加载订阅详情...";
+"subscription.error.title" = "加载订阅失败";
+"subscription.error.tryAgain" = "重试";
+"subscription.success.title" = "购买成功";
+"subscription.success.message" = "您的订阅已激活。享受无限访问权限！";
+"subscription.failed.title" = "购买失败";
+"subscription.failed.message" = "购买过程中发生错误。请重试。";
+"subscription.failed.productNotAvailable" = "产品不可用。请稍后再试。";
+"subscription.failed.cancelled" = "购买已取消或等待批准。";
+"subscription.restore.success" = "购买已成功恢复！";
+"subscription.restore.none" = "未找到可恢复的有效订阅。";
+
+/* Service Errors */
+"error.invalidURL" = "无效的 URL";
+"error.encoding" = "请求编码失败";
+"error.decoding" = "响应解码失败";
+"error.server" = "服务器发生错误";
+"error.network" = "网络错误";
+"error.unknown" = "发生未知错误";
+"error.auth.failed" = "认证失败 - 凭据无效";
+"error.auth.tokenRefreshFailed" = "令牌刷新失败";
+"error.auth.noToken" = "未找到认证令牌";
+"error.session.notFound" = "未找到会话";
+"error.review.itemNotFound" = "未找到复习项目";
+"error.verification.invalidCode" = "验证码无效或已过期";
+"error.subscription.purchaseFailed" = "购买失败，请重试。";
+"error.subscription.purchaseCancelled" = "购买已取消";
+"error.store.unknown" = "发生未知错误";
+"error.store.userCancelled" = "购买已取消";
+"error.store.network" = "网络错误";
+"error.store.notAvailable" = "此产品在您所在的地区不可用";
+"error.store.notEntitled" = "您无权使用此产品";
+"error.store.generic" = "发生错误";

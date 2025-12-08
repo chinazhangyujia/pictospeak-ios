@@ -14,9 +14,9 @@ enum PolicyType {
     var title: String {
         switch self {
         case .termsOfUse:
-            return "Terms of Use"
+            return NSLocalizedString("settings.termsOfUse", comment: "Terms of Use")
         case .privacyPolicy:
-            return "Privacy Policy"
+            return NSLocalizedString("settings.privacyPolicy", comment: "Privacy Policy")
         }
     }
 }
@@ -39,7 +39,7 @@ struct PolicyView: View {
                     VStack {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.primaryBlue))
-                        Text("Loading...")
+                        Text("common.loading")
                             .font(.system(size: 17, weight: .regular))
                             .foregroundColor(AppTheme.gray8c8c8c)
                             .padding(.top, 8)
@@ -57,7 +57,7 @@ struct PolicyView: View {
                             .foregroundColor(AppTheme.gray8c8c8c)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
-                        Button("Retry") {
+                        Button("common.retry") {
                             loadPolicy()
                         }
                         .font(.system(size: 17, weight: .medium))

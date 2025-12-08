@@ -43,7 +43,7 @@ struct ReviewView: View {
     var body: some View {
         VStack(spacing: 16) {
             // Segmented Control
-            Picker("Review Tab", selection: $selectedTab) {
+            Picker("review.tab.review", selection: $selectedTab) {
                 ForEach(ReviewTab.allCases, id: \.self) { tab in
                     Text(tab.rawValue).tag(tab)
                 }
@@ -62,7 +62,7 @@ struct ReviewView: View {
         .padding(.horizontal, 16)
         .background(AppTheme.backgroundGradient)
         .navigationBarBackButtonHidden(true)
-        .navigationTitle("Review")
+        .navigationTitle("review.title")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -96,7 +96,7 @@ struct ReviewView: View {
                 }
             }
         }
-        .toast(isPresented: $showDeleteToast, message: "Session deleted", icon: "trash.fill")
+        .toast(isPresented: $showDeleteToast, message: NSLocalizedString("home.sessionDeleted", comment: "Session deleted"), icon: "trash.fill")
     }
 
     // MARK: - Vocabulary Content
@@ -104,7 +104,7 @@ struct ReviewView: View {
     private var vocabularyContent: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Vocabulary Section Header
-            Text("Vocabulary")
+            Text("review.section.vocabulary")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(.primary)
                 .padding(.top, 5)
@@ -131,7 +131,7 @@ struct ReviewView: View {
                     Text(errorMessage)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
-                    Button("Retry") {
+                    Button("common.retry") {
                         Task {
                             await reviewViewModel.refreshReviewItems()
                         }
@@ -220,7 +220,7 @@ struct ReviewView: View {
                         HStack {
                             ProgressView()
                                 .scaleEffect(0.8)
-                            Text("Loading more...")
+                            Text("home.loadingMore")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -241,10 +241,10 @@ struct ReviewView: View {
                     Image(systemName: "book.closed")
                         .font(.largeTitle)
                         .foregroundColor(.secondary)
-                    Text("No review items yet")
+                    Text("review.empty.vocabulary.title")
                         .font(.headline)
                         .foregroundColor(.secondary)
-                    Text("Complete some sessions to see your vocabulary and suggestions here")
+                    Text("review.empty.vocabulary.subtitle")
                         .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -317,7 +317,7 @@ struct ReviewView: View {
     private var sessionsContent: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Sessions Section Header
-            Text("All sessions")
+            Text("review.section.sessions")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(.primary)
                 .padding(.top, 5)
@@ -344,7 +344,7 @@ struct ReviewView: View {
                     Text(errorMessage)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
-                    Button("Retry") {
+                    Button("common.retry") {
                         Task {
                             await sessionsViewModel.refreshSessions()
                         }
@@ -383,7 +383,7 @@ struct ReviewView: View {
                         HStack {
                             ProgressView()
                                 .scaleEffect(0.8)
-                            Text("Loading more...")
+                            Text("home.loadingMore")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -404,10 +404,10 @@ struct ReviewView: View {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.largeTitle)
                         .foregroundColor(.secondary)
-                    Text("No sessions yet")
+                    Text("review.empty.sessions.title")
                         .font(.headline)
                         .foregroundColor(.secondary)
-                    Text("Complete some speaking sessions to see them here")
+                    Text("review.empty.sessions.subtitle")
                         .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)

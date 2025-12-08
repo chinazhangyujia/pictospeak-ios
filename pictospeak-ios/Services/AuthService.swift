@@ -426,23 +426,23 @@ enum AuthError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            return NSLocalizedString("error.invalidURL", comment: "")
         case .encodingError:
-            return "Failed to encode request"
+            return NSLocalizedString("error.encoding", comment: "")
         case .decodingError:
-            return "Failed to decode response"
+            return NSLocalizedString("error.decoding", comment: "")
         case .serverError:
-            return "Server error occurred"
+            return NSLocalizedString("error.server", comment: "")
         case .networkError:
-            return "Network error occurred"
+            return NSLocalizedString("error.network", comment: "")
         case .authenticationFailed:
-            return "Authentication failed - invalid credentials"
+            return NSLocalizedString("error.auth.failed", comment: "")
         case .tokenRefreshFailed:
-            return "Token refresh failed"
+            return NSLocalizedString("error.auth.tokenRefreshFailed", comment: "")
         case .noTokenFound:
-            return "No authentication token found"
+            return NSLocalizedString("error.auth.noToken", comment: "")
         case .unknownError:
-            return "Unknown error occurred"
+            return NSLocalizedString("error.unknown", comment: "")
         }
     }
 }
