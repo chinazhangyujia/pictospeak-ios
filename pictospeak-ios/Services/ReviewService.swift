@@ -105,17 +105,17 @@ enum ReviewError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            return NSLocalizedString("error.invalidURL", comment: "Invalid URL")
         case .encodingError:
-            return "Failed to encode request"
+            return NSLocalizedString("error.encoding", comment: "Encoding error")
         case .decodingError:
-            return "Failed to decode response"
+            return NSLocalizedString("error.decoding", comment: "Decoding error")
         case .serverError:
-            return "Server error occurred"
+            return NSLocalizedString("error.server", comment: "Server error")
         case .networkError:
-            return "Network error occurred"
+            return NSLocalizedString("error.network", comment: "Network error")
         case .reviewItemNotFound:
-            return "Review item not found"
+            return NSLocalizedString("error.review.itemNotFound", comment: "Item not found")
         }
     }
 }

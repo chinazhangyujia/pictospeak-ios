@@ -563,15 +563,15 @@ enum FeedbackError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            return NSLocalizedString("error.invalidURL", comment: "")
         case .encodingError:
-            return "Failed to encode request"
+            return NSLocalizedString("error.encoding", comment: "")
         case .decodingError:
-            return "Failed to decode response"
+            return NSLocalizedString("error.decoding", comment: "")
         case .serverError:
-            return "Server error occurred"
+            return NSLocalizedString("error.server", comment: "")
         case .networkError:
-            return "Network error occurred"
+            return NSLocalizedString("error.network", comment: "")
         }
     }
 }

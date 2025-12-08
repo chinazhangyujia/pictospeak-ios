@@ -1,0 +1,183 @@
+/* Common */
+"common.loading" = "読み込み中...";
+"common.unknown" = "不明";
+"common.notSet" = "未設定";
+"common.cancel" = "キャンセル";
+"common.retry" = "再試行";
+"common.save" = "保存";
+"common.getStarted" = "はじめる";
+"common.continue" = "次へ";
+"common.dismiss" = "閉じる";
+"common.delete" = "削除";
+"common.edit" = "編集";
+"common.done" = "完了";
+"common.next" = "次へ";
+"common.seeAll" = "すべて見る";
+"common.rec" = "録画";
+"common.today" = "今日";
+
+/* Settings View */
+"settings.title" = "設定";
+"settings.account" = "アカウント";
+"settings.manageAccount" = "アカウント管理";
+"settings.languageAndLearning" = "言語と学習";
+"settings.systemLanguage" = "システム言語";
+"settings.teachingLanguage" = "学習言語";
+"settings.support" = "サポート";
+"settings.contactSupport" = "サポートに連絡";
+"settings.faq" = "よくある質問";
+"settings.feedback" = "フィードバック";
+"settings.legal" = "法務情報";
+"settings.termsOfUse" = "利用規約";
+"settings.privacyPolicy" = "プライバシーポリシー";
+"settings.about" = "アプリについて";
+"settings.appInfo" = "アプリ情報";
+"settings.ourStory" = "私たちのストーリー";
+"settings.learningDays" = "%lld 日間学習中";
+"settings.currentlyLearning" = "学習中の言語";
+"settings.selectLanguage" = "言語を選択";
+
+/* Auth & Onboarding */
+"auth.logout" = "ログアウト";
+"auth.logoutAlert.title" = "ログアウト";
+"auth.logoutAlert.message" = "本当にログアウトしますか？";
+"auth.login" = "ログイン";
+"auth.signup" = "サインアップ";
+"auth.email" = "メールアドレス";
+"auth.password" = "パスワード";
+"auth.forgotPassword" = "パスワードをお忘れですか？";
+"auth.haveAccount" = "アカウントをお持ちですか？";
+"auth.noAccount" = "アカウントをお持ちではありませんか？";
+"auth.fullName" = "氏名";
+"auth.enterEmail" = "メールアドレスを入力";
+"auth.enterPassword" = "パスワードを入力";
+"auth.enterFullName" = "氏名を入力";
+"auth.createAccount" = "アカウントを作成";
+"auth.welcomeBack" = "おかえりなさい";
+"auth.resetPassword" = "パスワードをリセット";
+"auth.subtitle.signup" = "単語やセッションを保存しましょう";
+"auth.subtitle.signin" = "ログインして学習を続けましょう";
+"auth.subtitle.reset" = "リセットリンクを受け取るメールアドレスを入力してください";
+"auth.sendResetLink" = "リセットリンクを送信";
+
+"onboarding.targetLanguage.title" = "どの言語を学びたいですか？";
+"onboarding.targetLanguage.subtitle" = "後で設定から変更できます";
+"onboarding.targetLanguage.moreComingSoon" = "他の言語も順次追加予定です";
+
+"onboarding.nativeLanguage.title" = "何語で学びますか？";
+"onboarding.nativeLanguage.subtitle" = "説明や翻訳に使用する言語を選択してください";
+"onboarding.nativeLanguage.requestOthers" = "他の言語をリクエスト";
+
+"onboarding.verification.title" = "認証コードを入力";
+"onboarding.verification.subtitle" = "%@ に送信された6桁のコード";
+"onboarding.verification.label" = "認証コード";
+"onboarding.verification.resend" = "再送信";
+"onboarding.verification.noCode" = "コードが届きませんか？";
+"onboarding.verification.verify" = "認証する";
+"onboarding.verification.resentSuccess" = "認証コードを %@ に再送信しました";
+"onboarding.verification.resendError" = "コードの再送信に失敗しました。もう一度お試しください。";
+
+"onboarding.newPassword.title" = "新しいパスワードを作成";
+"onboarding.newPassword.subtitle" = "アカウントの新しいパスワードを入力してください";
+"onboarding.newPassword.new" = "新しいパスワード";
+"onboarding.newPassword.confirm" = "パスワード（確認）";
+"onboarding.newPassword.placeholder.new" = "新しいパスワードを入力";
+"onboarding.newPassword.placeholder.confirm" = "新しいパスワードを確認";
+"onboarding.newPassword.requirement.length" = "8文字以上";
+"onboarding.newPassword.requirement.match" = "パスワードが一致しています";
+"onboarding.newPassword.set" = "パスワードを設定";
+"onboarding.newPassword.error.fullName" = "氏名は必須です";
+"onboarding.newPassword.error.settings" = "ユーザー設定が見つかりません";
+
+/* Home View */
+"home.greeting.morning" = "おはようございます";
+"home.greeting.afternoon" = "こんにちは";
+"home.greeting.evening" = "こんばんは";
+"home.startTalking" = "会話を始める";
+"home.loadingMaterials" = "教材を読み込み中...";
+"home.review.title" = "今日の復習";
+"home.review.subtitle" = "保存した単語";
+"home.review.start" = "復習を開始";
+"home.recentSessions.title" = "最近のセッション";
+"home.loadingSessions" = "セッションを読み込み中...";
+"home.loadingMore" = "さらに読み込み中...";
+"home.sessionDeleted" = "セッションを削除しました";
+
+/* Review View */
+"review.title" = "復習";
+"review.tab.review" = "復習タブ";
+"review.section.vocabulary" = "単語帳";
+"review.section.sessions" = "すべてのセッション";
+"review.empty.vocabulary.title" = "復習アイテムがありません";
+"review.empty.vocabulary.subtitle" = "セッションを完了すると、単語やアドバイスがここに表示されます";
+"review.empty.sessions.title" = "セッションがありません";
+"review.empty.sessions.subtitle" = "スピーキングセッションを完了すると、ここに表示されます";
+
+/* Capture View */
+"capture.mode.photo" = "写真";
+"capture.mode.video" = "ビデオ";
+"capture.permission.title" = "カメラのアクセス許可が必要です";
+"capture.permission.message" = "この機能を使用するには、設定でカメラへのアクセスを許可してください。";
+"capture.permission.placeholder" = "この機能を使用するにはカメラへのアクセスを許可してください";
+
+/* Feedback View */
+"feedback.title" = "AIフィードバック";
+"feedback.tab.mine" = "自分";
+"feedback.tab.aiRefined" = "AI修正";
+"feedback.thinking.organizing" = "入力を整理しています…";
+"feedback.thinking.distilling" = "キーとなるアイデアを抽出しています…";
+"feedback.thinking.polishing" = "自然な表現に修正しています…";
+"feedback.thinking.highlighting" = "キーワードを選定・強調しています…";
+"feedback.thinking.ready" = "もうすぐ完了します…";
+
+/* Subscription View */
+"subscription.title" = "AIフィードバックで速く学ぶ";
+"subscription.subtitle" = "画像を使った練習で、素早く役立つフィードバックを入手しましょう。";
+"subscription.plan.monthly" = "月額";
+"subscription.plan.yearly" = "年額";
+"subscription.period.month" = "月額";
+"subscription.period.year" = "年額";
+"subscription.monthlyEquivalent" = "≈ %@ / 月";
+"subscription.savePercent" = "%.0f%% オフ";
+"subscription.recommended" = "おすすめ";
+"subscription.trial.start" = "%d日間の無料トライアルを開始";
+"subscription.trial.default" = "7日間の無料トライアルを開始";
+"subscription.details.monthly" = "その後 %@/月、いつでもキャンセル可能。";
+"subscription.details.yearly" = "その後 %@/年、いつでもキャンセル可能。";
+"subscription.processing" = "処理中...";
+"subscription.restore" = "購入を復元";
+"subscription.included" = "含まれるもの:";
+"subscription.limits" = "利用制限:";
+"subscription.loading" = "サブスクリプション詳細を読み込み中...";
+"subscription.error.title" = "サブスクリプションの読み込みエラー";
+"subscription.error.tryAgain" = "再試行";
+"subscription.success.title" = "購入完了";
+"subscription.success.message" = "サブスクリプションが有効になりました。無制限のアクセスをお楽しみください！";
+"subscription.failed.title" = "購入失敗";
+"subscription.failed.message" = "購入中にエラーが発生しました。もう一度お試しください。";
+"subscription.failed.productNotAvailable" = "製品が利用できません。後ほど再試行してください。";
+"subscription.failed.cancelled" = "購入がキャンセルされたか、承認待ちです。";
+"subscription.restore.success" = "購入が正常に復元されました！";
+"subscription.restore.none" = "復元可能な有効なサブスクリプションが見つかりません。";
+
+/* Service Errors */
+"error.invalidURL" = "無効なURL";
+"error.encoding" = "リクエストのエンコードに失敗しました";
+"error.decoding" = "レスポンスのデコードに失敗しました";
+"error.server" = "サーバーエラーが発生しました";
+"error.network" = "ネットワークエラーが発生しました";
+"error.unknown" = "不明なエラーが発生しました";
+"error.auth.failed" = "認証に失敗しました - 資格情報が無効です";
+"error.auth.tokenRefreshFailed" = "トークンの更新に失敗しました";
+"error.auth.noToken" = "認証トークンが見つかりません";
+"error.session.notFound" = "セッションが見つかりません";
+"error.review.itemNotFound" = "復習アイテムが見つかりません";
+"error.verification.invalidCode" = "確認コードが無効か期限切れです";
+"error.subscription.purchaseFailed" = "購入に失敗しました。もう一度お試しください。";
+"error.subscription.purchaseCancelled" = "購入がキャンセルされました";
+"error.store.unknown" = "不明なエラーが発生しました";
+"error.store.userCancelled" = "購入がキャンセルされました";
+"error.store.network" = "ネットワークエラーが発生しました";
+"error.store.notAvailable" = "この製品はお住まいの地域では利用できません";
+"error.store.notEntitled" = "この製品を使用する権限がありません";
+"error.store.generic" = "エラーが発生しました";

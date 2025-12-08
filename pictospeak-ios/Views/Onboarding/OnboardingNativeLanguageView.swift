@@ -31,7 +31,7 @@ struct OnboardingNativeLanguageView: View {
             // Main content
             VStack(spacing: 32) {
                 VStack(spacing: 12) {
-                    Text("What language do you want to learn in?")
+                    Text("onboarding.nativeLanguage.title")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
@@ -39,7 +39,7 @@ struct OnboardingNativeLanguageView: View {
                         .tracking(0.38)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Select the language for explanations and translations")
+                    Text("onboarding.nativeLanguage.subtitle")
                         .font(.body)
                         .foregroundColor(Color(red: 0x3C / 255, green: 0x3C / 255, blue: 0x43 / 255).opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -54,7 +54,7 @@ struct OnboardingNativeLanguageView: View {
                     Text(error)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
-                    Button("Retry") {
+                    Button("common.retry") {
                         Task { await fetchLanguages() }
                     }
                 } else {
@@ -73,7 +73,7 @@ struct OnboardingNativeLanguageView: View {
 
                 // Request other languages link
                 Button(action: {}) {
-                    Text("Request other languages")
+                    Text("onboarding.nativeLanguage.requestOthers")
                         .font(.body.weight(.semibold))
                         .foregroundColor(AppTheme.primaryBlue)
                 }
@@ -92,7 +92,7 @@ struct OnboardingNativeLanguageView: View {
                     router.goTo(.auth(initialMode: .signUp))
                 }
             }) {
-                Text(sourceView == .settings ? "Save" : "Get Started")
+                Text(sourceView == .settings ? "common.save" : "common.getStarted")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

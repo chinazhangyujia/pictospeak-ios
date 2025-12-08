@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		908CC4272EE649A5007C6D90 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 908CC4252EE649A5007C6D90 /* Localizable.strings */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		90929E3D2E41BAFF008A2EF1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -25,6 +29,10 @@
 
 /* Begin PBXFileReference section */
 		9071D16E2EA2035B0086DC6A /* pictospeak-ios.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = "pictospeak-ios.storekit"; sourceTree = "<group>"; };
+		908CC4212EE649A5007C6D90 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		908CC4222EE649A5007C6D90 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		908CC4232EE649A5007C6D90 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		908CC4242EE649A5007C6D90 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		90929E2F2E41BAFE008A2EF1 /* pictospeak-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "pictospeak-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		90929E3C2E41BAFF008A2EF1 /* pictospeak-iosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pictospeak-iosTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		90929E462E41BAFF008A2EF1 /* pictospeak-iosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pictospeak-iosUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -73,9 +81,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		908CC4262EE649A5007C6D90 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				908CC4252EE649A5007C6D90 /* Localizable.strings */,
+			);
+			path = Localization;
+			sourceTree = "<group>";
+		};
 		90929E262E41BAFE008A2EF1 = {
 			isa = PBXGroup;
 			children = (
+				908CC4262EE649A5007C6D90 /* Localization */,
 				9071D16E2EA2035B0086DC6A /* pictospeak-ios.storekit */,
 				90929E312E41BAFE008A2EF1 /* pictospeak-ios */,
 				90929E3F2E41BAFF008A2EF1 /* pictospeak-iosTests */,
@@ -194,6 +211,9 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
+				ja,
+				es,
 			);
 			mainGroup = 90929E262E41BAFE008A2EF1;
 			minimizedProjectReferenceProxies = 1;
@@ -214,6 +234,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				908CC4272EE649A5007C6D90 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,6 +290,20 @@
 			targetProxy = 90929E472E41BAFF008A2EF1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		908CC4252EE649A5007C6D90 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				908CC4212EE649A5007C6D90 /* en */,
+				908CC4222EE649A5007C6D90 /* es */,
+				908CC4232EE649A5007C6D90 /* ja */,
+				908CC4242EE649A5007C6D90 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		90929E4E2E41BAFF008A2EF1 /* Debug */ = {

@@ -53,12 +53,12 @@ struct CreateNewPasswordView: View {
             VStack(spacing: 24) {
                 // Title and subtitle
                 VStack(spacing: 12) {
-                    Text("Create new password")
+                    Text("onboarding.newPassword.title")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 
-                    Text("Enter a new password for your account")
+                    Text("onboarding.newPassword.subtitle")
                         .font(.system(size: 17))
                         .foregroundColor(AppTheme.gray3c3c3c60)
                         .multilineTextAlignment(.center)
@@ -69,16 +69,16 @@ struct CreateNewPasswordView: View {
                 VStack(spacing: 20) {
                     // New Password field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("New password")
+                        Text("onboarding.newPassword.new")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
 
                         HStack {
                             if isNewPasswordVisible {
-                                TextField("Enter new password", text: $newPassword)
+                                TextField("onboarding.newPassword.placeholder.new", text: $newPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             } else {
-                                SecureField("Enter new password", text: $newPassword)
+                                SecureField("onboarding.newPassword.placeholder.new", text: $newPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             }
 
@@ -105,16 +105,16 @@ struct CreateNewPasswordView: View {
 
                     // Confirm Password field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Confirm password")
+                        Text("onboarding.newPassword.confirm")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
 
                         HStack {
                             if isConfirmPasswordVisible {
-                                TextField("Confirm new password", text: $confirmPassword)
+                                TextField("onboarding.newPassword.placeholder.confirm", text: $confirmPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             } else {
-                                SecureField("Confirm new password", text: $confirmPassword)
+                                SecureField("onboarding.newPassword.placeholder.confirm", text: $confirmPassword)
                                     .textFieldStyle(PlainTextFieldStyle())
                             }
 
@@ -161,7 +161,7 @@ struct CreateNewPasswordView: View {
                             }
                         }
 
-                        Text("At least 8 characters")
+                        Text("onboarding.newPassword.requirement.length")
                             .font(.system(size: 16))
                             .foregroundColor(isPasswordValid ? Color.green : AppTheme.gray3c3c4360)
 
@@ -181,7 +181,7 @@ struct CreateNewPasswordView: View {
                             }
                         }
 
-                        Text("Passwords match")
+                        Text("onboarding.newPassword.requirement.match")
                             .font(.system(size: 16))
                             .foregroundColor(doPasswordsMatch ? Color.green : AppTheme.gray3c3c4360)
 
@@ -213,7 +213,7 @@ struct CreateNewPasswordView: View {
                             .scaleEffect(0.8)
                     }
 
-                    Text("Set password")
+                    Text("onboarding.newPassword.set")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(isResetButtonEnabled ? .white : AppTheme.grayd9d9d9)
                 }
@@ -247,7 +247,7 @@ struct CreateNewPasswordView: View {
                     // Sign-up flow - create new account
                     guard let fullName = fullName else {
                         await MainActor.run {
-                            self.errorMessage = "Full name is required"
+                            self.errorMessage = NSLocalizedString("onboarding.newPassword.error.fullName", comment: "Full name required")
                             self.isLoading = false
                         }
                         return
@@ -264,7 +264,7 @@ struct CreateNewPasswordView: View {
                     } else {
                         print("❌ No user setting found in ContentViewModel or UserDefaultManager. This should not happen.")
                         await MainActor.run {
-                            self.errorMessage = "User settings not found"
+                            self.errorMessage = NSLocalizedString("onboarding.newPassword.error.settings", comment: "Settings not found")
                             self.isLoading = false
                         }
                         return

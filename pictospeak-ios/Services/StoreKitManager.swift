@@ -260,17 +260,17 @@ extension StoreKitError {
     var localizedDescription: String {
         switch self {
         case .unknown:
-            return "An unknown error occurred"
+            return NSLocalizedString("error.store.unknown", comment: "Unknown store error")
         case .userCancelled:
-            return "Purchase was cancelled"
+            return NSLocalizedString("error.store.userCancelled", comment: "User cancelled")
         case .networkError:
-            return "Network error occurred"
+            return NSLocalizedString("error.store.network", comment: "Network error")
         case .notAvailableInStorefront:
-            return "This product is not available in your region"
+            return NSLocalizedString("error.store.notAvailable", comment: "Not available")
         case .notEntitled:
-            return "You are not entitled to this product"
+            return NSLocalizedString("error.store.notEntitled", comment: "Not entitled")
         @unknown default:
-            return "An error occurred"
+            return NSLocalizedString("error.store.generic", comment: "Generic store error")
         }
     }
 }

@@ -34,7 +34,7 @@ struct MailComposeView: UIViewControllerRepresentable {
         mailComposer.setToRecipients(["support@babelo.io"])
 
         // Set subject
-        mailComposer.setSubject("Feedback")
+        mailComposer.setSubject(NSLocalizedString("settings.feedback", comment: "Feedback"))
 
         // Get device information
         let deviceInfo = getDeviceInfo()
@@ -201,7 +201,7 @@ struct MailNotAvailableView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            Button("Dismiss") {
+            Button("common.dismiss") {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)

@@ -97,9 +97,9 @@ enum FavoriteError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            return NSLocalizedString("error.invalidURL", comment: "Invalid URL")
         case .serverError:
-            return "Server error occurred"
+            return NSLocalizedString("error.server", comment: "Server error")
         }
     }
 }

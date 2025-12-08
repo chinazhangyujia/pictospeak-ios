@@ -48,12 +48,12 @@ struct VerificationCodeView: View {
             VStack(spacing: 24) {
                 // Title and subtitle
                 VStack(spacing: 12) {
-                    Text("Enter verification code")
+                    Text("onboarding.verification.title")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.black)
                         .multilineTextAlignment(.center)
 
-                    Text("6-digit code to \(email)")
+                    Text(String(format: NSLocalizedString("onboarding.verification.subtitle", comment: ""), email))
                         .font(.system(size: 17))
                         .foregroundColor(AppTheme.gray3c3c3c60)
                         .multilineTextAlignment(.center)
@@ -62,7 +62,7 @@ struct VerificationCodeView: View {
                 // Verification code input section
                 VStack {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Verification code")
+                        Text("onboarding.verification.label")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.gray333333)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -95,14 +95,14 @@ struct VerificationCodeView: View {
 
                 // Resend code section
                 HStack(spacing: 10) {
-                    Text("Didn't receive the code?")
+                    Text("onboarding.verification.noCode")
                         .font(.system(size: 17))
                         .foregroundColor(AppTheme.gray3c3c4360)
 
                     Button(action: {
                         resendVerificationCode()
                     }) {
-                        Text("Resend")
+                        Text("onboarding.verification.resend")
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(AppTheme.primaryBlue)
                     }
@@ -131,7 +131,7 @@ struct VerificationCodeView: View {
                             .scaleEffect(0.8)
                     }
 
-                    Text("Verify code")
+                    Text("onboarding.verification.verify")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(isButtonDisabled ? AppTheme.grayd9d9d9 : .white)
                 }
@@ -215,11 +215,11 @@ struct VerificationCodeView: View {
                 try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
                 await MainActor.run {
-                    print("✅ Verification code resent to \(email)")
+                    print(String(format: NSLocalizedString("onboarding.verification.resentSuccess", comment: ""), email))
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to resend code. Please try again."
+                    errorMessage = NSLocalizedString("onboarding.verification.resendError", comment: "Resend failed")
                 }
             }
         }

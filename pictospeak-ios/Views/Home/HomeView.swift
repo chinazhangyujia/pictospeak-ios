@@ -26,11 +26,11 @@ struct HomeView: View {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
         case 5 ..< 12:
-            return "Good morning!"
+            return NSLocalizedString("home.greeting.morning", comment: "Good morning")
         case 12 ..< 17:
-            return "Good afternoon!"
+            return NSLocalizedString("home.greeting.afternoon", comment: "Good afternoon")
         default:
-            return "Good evening!"
+            return NSLocalizedString("home.greeting.evening", comment: "Good evening")
         }
     }
 
@@ -58,7 +58,7 @@ struct HomeView: View {
                 VStack {
                     ProgressView()
                         .scaleEffect(1.2)
-                    Text("Loading sessions...")
+                    Text("home.loadingSessions")
                         .font(.body)
                         .foregroundColor(.secondary)
                         .padding(.top, 8)
@@ -124,13 +124,13 @@ struct HomeView: View {
                 }
             }
         }
-        .toast(isPresented: $showDeleteToast, message: "Session deleted", icon: "trash.fill")
+        .toast(isPresented: $showDeleteToast, message: NSLocalizedString("home.sessionDeleted", comment: "Session deleted"), icon: "trash.fill")
     }
 
     private var internalMaterialsSection: some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack {
-                Text("Start Talking")
+                Text("home.startTalking")
                     .font(.system(size: 20, weight: .semibold, design: .default))
                     .kerning(-0.45)
                     .foregroundColor(.primary)
@@ -142,7 +142,7 @@ struct HomeView: View {
                     router.goTo(.speakFromMaterials(materialsModel: materialsModel))
                 }) {
                     HStack(spacing: 4) {
-                        Text("See All")
+                        Text("common.seeAll")
                             .font(.system(size: 17, weight: .regular, design: .default))
                             .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
 
@@ -159,7 +159,7 @@ struct HomeView: View {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.8)
-                    Text("Loading materials...")
+                    Text("home.loadingMaterials")
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
@@ -200,12 +200,12 @@ struct HomeView: View {
 
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Review today")
+                    Text("home.review.title")
                         .font(.system(size: 17, weight: .regular, design: .default))
                         .foregroundColor(.black)
                         .kerning(-0.4)
 
-                    Text("Your saved vocabulary")
+                    Text("home.review.subtitle")
                         .font(.system(size: 13, weight: .regular, design: .default))
                         .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
                         .kerning(-0.1)
@@ -213,7 +213,7 @@ struct HomeView: View {
 
                 Spacer()
 
-                Button("Start review") {
+                Button("home.review.start") {
                     router.goTo(.review(initialTab: .vocabulary))
                 }
                 .font(.system(size: 15, weight: .semibold, design: .default))
@@ -237,7 +237,7 @@ struct HomeView: View {
     private var recentSessionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Recent Sessions")
+                Text("home.recentSessions.title")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -248,7 +248,7 @@ struct HomeView: View {
                     router.goTo(.review(initialTab: .sessions))
                 }) {
                     HStack(spacing: 4) {
-                        Text("See All")
+                        Text("common.seeAll")
                             .font(.system(size: 17, weight: .regular, design: .default))
                             .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
 
@@ -283,7 +283,7 @@ struct HomeView: View {
                         ProgressView()
                             .scaleEffect(0.8)
 
-                        Text("Loading more...")
+                        Text("home.loadingMore")
                             .font(.body)
                             .foregroundColor(.secondary)
                     }

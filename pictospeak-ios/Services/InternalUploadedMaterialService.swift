@@ -109,15 +109,15 @@ enum InternalUploadedMaterialError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            return NSLocalizedString("error.invalidURL", comment: "")
         case .networkError:
-            return "Network error occurred"
+            return NSLocalizedString("error.network", comment: "")
         case .serverError:
-            return "Server error occurred"
+            return NSLocalizedString("error.server", comment: "")
         case .decodingError:
-            return "Failed to decode response"
+            return NSLocalizedString("error.decoding", comment: "")
         case .unknownError:
-            return "Unknown error occurred"
+            return NSLocalizedString("error.unknown", comment: "")
         }
     }
 }

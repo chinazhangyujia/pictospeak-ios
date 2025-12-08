@@ -1,0 +1,183 @@
+/* Common */
+"common.loading" = "Cargando...";
+"common.unknown" = "Desconocido";
+"common.notSet" = "No establecido";
+"common.cancel" = "Cancelar";
+"common.retry" = "Reintentar";
+"common.save" = "Guardar";
+"common.getStarted" = "Comenzar";
+"common.continue" = "Continuar";
+"common.dismiss" = "Descartar";
+"common.delete" = "Eliminar";
+"common.edit" = "Editar";
+"common.done" = "Hecho";
+"common.next" = "Siguiente";
+"common.seeAll" = "Ver todo";
+"common.rec" = "GRAB";
+"common.today" = "Hoy";
+
+/* Settings View */
+"settings.title" = "Ajustes";
+"settings.account" = "Cuenta";
+"settings.manageAccount" = "Gestionar cuenta";
+"settings.languageAndLearning" = "Idioma y aprendizaje";
+"settings.systemLanguage" = "Idioma del sistema";
+"settings.teachingLanguage" = "Idioma de enseñanza";
+"settings.support" = "Soporte";
+"settings.contactSupport" = "Contactar soporte";
+"settings.faq" = "Preguntas frecuentes";
+"settings.feedback" = "Comentarios";
+"settings.legal" = "Legal";
+"settings.termsOfUse" = "Términos de uso";
+"settings.privacyPolicy" = "Política de privacidad";
+"settings.about" = "Acerca de";
+"settings.appInfo" = "Info. de la aplicación";
+"settings.ourStory" = "Nuestra historia";
+"settings.learningDays" = "Aprendiendo por %lld días";
+"settings.currentlyLearning" = "Aprendiendo actualmente";
+"settings.selectLanguage" = "Seleccionar idioma";
+
+/* Auth & Onboarding */
+"auth.logout" = "Cerrar sesión";
+"auth.logoutAlert.title" = "Cerrar sesión";
+"auth.logoutAlert.message" = "¿Estás seguro de que quieres cerrar sesión?";
+"auth.login" = "Iniciar sesión";
+"auth.signup" = "Registrarse";
+"auth.email" = "Correo electrónico";
+"auth.password" = "Contraseña";
+"auth.forgotPassword" = "¿Olvidaste tu contraseña?";
+"auth.haveAccount" = "¿Ya tienes una cuenta?";
+"auth.noAccount" = "¿No tienes una cuenta?";
+"auth.fullName" = "Nombre completo";
+"auth.enterEmail" = "Introduce tu correo";
+"auth.enterPassword" = "Introduce tu contraseña";
+"auth.enterFullName" = "Introduce tu nombre completo";
+"auth.createAccount" = "Crear cuenta";
+"auth.welcomeBack" = "Bienvenido de nuevo";
+"auth.resetPassword" = "Restablecer contraseña";
+"auth.subtitle.signup" = "Guarda tus palabras y sesiones";
+"auth.subtitle.signin" = "Inicia sesión para continuar tu aprendizaje";
+"auth.subtitle.reset" = "Introduce tu correo para recibir un enlace";
+"auth.sendResetLink" = "Enviar enlace";
+
+"onboarding.targetLanguage.title" = "¿Qué idioma quieres aprender?";
+"onboarding.targetLanguage.subtitle" = "Puedes cambiar esto más tarde en Ajustes";
+"onboarding.targetLanguage.moreComingSoon" = "Más idiomas próximamente";
+
+"onboarding.nativeLanguage.title" = "¿En qué idioma quieres aprender?";
+"onboarding.nativeLanguage.subtitle" = "Selecciona el idioma para explicaciones y traducciones";
+"onboarding.nativeLanguage.requestOthers" = "Solicitar otros idiomas";
+
+"onboarding.verification.title" = "Introduce el código";
+"onboarding.verification.subtitle" = "Código de 6 dígitos enviado a %@";
+"onboarding.verification.label" = "Código de verificación";
+"onboarding.verification.resend" = "Reenviar";
+"onboarding.verification.noCode" = "¿No recibiste el código?";
+"onboarding.verification.verify" = "Verificar código";
+"onboarding.verification.resentSuccess" = "Código reenviado a %@";
+"onboarding.verification.resendError" = "Error al reenviar. Inténtalo de nuevo.";
+
+"onboarding.newPassword.title" = "Crear nueva contraseña";
+"onboarding.newPassword.subtitle" = "Introduce una nueva contraseña para tu cuenta";
+"onboarding.newPassword.new" = "Nueva contraseña";
+"onboarding.newPassword.confirm" = "Confirmar contraseña";
+"onboarding.newPassword.placeholder.new" = "Introduce nueva contraseña";
+"onboarding.newPassword.placeholder.confirm" = "Confirma nueva contraseña";
+"onboarding.newPassword.requirement.length" = "Al menos 8 caracteres";
+"onboarding.newPassword.requirement.match" = "Las contraseñas coinciden";
+"onboarding.newPassword.set" = "Establecer contraseña";
+"onboarding.newPassword.error.fullName" = "El nombre completo es obligatorio";
+"onboarding.newPassword.error.settings" = "Configuración de usuario no encontrada";
+
+/* Home View */
+"home.greeting.morning" = "¡Buenos días!";
+"home.greeting.afternoon" = "¡Buenas tardes!";
+"home.greeting.evening" = "¡Buenas noches!";
+"home.startTalking" = "Empezar a hablar";
+"home.loadingMaterials" = "Cargando materiales...";
+"home.review.title" = "Repasar hoy";
+"home.review.subtitle" = "Tu vocabulario guardado";
+"home.review.start" = "Empezar repaso";
+"home.recentSessions.title" = "Sesiones recientes";
+"home.loadingSessions" = "Cargando sesiones...";
+"home.loadingMore" = "Cargando más...";
+"home.sessionDeleted" = "Sesión eliminada";
+
+/* Review View */
+"review.title" = "Repaso";
+"review.tab.review" = "Pestaña de repaso";
+"review.section.vocabulary" = "Vocabulario";
+"review.section.sessions" = "Todas las sesiones";
+"review.empty.vocabulary.title" = "Aún no hay elementos";
+"review.empty.vocabulary.subtitle" = "Completa algunas sesiones para ver tu vocabulario y sugerencias aquí";
+"review.empty.sessions.title" = "Aún no hay sesiones";
+"review.empty.sessions.subtitle" = "Completa algunas sesiones de habla para verlas aquí";
+
+/* Capture View */
+"capture.mode.photo" = "FOTO";
+"capture.mode.video" = "VÍDEO";
+"capture.permission.title" = "Acceso a cámara requerido";
+"capture.permission.message" = "Por favor, habilita el acceso a la cámara en Ajustes para usar esta función.";
+"capture.permission.placeholder" = "Habilita el acceso a la cámara para usar esta función";
+
+/* Feedback View */
+"feedback.title" = "Feedback IA";
+"feedback.tab.mine" = "Mío";
+"feedback.tab.aiRefined" = "Mejorado por IA";
+"feedback.thinking.organizing" = "Organizando tu entrada…";
+"feedback.thinking.distilling" = "Destilando ideas clave…";
+"feedback.thinking.polishing" = "Puliendo para fraseo natural…";
+"feedback.thinking.highlighting" = "Seleccionando y destacando palabras clave…";
+"feedback.thinking.ready" = "Casi listo…";
+
+/* Subscription View */
+"subscription.title" = "Aprende más rápido con feedback de IA";
+"subscription.subtitle" = "Obtén feedback rápido y útil con práctica basada en imágenes.";
+"subscription.plan.monthly" = "Mensual";
+"subscription.plan.yearly" = "Anual";
+"subscription.period.month" = "al mes";
+"subscription.period.year" = "al año";
+"subscription.monthlyEquivalent" = "≈ %@ / mes";
+"subscription.savePercent" = "Ahorra %.0f%%";
+"subscription.recommended" = "Recomendado";
+"subscription.trial.start" = "Prueba gratis de %d días";
+"subscription.trial.default" = "Prueba gratis de 7 días";
+"subscription.details.monthly" = "Luego %@/mes, cancela cuando quieras.";
+"subscription.details.yearly" = "Luego %@/año, cancela cuando quieras.";
+"subscription.processing" = "Procesando...";
+"subscription.restore" = "Restaurar compras";
+"subscription.included" = "Qué incluye:";
+"subscription.limits" = "Límites de uso:";
+"subscription.loading" = "Cargando detalles de suscripción...";
+"subscription.error.title" = "Error al cargar suscripción";
+"subscription.error.tryAgain" = "Reintentar";
+"subscription.success.title" = "Compra exitosa";
+"subscription.success.message" = "Tu suscripción ha sido activada. ¡Disfruta de acceso ilimitado!";
+"subscription.failed.title" = "Compra fallida";
+"subscription.failed.message" = "Ocurrió un error durante la compra. Por favor, inténtalo de nuevo.";
+"subscription.failed.productNotAvailable" = "Producto no disponible. Por favor, inténtalo más tarde.";
+"subscription.failed.cancelled" = "La compra fue cancelada o está pendiente de aprobación.";
+"subscription.restore.success" = "¡Compras restauradas con éxito!";
+"subscription.restore.none" = "No se encontraron suscripciones activas para restaurar.";
+
+/* Service Errors */
+"error.invalidURL" = "URL no válida";
+"error.encoding" = "Error al codificar la solicitud";
+"error.decoding" = "Error al decodificar la respuesta";
+"error.server" = "Ocurrió un error en el servidor";
+"error.network" = "Ocurrió un error de red";
+"error.unknown" = "Ocurrió un error desconocido";
+"error.auth.failed" = "Autenticación fallida - credenciales no válidas";
+"error.auth.tokenRefreshFailed" = "Error al actualizar el token";
+"error.auth.noToken" = "No se encontró token de autenticación";
+"error.session.notFound" = "Sesión no encontrada";
+"error.review.itemNotFound" = "Elemento de revisión no encontrado";
+"error.verification.invalidCode" = "Código de verificación no válido o caducado";
+"error.subscription.purchaseFailed" = "La compra falló. Por favor, inténtelo de nuevo.";
+"error.subscription.purchaseCancelled" = "La compra fue cancelada";
+"error.store.unknown" = "Ocurrió un error desconocido";
+"error.store.userCancelled" = "La compra fue cancelada";
+"error.store.network" = "Ocurrió un error de red";
+"error.store.notAvailable" = "Este producto no está disponible en su región";
+"error.store.notEntitled" = "No tiene derecho a este producto";
+"error.store.generic" = "Ocurrió un error";

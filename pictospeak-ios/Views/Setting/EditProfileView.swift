@@ -47,7 +47,7 @@ struct EditProfileView: View {
             }
 
             ToolbarItem(placement: .principal) {
-                Text("Edit Profile")
+                Text("common.edit")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.primary)
             }
@@ -63,8 +63,8 @@ struct EditProfileView: View {
                 router.goBack()
             }
         }
-        .alert("Error", isPresented: $viewModel.showError) {
-            Button("OK", role: .cancel) {}
+        .alert("error.unknown", isPresented: $viewModel.showError) {
+            Button("common.done", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage)
         }
@@ -90,11 +90,11 @@ struct EditProfileView: View {
 
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Name")
+            Text("auth.fullName")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(.primary)
 
-            TextField("Enter you name", text: $viewModel.name)
+            TextField("auth.enterFullName", text: $viewModel.name)
                 .font(.system(size: 17, weight: .regular))
                 .foregroundColor(AppTheme.gray3c3c4360)
                 .padding(.vertical, 14)
@@ -137,7 +137,7 @@ struct EditProfileView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
-                    Text("Save changes")
+                    Text("common.save")
                         .font(.system(size: 17, weight: .semibold))
                 }
             }
@@ -179,13 +179,13 @@ class EditProfileViewModel: ObservableObject {
 
     func updateProfile(contentViewModel: ContentViewModel) async {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            errorMessage = "Name cannot be empty"
+            errorMessage = NSLocalizedString("onboarding.newPassword.error.fullName", comment: "Name cannot be empty")
             showError = true
             return
         }
 
         guard let authToken = contentViewModel.authToken else {
-            errorMessage = "You must be logged in to update your profile"
+            errorMessage = NSLocalizedString("error.auth.noToken", comment: "Not logged in")
             showError = true
             return
         }

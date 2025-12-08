@@ -1,0 +1,183 @@
+/* Common */
+"common.loading" = "Loading...";
+"common.unknown" = "Unknown";
+"common.notSet" = "Not set";
+"common.cancel" = "Cancel";
+"common.retry" = "Retry";
+"common.save" = "Save";
+"common.getStarted" = "Get Started";
+"common.continue" = "Continue";
+"common.dismiss" = "Dismiss";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.done" = "Done";
+"common.next" = "Next";
+"common.seeAll" = "See All";
+"common.rec" = "REC";
+"common.today" = "Today";
+
+/* Settings View */
+"settings.title" = "Settings";
+"settings.account" = "Account";
+"settings.manageAccount" = "Manage Account";
+"settings.languageAndLearning" = "Language & Learning";
+"settings.systemLanguage" = "System Language";
+"settings.teachingLanguage" = "Teaching Language";
+"settings.support" = "Support";
+"settings.contactSupport" = "Contact Support";
+"settings.faq" = "FAQ";
+"settings.feedback" = "Feedback";
+"settings.legal" = "Legal";
+"settings.termsOfUse" = "Terms of Use";
+"settings.privacyPolicy" = "Privacy Policy";
+"settings.about" = "About";
+"settings.appInfo" = "App Info";
+"settings.ourStory" = "Our story";
+"settings.learningDays" = "Learning for %lld days";
+"settings.currentlyLearning" = "Currently Learning";
+"settings.selectLanguage" = "Select Language";
+
+/* Auth & Onboarding */
+"auth.logout" = "Log out";
+"auth.logoutAlert.title" = "Log Out";
+"auth.logoutAlert.message" = "Are you sure you want to log out?";
+"auth.login" = "Sign in";
+"auth.signup" = "Sign up";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.forgotPassword" = "Forgot password?";
+"auth.haveAccount" = "Already have an account?";
+"auth.noAccount" = "Don't have an account?";
+"auth.fullName" = "Full Name";
+"auth.enterEmail" = "Enter your email";
+"auth.enterPassword" = "Enter your password";
+"auth.enterFullName" = "Enter your full name";
+"auth.createAccount" = "Create account";
+"auth.welcomeBack" = "Welcome back";
+"auth.resetPassword" = "Reset password";
+"auth.subtitle.signup" = "Save your words and sessions";
+"auth.subtitle.signin" = "Sign in to continue your learning journey";
+"auth.subtitle.reset" = "Enter your email to receive a reset link";
+"auth.sendResetLink" = "Send reset link";
+
+"onboarding.targetLanguage.title" = "What language do you want to learn?";
+"onboarding.targetLanguage.subtitle" = "You can change this later in Settings";
+"onboarding.targetLanguage.moreComingSoon" = "More languages coming soon";
+
+"onboarding.nativeLanguage.title" = "What language do you want to learn in?";
+"onboarding.nativeLanguage.subtitle" = "Select the language for explanations and translations";
+"onboarding.nativeLanguage.requestOthers" = "Request other languages";
+
+"onboarding.verification.title" = "Enter verification code";
+"onboarding.verification.subtitle" = "6-digit code to %@";
+"onboarding.verification.label" = "Verification code";
+"onboarding.verification.resend" = "Resend";
+"onboarding.verification.noCode" = "Didn't receive the code?";
+"onboarding.verification.verify" = "Verify code";
+"onboarding.verification.resentSuccess" = "Verification code resent to %@";
+"onboarding.verification.resendError" = "Failed to resend code. Please try again.";
+
+"onboarding.newPassword.title" = "Create new password";
+"onboarding.newPassword.subtitle" = "Enter a new password for your account";
+"onboarding.newPassword.new" = "New password";
+"onboarding.newPassword.confirm" = "Confirm password";
+"onboarding.newPassword.placeholder.new" = "Enter new password";
+"onboarding.newPassword.placeholder.confirm" = "Confirm new password";
+"onboarding.newPassword.requirement.length" = "At least 8 characters";
+"onboarding.newPassword.requirement.match" = "Passwords match";
+"onboarding.newPassword.set" = "Set password";
+"onboarding.newPassword.error.fullName" = "Full name is required";
+"onboarding.newPassword.error.settings" = "User settings not found";
+
+/* Home View */
+"home.greeting.morning" = "Good morning!";
+"home.greeting.afternoon" = "Good afternoon!";
+"home.greeting.evening" = "Good evening!";
+"home.startTalking" = "Start Talking";
+"home.loadingMaterials" = "Loading materials...";
+"home.review.title" = "Review today";
+"home.review.subtitle" = "Your saved vocabulary";
+"home.review.start" = "Start review";
+"home.recentSessions.title" = "Recent Sessions";
+"home.loadingSessions" = "Loading sessions...";
+"home.loadingMore" = "Loading more...";
+"home.sessionDeleted" = "Session deleted";
+
+/* Review View */
+"review.title" = "Review";
+"review.tab.review" = "Review Tab";
+"review.section.vocabulary" = "Vocabulary";
+"review.section.sessions" = "All sessions";
+"review.empty.vocabulary.title" = "No review items yet";
+"review.empty.vocabulary.subtitle" = "Complete some sessions to see your vocabulary and suggestions here";
+"review.empty.sessions.title" = "No sessions yet";
+"review.empty.sessions.subtitle" = "Complete some speaking sessions to see them here";
+
+/* Capture View */
+"capture.mode.photo" = "PHOTO";
+"capture.mode.video" = "VIDEO";
+"capture.permission.title" = "Camera Access Required";
+"capture.permission.message" = "Please enable camera access in Settings to use this feature.";
+"capture.permission.placeholder" = "Access camera permission to use this feature";
+
+/* Feedback View */
+"feedback.title" = "AI feedback";
+"feedback.tab.mine" = "Mine";
+"feedback.tab.aiRefined" = "AI Refined";
+"feedback.thinking.organizing" = "Organizing your input…";
+"feedback.thinking.distilling" = "Distilling key ideas…";
+"feedback.thinking.polishing" = "Polishing for natural phrasing…";
+"feedback.thinking.highlighting" = "Picking & highlighting keywords…";
+"feedback.thinking.ready" = "Almost ready…";
+
+/* Subscription View */
+"subscription.title" = "Learn faster with AI feedback";
+"subscription.subtitle" = "Get quick, useful feedback with image-based practice.";
+"subscription.plan.monthly" = "Monthly";
+"subscription.plan.yearly" = "Yearly";
+"subscription.period.month" = "per month";
+"subscription.period.year" = "per year";
+"subscription.monthlyEquivalent" = "≈ %@ / month";
+"subscription.savePercent" = "Save %.0f%%";
+"subscription.recommended" = "Recommended";
+"subscription.trial.start" = "Start %d-day free trial";
+"subscription.trial.default" = "Start 7-day free trial";
+"subscription.details.monthly" = "Then %@/month, cancel anytime.";
+"subscription.details.yearly" = "Then %@/year, cancel anytime.";
+"subscription.processing" = "Processing...";
+"subscription.restore" = "Restore Purchases";
+"subscription.included" = "What's included:";
+"subscription.limits" = "Usage limits:";
+"subscription.loading" = "Loading subscription details...";
+"subscription.error.title" = "Error loading subscription";
+"subscription.error.tryAgain" = "Try Again";
+"subscription.success.title" = "Purchase Successful";
+"subscription.success.message" = "Your subscription has been activated. Enjoy unlimited access!";
+"subscription.failed.title" = "Purchase Failed";
+"subscription.failed.message" = "An error occurred during purchase. Please try again.";
+"subscription.failed.productNotAvailable" = "Product not available. Please try again later.";
+"subscription.failed.cancelled" = "Purchase was cancelled or is pending approval.";
+"subscription.restore.success" = "Purchases restored successfully!";
+"subscription.restore.none" = "No active subscriptions found to restore.";
+
+/* Service Errors */
+"error.invalidURL" = "Invalid URL";
+"error.encoding" = "Failed to encode request";
+"error.decoding" = "Failed to decode response";
+"error.server" = "Server error occurred";
+"error.network" = "Network error occurred";
+"error.unknown" = "Unknown error occurred";
+"error.auth.failed" = "Authentication failed - invalid credentials";
+"error.auth.tokenRefreshFailed" = "Token refresh failed";
+"error.auth.noToken" = "No authentication token found";
+"error.session.notFound" = "Session not found";
+"error.review.itemNotFound" = "Review item not found";
+"error.verification.invalidCode" = "Invalid or expired verification code";
+"error.subscription.purchaseFailed" = "Purchase failed. Please try again.";
+"error.subscription.purchaseCancelled" = "Purchase was cancelled";
+"error.store.unknown" = "An unknown error occurred";
+"error.store.userCancelled" = "Purchase was cancelled";
+"error.store.network" = "Network error occurred";
+"error.store.notAvailable" = "This product is not available in your region";
+"error.store.notEntitled" = "You are not entitled to this product";
+"error.store.generic" = "An error occurred";
