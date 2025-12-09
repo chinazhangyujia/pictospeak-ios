@@ -159,17 +159,18 @@ struct KeyTermCard: View {
                     if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
                         SkeletonPlaceholder(width: 20, height: 16)
                     } else {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                onToggle()
-                            }
-                        }) {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(AppTheme.feedbackCardTextColor)
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AppTheme.feedbackCardTextColor)
+                            .frame(width: 22, height: 22)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !(keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            onToggle()
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .frame(width: 22, height: 22)
                     }
                 }
             }
@@ -331,17 +332,18 @@ struct SuggestionCard: View {
                     if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
                         SkeletonPlaceholder(width: 20, height: 16)
                     } else {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                onToggle()
-                            }
-                        }) {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(AppTheme.feedbackCardTextColor)
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AppTheme.feedbackCardTextColor)
+                            .frame(width: 22, height: 22)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !(suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            onToggle()
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .frame(width: 22, height: 22)
                     }
                 }
             }
