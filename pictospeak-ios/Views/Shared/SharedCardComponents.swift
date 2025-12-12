@@ -103,7 +103,7 @@ struct KeyTermCard: View {
                             SkeletonPlaceholder(width: 100, height: 18)
                         } else {
                             Text(keyTerm.term)
-                                .appCardHeaderText(color: AppTheme.primaryBlue)
+                                .appCardHeaderText(color: AppTheme.primaryBlue, weight: .medium)
                         }
 
                         // Speaker icon
@@ -238,7 +238,7 @@ struct SuggestionCard: View {
         var attributedString = AttributedString(suggestion.term + " → " + suggestion.refinement)
 
         // Apply font to the entire string (matching appCardHeaderText style)
-        attributedString.font = .subheadline.weight(.regular)
+        attributedString.font = .subheadline.weight(.medium)
 
         // Style the term part
         if let termRange = attributedString.range(of: suggestion.term) {
@@ -275,7 +275,7 @@ struct SuggestionCard: View {
 
                             } else {
                                 Text(suggestion.refinement)
-                                    .appCardHeaderText(color: AppTheme.primaryBlue)
+                                    .appCardHeaderText(color: AppTheme.primaryBlue, weight: .medium)
                             }
                         }
 

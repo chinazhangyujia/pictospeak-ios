@@ -235,11 +235,11 @@ struct HomeView: View {
     // MARK: - Recent Sessions Section
 
     private var recentSessionsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 1) {
             HStack {
                 Text("home.recentSessions.title")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 20, weight: .semibold, design: .default))
+                    .kerning(-0.45)
                     .foregroundColor(.primary)
 
                 Spacer()
@@ -258,6 +258,8 @@ struct HomeView: View {
                     }
                 }
             }
+            .padding(.top, 5)
+            .padding(.bottom, 10)
 
             LazyVStack(spacing: 12) {
                 ForEach(Array(sessionsViewModel.sessions.enumerated()), id: \.element.id) { _, session in

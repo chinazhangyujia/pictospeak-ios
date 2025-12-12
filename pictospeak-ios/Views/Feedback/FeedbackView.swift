@@ -357,9 +357,9 @@ struct FeedbackView: View {
                 .frame(maxWidth: .infinity)
 
                 // Speaker Icon
-                if selectedTab == .aiRefined, let pronunciationUrl = feedback.pronunciationUrl, !pronunciationUrl.isEmpty {
+                if selectedTab == .aiRefined {
                     AudioPlayerButton(
-                        audioUrl: pronunciationUrl,
+                        audioUrl: feedback.pronunciationUrl ?? "",
                         foregroundColorPlaying: AppTheme.primaryBlue,
                         foregroundColorNotPlaying: Color(red: 0.549, green: 0.549, blue: 0.549), // #8c8c8c 100%
                         backgroundColorPlaying: AppTheme.lightBlueBackground, // #E9EEFF 60%
@@ -1228,6 +1228,7 @@ struct FeedbackView: View {
                 .foregroundColor: UIColor.black,
                 .paragraphStyle: paragraphStyle,
                 .kern: -0.43,
+                .baselineOffset: 1, // Move all text up slightly to create gap for underlines while keeping alignment
             ]
             attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: text.count))
 

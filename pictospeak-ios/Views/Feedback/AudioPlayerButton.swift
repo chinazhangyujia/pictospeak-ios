@@ -18,7 +18,6 @@ struct AudioPlayerButton: View {
     @State private var isPlaying = false
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isLoading = false
-    @State private var hasError = false
     @State private var audioDelegate: AudioPlayerDelegate?
 
     init(audioUrl: String,
@@ -46,7 +45,7 @@ struct AudioPlayerButton: View {
                 ProgressView()
                     .scaleEffect(0.6)
                     .frame(width: 16, height: 16)
-            } else if hasError {
+            } else if isUrlInvalid {
                 Image(systemName: "speaker.slash")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.gray)
@@ -59,20 +58,26 @@ struct AudioPlayerButton: View {
         .frame(width: 44, height: 44)
         .background(isPlaying ? backgroundColorPlaying : backgroundColorNotPlaying)
         .clipShape(Circle())
-        .disabled(isLoading || hasError)
+        .disabled(isLoading || isUrlInvalid)
         .onDisappear {
+            stopAudio()
+        }
+        .onChange(of: audioUrl) { _ in
+            // Stop playing when URL changes
             stopAudio()
         }
     }
 
+    private var isUrlInvalid: Bool {
+        audioUrl.isEmpty || URL(string: audioUrl) == nil
+    }
+
     private func playAudio() {
         guard let url = URL(string: audioUrl) else {
-            hasError = true
             return
         }
 
         isLoading = true
-        hasError = false
 
         // Download and play audio from URL
         URLSession.shared.dataTask(with: url) { data, _, error in
@@ -80,7 +85,6 @@ struct AudioPlayerButton: View {
                 isLoading = false
 
                 guard let data = data, error == nil else {
-                    hasError = true
                     return
                 }
 
@@ -112,7 +116,7 @@ struct AudioPlayerButton: View {
                     startFallbackTimer()
 
                 } catch {
-                    hasError = true
+                    // Silently fail, user can retry
                 }
             }
         }.resume()

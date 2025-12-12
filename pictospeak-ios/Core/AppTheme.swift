@@ -80,8 +80,8 @@ extension Text {
             .lineSpacing(AppTheme.bodyLineSpacing)
     }
 
-    func appCardHeaderText(color: Color) -> some View {
-        font(.subheadline.weight(.regular))
+    func appCardHeaderText(color: Color, weight: Font.Weight = .regular) -> some View {
+        font(.subheadline.weight(weight))
             .foregroundColor(color)
     }
 
