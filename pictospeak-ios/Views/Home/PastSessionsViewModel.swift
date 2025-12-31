@@ -254,12 +254,16 @@ class PastSessionsViewModel: ObservableObject {
             // Find and update the KeyTerm in the session
             if let keyTermIndex = updatedSession.keyTerms.firstIndex(where: { $0.id == termId }) {
                 // Create updated KeyTerm with new favorite status
+                let currentKeyTerm = updatedSession.keyTerms[keyTermIndex]
                 let updatedKeyTerm = KeyTerm(
-                    term: updatedSession.keyTerms[keyTermIndex].term,
-                    translation: updatedSession.keyTerms[keyTermIndex].translation,
-                    example: updatedSession.keyTerms[keyTermIndex].example,
+                    term: currentKeyTerm.term,
+                    translations: currentKeyTerm.translations,
+                    reason: currentKeyTerm.reason,
+                    example: currentKeyTerm.example,
                     favorite: favorite,
-                    id: updatedSession.keyTerms[keyTermIndex].id
+                    phoneticSymbol: currentKeyTerm.phoneticSymbol,
+                    id: currentKeyTerm.id,
+                    descriptionGuidanceId: currentKeyTerm.descriptionGuidanceId
                 )
 
                 // Update the session with the modified KeyTerm
@@ -290,13 +294,17 @@ class PastSessionsViewModel: ObservableObject {
             // Find and update the Suggestion in the session
             if let suggestionIndex = updatedSession.suggestions.firstIndex(where: { $0.id == suggestionId }) {
                 // Create updated Suggestion with new favorite status
+                let currentSuggestion = updatedSession.suggestions[suggestionIndex]
                 let updatedSuggestion = Suggestion(
-                    term: updatedSession.suggestions[suggestionIndex].term,
-                    refinement: updatedSession.suggestions[suggestionIndex].refinement,
-                    translation: updatedSession.suggestions[suggestionIndex].translation,
-                    reason: updatedSession.suggestions[suggestionIndex].reason,
+                    term: currentSuggestion.term,
+                    refinement: currentSuggestion.refinement,
+                    translations: currentSuggestion.translations,
+                    reason: currentSuggestion.reason,
+                    example: currentSuggestion.example,
                     favorite: favorite,
-                    id: updatedSession.suggestions[suggestionIndex].id
+                    phoneticSymbol: currentSuggestion.phoneticSymbol,
+                    id: currentSuggestion.id,
+                    descriptionGuidanceId: currentSuggestion.descriptionGuidanceId
                 )
 
                 // Update the session with the modified Suggestion

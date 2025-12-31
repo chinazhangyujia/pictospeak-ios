@@ -147,9 +147,11 @@ class FeedbackViewModel: ObservableObject {
             if favoritedKeyTermIds.contains(item.id) {
                 return KeyTerm(
                     term: item.term,
-                    translation: item.translation,
+                    translations: item.translations,
+                    reason: item.reason,
                     example: item.example,
                     favorite: true,
+                    phoneticSymbol: item.phoneticSymbol,
                     id: item.id,
                     descriptionGuidanceId: item.descriptionGuidanceId
                 )
@@ -162,9 +164,11 @@ class FeedbackViewModel: ObservableObject {
                 return Suggestion(
                     term: item.term,
                     refinement: item.refinement,
-                    translation: item.translation,
+                    translations: item.translations,
                     reason: item.reason,
+                    example: item.example,
                     favorite: true,
+                    phoneticSymbol: item.phoneticSymbol,
                     id: item.id,
                     descriptionGuidanceId: item.descriptionGuidanceId
                 )
@@ -192,9 +196,11 @@ class FeedbackViewModel: ObservableObject {
             guard keyTerm.id == termId else { return keyTerm }
             return KeyTerm(
                 term: keyTerm.term,
-                translation: keyTerm.translation,
+                translations: keyTerm.translations,
+                reason: keyTerm.reason,
                 example: keyTerm.example,
                 favorite: isFavorite,
+                phoneticSymbol: keyTerm.phoneticSymbol,
                 id: keyTerm.id,
                 descriptionGuidanceId: keyTerm.descriptionGuidanceId
             )
@@ -221,9 +227,11 @@ class FeedbackViewModel: ObservableObject {
             return Suggestion(
                 term: suggestion.term,
                 refinement: suggestion.refinement,
-                translation: suggestion.translation,
+                translations: suggestion.translations,
                 reason: suggestion.reason,
+                example: suggestion.example,
                 favorite: isFavorite,
+                phoneticSymbol: suggestion.phoneticSymbol,
                 id: suggestion.id,
                 descriptionGuidanceId: suggestion.descriptionGuidanceId
             )

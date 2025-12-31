@@ -488,8 +488,9 @@ class FeedbackService {
             Suggestion(
                 term: "There is",
                 refinement: "There's",
-                translation: "There is",
-                reason: "\"There's\" is a common contraction in spoken English, making the sentence sound more natural.",
+                translations: [TermTranslation(pos: "phrase", translation: "There is")],
+                reason: TermReason(reason: "\"There's\" is a common contraction in spoken English, making the sentence sound more natural.", reasonTranslation: "\"There's\"是口语中常见的缩写，使句子听起来更自然。"),
+                example: TermExample(sentence: "There's a book on the table.", sentenceTranslation: "桌子上有一本书。"),
                 favorite: false,
                 id: UUID(),
                 descriptionGuidanceId: nil
@@ -497,8 +498,9 @@ class FeedbackService {
             Suggestion(
                 term: "He is",
                 refinement: "He's",
-                translation: "He is",
-                reason: "\"He's\" is a natural contraction that makes the speech flow better.",
+                translations: [TermTranslation(pos: "phrase", translation: "He is")],
+                reason: TermReason(reason: "\"He's\" is a natural contraction that makes the speech flow better.", reasonTranslation: "\"He's\"是一个自然的缩写，使语音更流畅。"),
+                example: TermExample(sentence: "He's running fast.", sentenceTranslation: "他跑得很快。"),
                 favorite: false,
                 id: UUID(),
                 descriptionGuidanceId: nil
@@ -506,8 +508,9 @@ class FeedbackService {
             Suggestion(
                 term: "a little wet or something",
                 refinement: "slightly wet",
-                translation: "a little wet or something",
-                reason: "\"Slightly wet\" is more precise and fits naturally in the context.",
+                translations: [TermTranslation(pos: "phrase", translation: "slightly wet")],
+                reason: TermReason(reason: "\"Slightly wet\" is more precise and fits naturally in the context.", reasonTranslation: "\"Slightly wet\"更精确，自然地适应上下文。"),
+                example: TermExample(sentence: "The grass was slightly wet after the rain.", sentenceTranslation: "雨后草地有点湿。"),
                 favorite: false,
                 id: UUID(),
                 descriptionGuidanceId: nil
@@ -517,24 +520,27 @@ class FeedbackService {
         let keyTerms = [
             KeyTerm(
                 term: "happily chasing",
-                translation: "To pursue something with joy and enthusiasm - common phrase to describe playful behavior",
-                example: "The dog is happily chasing the ball.",
+                translations: [TermTranslation(pos: "phrase", translation: "To pursue something with joy and enthusiasm")],
+                reason: TermReason(reason: "Common phrase to describe playful behavior", reasonTranslation: "描述顽皮行为的常用短语"),
+                example: TermExample(sentence: "The dog is happily chasing the ball.", sentenceTranslation: "狗快乐地追逐着球。"),
                 favorite: false,
                 id: UUID(),
                 descriptionGuidanceId: nil
             ),
             KeyTerm(
                 term: "looking ahead",
-                translation: "To focus on what's in front or plan for the future - describes forward-focused attention",
-                example: "The dog is looking ahead to the ball.",
+                translations: [TermTranslation(pos: "phrase", translation: "To focus on what's in front or plan for the future")],
+                reason: TermReason(reason: "Describes forward-focused attention", reasonTranslation: "描述向前集中的注意力"),
+                example: TermExample(sentence: "The dog is looking ahead to the ball.", sentenceTranslation: "狗正看着前方的球。"),
                 favorite: false,
                 id: UUID(),
                 descriptionGuidanceId: nil
             ),
             KeyTerm(
                 term: "droplets scattering",
-                translation: "Small drops of liquid being dispersed in different directions - vivid description of water movement",
-                example: "The droplets are scattering around the dog.",
+                translations: [TermTranslation(pos: "phrase", translation: "Small drops of liquid being dispersed in different directions")],
+                reason: TermReason(reason: "Vivid description of water movement", reasonTranslation: "生动地描述水的运动"),
+                example: TermExample(sentence: "The droplets are scattering around the dog.", sentenceTranslation: "水滴在狗周围散开。"),
                 favorite: false,
                 id: UUID(),
                 descriptionGuidanceId: nil

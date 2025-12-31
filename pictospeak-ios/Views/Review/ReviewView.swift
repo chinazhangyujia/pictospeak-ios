@@ -149,6 +149,8 @@ struct ReviewView: View {
                         case .keyTerm:
                             let keyTerm = reviewItem.toKeyTerm()
                             KeyTermCard(
+                                isReviewCard: true,
+                                date: reviewItem.createdAt,
                                 keyTerm: keyTerm,
                                 isExpanded: expandedKeyTerms.contains(keyTerm.id),
                                 onToggle: {
@@ -182,6 +184,8 @@ struct ReviewView: View {
                         case .suggestion:
                             let suggestion = reviewItem.toSuggestion()
                             SuggestionCard(
+                                isReviewCard: true,
+                                date: reviewItem.createdAt,
                                 suggestion: suggestion,
                                 isExpanded: expandedSuggestions.contains(suggestion.id),
                                 onToggle: {

@@ -177,9 +177,11 @@ class ReviewViewModel: ObservableObject {
                 id: item.id,
                 type: item.type,
                 term: item.term,
-                translation: item.translation,
+                translations: item.translations,
                 favorite: favorite,
-                detail: item.detail,
+                reason: item.reason,
+                example: item.example,
+                createdAt: item.createdAt,
                 updatedAt: item.updatedAt,
                 descriptionGuidanceId: item.descriptionGuidanceId,
                 userOriginalTerm: item.userOriginalTerm

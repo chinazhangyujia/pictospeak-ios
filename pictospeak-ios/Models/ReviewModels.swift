@@ -22,18 +22,22 @@ struct ReviewItem: Codable, Identifiable {
     let type: ReviewItemType
     let term: String
     let userOriginalTerm: String?
-    let translation: String
+    let translations: [TermTranslation]
+    let reason: TermReason
+    let example: TermExample
     let favorite: Bool
-    let detail: String
+    let createdAt: Date
     let updatedAt: Date
 
-    init(id: UUID, type: ReviewItemType, term: String, translation: String, favorite: Bool, detail: String, updatedAt: Date, descriptionGuidanceId: UUID = UUID(), userOriginalTerm: String? = nil) {
+    init(id: UUID, type: ReviewItemType, term: String, translations: [TermTranslation], favorite: Bool, reason: TermReason, example: TermExample, createdAt: Date, updatedAt: Date, descriptionGuidanceId: UUID = UUID(), userOriginalTerm: String? = nil) {
         self.id = id
         self.type = type
         self.term = term
-        self.translation = translation
+        self.translations = translations
         self.favorite = favorite
-        self.detail = detail
+        self.reason = reason
+        self.example = example
+        self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.descriptionGuidanceId = descriptionGuidanceId
         self.userOriginalTerm = userOriginalTerm
@@ -41,7 +45,8 @@ struct ReviewItem: Codable, Identifiable {
 
     // Custom Codable implementation to handle snake_case from JSON
     private enum CodingKeys: String, CodingKey {
-        case id, type, term, translation, favorite, detail
+        case id, type, term, translations, favorite, reason, example
+        case createdAt = "created_at"
         case updatedAt = "updated_at"
         case descriptionGuidanceId = "description_guidance_id"
         case userOriginalTerm = "user_original_term"
@@ -52,21 +57,29 @@ struct ReviewItem: Codable, Identifiable {
         id = try container.decode(UUID.self, forKey: .id)
         type = try container.decode(ReviewItemType.self, forKey: .type)
         term = try container.decode(String.self, forKey: .term)
-        translation = try container.decode(String.self, forKey: .translation)
+        translations = try container.decode([TermTranslation].self, forKey: .translations)
         favorite = try container.decode(Bool.self, forKey: .favorite)
-        detail = try container.decode(String.self, forKey: .detail)
+        reason = try container.decode(TermReason.self, forKey: .reason)
+        example = try container.decode(TermExample.self, forKey: .example)
         descriptionGuidanceId = try container.decode(UUID.self, forKey: .descriptionGuidanceId)
         userOriginalTerm = try container.decodeIfPresent(String.self, forKey: .userOriginalTerm)
 
-        // Handle date string decoding
-        let dateString = try container.decode(String.self, forKey: .updatedAt)
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        guard let date = formatter.date(from: dateString) else {
-            throw DecodingError.dataCorruptedError(forKey: .updatedAt, in: container, debugDescription: "Invalid date format: \(dateString)")
+        // Handle updatedAt
+        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
+        guard let updatedAtDate = formatter.date(from: updatedAtString) else {
+            throw DecodingError.dataCorruptedError(forKey: .updatedAt, in: container, debugDescription: "Invalid date format: \(updatedAtString)")
         }
-        updatedAt = date
+        updatedAt = updatedAtDate
+
+        // Handle createdAt
+        let createdAtString = try container.decode(String.self, forKey: .createdAt)
+        guard let createdAtDate = formatter.date(from: createdAtString) else {
+            throw DecodingError.dataCorruptedError(forKey: .createdAt, in: container, debugDescription: "Invalid date format: \(createdAtString)")
+        }
+        createdAt = createdAtDate
     }
 
     func encode(to encoder: Encoder) throws {
@@ -74,17 +87,22 @@ struct ReviewItem: Codable, Identifiable {
         try container.encode(id, forKey: .id)
         try container.encode(type, forKey: .type)
         try container.encode(term, forKey: .term)
-        try container.encode(translation, forKey: .translation)
+        try container.encode(translations, forKey: .translations)
         try container.encode(favorite, forKey: .favorite)
-        try container.encode(detail, forKey: .detail)
+        try container.encode(reason, forKey: .reason)
+        try container.encode(example, forKey: .example)
         try container.encode(descriptionGuidanceId, forKey: .descriptionGuidanceId)
         try container.encodeIfPresent(userOriginalTerm, forKey: .userOriginalTerm)
 
         // Handle date encoding to ISO 8601 string
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let dateString = formatter.string(from: updatedAt)
-        try container.encode(dateString, forKey: .updatedAt)
+        
+        let updatedAtString = formatter.string(from: updatedAt)
+        try container.encode(updatedAtString, forKey: .updatedAt)
+        
+        let createdAtString = formatter.string(from: createdAt)
+        try container.encode(createdAtString, forKey: .createdAt)
     }
 }
 
@@ -96,9 +114,11 @@ extension ReviewItem {
     func toKeyTerm() -> KeyTerm {
         return KeyTerm(
             term: term,
-            translation: translation,
-            example: detail,
+            translations: translations,
+            reason: reason,
+            example: example,
             favorite: favorite,
+            phoneticSymbol: nil,
             id: id,
             descriptionGuidanceId: descriptionGuidanceId
         )
@@ -110,8 +130,9 @@ extension ReviewItem {
         return Suggestion(
             term: userOriginalTerm ?? "",
             refinement: term,
-            translation: translation,
-            reason: detail, // Using detail as reason
+            translations: translations,
+            reason: reason,
+            example: example,
             favorite: favorite,
             id: id,
             descriptionGuidanceId: descriptionGuidanceId

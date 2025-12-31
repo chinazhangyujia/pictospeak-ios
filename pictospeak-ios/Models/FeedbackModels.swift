@@ -104,23 +104,28 @@ struct Suggestion: Codable, Identifiable {
     let descriptionGuidanceId: UUID?
     let term: String
     let refinement: String
-    let translation: String
-    let reason: String
+    let translations: [TermTranslation]
+    let reason: TermReason
+    let example: TermExample
     let favorite: Bool
+    let phoneticSymbol: String?
 
-    init(term: String, refinement: String, translation: String, reason: String, favorite: Bool, id: UUID? = nil, descriptionGuidanceId: UUID? = nil) {
+    init(term: String, refinement: String, translations: [TermTranslation], reason: TermReason, example: TermExample, favorite: Bool, phoneticSymbol: String? = nil, id: UUID? = nil, descriptionGuidanceId: UUID? = nil) {
         self.term = term
         self.refinement = refinement
-        self.translation = translation
+        self.translations = translations
         self.reason = reason
+        self.example = example
         self.favorite = favorite
+        self.phoneticSymbol = phoneticSymbol
         self.id = id ?? UUID()
         self.descriptionGuidanceId = descriptionGuidanceId
     }
 
     // Custom Codable implementation to handle optional id from JSON
     private enum CodingKeys: String, CodingKey {
-        case id, term, refinement, translation, reason, favorite
+        case id, term, refinement, translations, reason, example, favorite
+        case phoneticSymbol = "phonetic_symbol"
         case descriptionGuidanceId = "description_guidance_id"
     }
 
@@ -128,45 +133,79 @@ struct Suggestion: Codable, Identifiable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         term = try container.decode(String.self, forKey: .term)
         refinement = try container.decode(String.self, forKey: .refinement)
-        translation = try container.decode(String.self, forKey: .translation)
-        reason = try container.decode(String.self, forKey: .reason)
+        translations = try container.decode([TermTranslation].self, forKey: .translations)
+        reason = try container.decode(TermReason.self, forKey: .reason)
+        example = try container.decodeIfPresent(TermExample.self, forKey: .example) ?? TermExample(sentence: "", sentenceTranslation: "")
         favorite = try container.decode(Bool.self, forKey: .favorite)
+        phoneticSymbol = try container.decodeIfPresent(String.self, forKey: .phoneticSymbol)
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? .zero
         descriptionGuidanceId = try container.decodeIfPresent(UUID.self, forKey: .descriptionGuidanceId)
     }
 }
 
-// MARK: - Key Term
+// MARK: - Shared Items
+
+struct TermTranslation: Codable {
+    let pos: String
+    let translation: String
+}
+
+struct TermReason: Codable {
+    let reason: String
+    let reasonTranslation: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case reason
+        case reasonTranslation = "reason_translation"
+    }
+}
+
+struct TermExample: Codable {
+    let sentence: String
+    let sentenceTranslation: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case sentence
+        case sentenceTranslation = "sentence_translation"
+    }
+}
 
 struct KeyTerm: Codable, Identifiable {
     let id: UUID
     let descriptionGuidanceId: UUID?
     let term: String
-    let translation: String
-    let example: String
+    let phoneticSymbol: String?
+    let translations: [TermTranslation]
+    let reason: TermReason
+    let example: TermExample
     let favorite: Bool
-
-    init(term: String, translation: String, example: String, favorite: Bool, id: UUID? = nil, descriptionGuidanceId: UUID? = nil) {
+    
+    init(term: String, translations: [TermTranslation], reason: TermReason, example: TermExample, favorite: Bool, phoneticSymbol: String? = nil, id: UUID? = nil, descriptionGuidanceId: UUID? = nil) {
         self.term = term
-        self.translation = translation
+        self.translations = translations
+        self.reason = reason
         self.example = example
         self.favorite = favorite
+        self.phoneticSymbol = phoneticSymbol
         self.id = id ?? .zero
         self.descriptionGuidanceId = descriptionGuidanceId
     }
 
     // Custom Codable implementation to handle optional id from JSON
     private enum CodingKeys: String, CodingKey {
-        case id, term, translation, example, favorite
+        case id, term, translations, reason, example, favorite
+        case phoneticSymbol = "phonetic_symbol"
         case descriptionGuidanceId = "description_guidance_id"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         term = try container.decode(String.self, forKey: .term)
-        translation = try container.decode(String.self, forKey: .translation)
-        example = try container.decode(String.self, forKey: .example)
+        translations = try container.decode([TermTranslation].self, forKey: .translations)
+        reason = try container.decode(TermReason.self, forKey: .reason)
+        example = try container.decode(TermExample.self, forKey: .example)
         favorite = try container.decode(Bool.self, forKey: .favorite)
+        phoneticSymbol = try container.decodeIfPresent(String.self, forKey: .phoneticSymbol)
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? .zero
         descriptionGuidanceId = try container.decodeIfPresent(UUID.self, forKey: .descriptionGuidanceId)
     }

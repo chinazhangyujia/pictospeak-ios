@@ -21,7 +21,7 @@ class ReviewService {
     ///   - cursor: Optional cursor for pagination. Pass nil for the first page.
     /// - Returns: ListReviewItemsResponse containing review items and next cursor
     func getReviewItems(authToken: String, cursor: String? = nil) async throws -> ListReviewItemsResponse {
-        var urlComponents = URLComponents(string: baseURL + "/key-term-and-suggestion/review")!
+        var urlComponents = URLComponents(string: baseURL + "/key-term-and-suggestion/review/favorite")!
 
         // Add cursor as query parameters if provided
         if let cursor = cursor {
