@@ -23,20 +23,26 @@ struct ReviewItem: Codable, Identifiable {
     let term: String
     let userOriginalTerm: String?
     let translations: [TermTranslation]
+    let phoneticSymbol: String?
     let reason: TermReason
     let example: TermExample
+    let standardDescription: String
+    let descriptionTitle: String
     let favorite: Bool
     let createdAt: Date
     let updatedAt: Date
 
-    init(id: UUID, type: ReviewItemType, term: String, translations: [TermTranslation], favorite: Bool, reason: TermReason, example: TermExample, createdAt: Date, updatedAt: Date, descriptionGuidanceId: UUID = UUID(), userOriginalTerm: String? = nil) {
+    init(id: UUID, type: ReviewItemType, term: String, translations: [TermTranslation], favorite: Bool, reason: TermReason, example: TermExample, standardDescription: String, descriptionTitle: String, phoneticSymbol: String? = nil, createdAt: Date, updatedAt: Date, descriptionGuidanceId: UUID = UUID(), userOriginalTerm: String? = nil) {
         self.id = id
         self.type = type
         self.term = term
         self.translations = translations
+        self.phoneticSymbol = phoneticSymbol
         self.favorite = favorite
         self.reason = reason
         self.example = example
+        self.standardDescription = standardDescription
+        self.descriptionTitle = descriptionTitle
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.descriptionGuidanceId = descriptionGuidanceId
@@ -46,6 +52,9 @@ struct ReviewItem: Codable, Identifiable {
     // Custom Codable implementation to handle snake_case from JSON
     private enum CodingKeys: String, CodingKey {
         case id, type, term, translations, favorite, reason, example
+        case standardDescription = "standard_description"
+        case descriptionTitle = "description_title"
+        case phoneticSymbol = "phonetic_symbol"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case descriptionGuidanceId = "description_guidance_id"
@@ -58,9 +67,12 @@ struct ReviewItem: Codable, Identifiable {
         type = try container.decode(ReviewItemType.self, forKey: .type)
         term = try container.decode(String.self, forKey: .term)
         translations = try container.decode([TermTranslation].self, forKey: .translations)
+        phoneticSymbol = try container.decodeIfPresent(String.self, forKey: .phoneticSymbol)
         favorite = try container.decode(Bool.self, forKey: .favorite)
         reason = try container.decode(TermReason.self, forKey: .reason)
         example = try container.decode(TermExample.self, forKey: .example)
+        standardDescription = try container.decode(String.self, forKey: .standardDescription)
+        descriptionTitle = try container.decodeIfPresent(String.self, forKey: .descriptionTitle) ?? ""
         descriptionGuidanceId = try container.decode(UUID.self, forKey: .descriptionGuidanceId)
         userOriginalTerm = try container.decodeIfPresent(String.self, forKey: .userOriginalTerm)
 
@@ -88,19 +100,22 @@ struct ReviewItem: Codable, Identifiable {
         try container.encode(type, forKey: .type)
         try container.encode(term, forKey: .term)
         try container.encode(translations, forKey: .translations)
+        try container.encodeIfPresent(phoneticSymbol, forKey: .phoneticSymbol)
         try container.encode(favorite, forKey: .favorite)
         try container.encode(reason, forKey: .reason)
         try container.encode(example, forKey: .example)
+        try container.encode(standardDescription, forKey: .standardDescription)
+        try container.encode(descriptionTitle, forKey: .descriptionTitle)
         try container.encode(descriptionGuidanceId, forKey: .descriptionGuidanceId)
         try container.encodeIfPresent(userOriginalTerm, forKey: .userOriginalTerm)
 
         // Handle date encoding to ISO 8601 string
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
+
         let updatedAtString = formatter.string(from: updatedAt)
         try container.encode(updatedAtString, forKey: .updatedAt)
-        
+
         let createdAtString = formatter.string(from: createdAt)
         try container.encode(createdAtString, forKey: .createdAt)
     }
@@ -118,7 +133,7 @@ extension ReviewItem {
             reason: reason,
             example: example,
             favorite: favorite,
-            phoneticSymbol: nil,
+            phoneticSymbol: phoneticSymbol,
             id: id,
             descriptionGuidanceId: descriptionGuidanceId
         )
@@ -134,6 +149,7 @@ extension ReviewItem {
             reason: reason,
             example: example,
             favorite: favorite,
+            phoneticSymbol: phoneticSymbol,
             id: id,
             descriptionGuidanceId: descriptionGuidanceId
         )

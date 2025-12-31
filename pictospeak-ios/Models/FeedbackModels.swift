@@ -153,7 +153,7 @@ struct TermTranslation: Codable {
 struct TermReason: Codable {
     let reason: String
     let reasonTranslation: String
-    
+
     private enum CodingKeys: String, CodingKey {
         case reason
         case reasonTranslation = "reason_translation"
@@ -163,7 +163,7 @@ struct TermReason: Codable {
 struct TermExample: Codable {
     let sentence: String
     let sentenceTranslation: String
-    
+
     private enum CodingKeys: String, CodingKey {
         case sentence
         case sentenceTranslation = "sentence_translation"
@@ -179,7 +179,7 @@ struct KeyTerm: Codable, Identifiable {
     let reason: TermReason
     let example: TermExample
     let favorite: Bool
-    
+
     init(term: String, translations: [TermTranslation], reason: TermReason, example: TermExample, favorite: Bool, phoneticSymbol: String? = nil, id: UUID? = nil, descriptionGuidanceId: UUID? = nil) {
         self.term = term
         self.translations = translations

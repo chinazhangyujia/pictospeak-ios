@@ -181,6 +181,8 @@ class ReviewViewModel: ObservableObject {
                 favorite: favorite,
                 reason: item.reason,
                 example: item.example,
+                standardDescription: item.standardDescription,
+                descriptionTitle: item.descriptionTitle,
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt,
                 descriptionGuidanceId: item.descriptionGuidanceId,

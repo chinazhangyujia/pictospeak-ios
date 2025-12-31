@@ -181,3 +181,8 @@
 "error.store.notAvailable" = "この製品はお住まいの地域では利用できません";
 "error.store.notEntitled" = "この製品を使用する権限がありません";
 "error.store.generic" = "エラーが発生しました";
+
+/* Card Components */
+"card.analysis" = "分析";
+"card.translate" = "翻訳";
+"card.example" = "例文";

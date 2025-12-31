@@ -62,6 +62,11 @@ struct SkeletonPlaceholder: View {
     }
 }
 
+struct ReviewMetadata: Codable {
+    let descriptionTitle: String
+    let standardDescription: String
+}
+
 // MARK: - Key Term Card
 
 struct KeyTermCard: View {
@@ -73,8 +78,9 @@ struct KeyTermCard: View {
     let onFavoriteToggle: (UUID, Bool) -> Void
     let onClickDetailText: (() -> Void)?
     let languageCode: String
+    let reviewMetadata: ReviewMetadata?
 
-    init(isReviewCard: Bool, date: Date? = nil, keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US") {
+    init(isReviewCard: Bool, date: Date? = nil, keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US", reviewMetadata: ReviewMetadata? = nil) {
         self.isReviewCard = isReviewCard
         self.date = date
         self.keyTerm = keyTerm
@@ -83,6 +89,7 @@ struct KeyTermCard: View {
         self.onFavoriteToggle = onFavoriteToggle
         self.onClickDetailText = onClickDetailText
         self.languageCode = languageCode
+        self.reviewMetadata = reviewMetadata
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
@@ -94,10 +101,10 @@ struct KeyTermCard: View {
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         speechSynthesizer.speak(utterance)
     }
-    
+
     private var formattedDateString: String {
         guard let date = date else { return "" }
-        
+
         let now = Date()
         // Check if less than 24 hours
         if abs(now.timeIntervalSince(date)) < 24 * 60 * 60 {
@@ -172,9 +179,10 @@ struct KeyTermCard: View {
 
                 // Phonetic Symbol Row
                 if let phonetic = keyTerm.phoneticSymbol, !phonetic.isEmpty {
-                     Text(phonetic)
+                    Text(phonetic)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 // Bottom row: POS + Translation + Chevron
@@ -233,82 +241,109 @@ struct KeyTermCard: View {
             // Expanded content
             if isExpanded {
                 VStack(alignment: .leading, spacing: 16) {
-
                     Rectangle()
                         .fill(AppTheme.graye6e6e6)
                         .frame(height: 1)
-                    
-                    // Analysis Section (Hidden for Review Card)
-                    if !isReviewCard, !keyTerm.reason.reason.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("ANALYSIS")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                // Translate button placeholder - functional logic can be added later
-                                Button(action: {
-                                    showReasonTranslation.toggle()
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "translate")
-                                        Text("Translate")
-                                    }
-                                    .font(.caption)
-                                    .foregroundColor(showReasonTranslation ? .white : .secondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(showReasonTranslation ? AppTheme.primaryBlue : Color(.systemGray6))
-                                    .cornerRadius(12)
+
+                    if let reviewMetadata = reviewMetadata {
+                        // Review Detail Section
+                        Text(reviewMetadata.standardDescription)
+                            .font(.system(size: 17, weight: .regular, design: .default))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.leading)
+                            .kerning(-0.4)
+                            .onTapGesture {
+                                onClickDetailText?()
+                            }
+
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 16))
+                            .foregroundColor(.black)
+                            .padding(.top, 4)
+
+                        // Date (For Review Card)
+                        if let _ = date {
+                            HStack(spacing: 4) {
+                                Text(formattedDateString)
+                                    .font(.system(size: 13, weight: .regular, design: .default))
+                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                                    .kerning(-0.1)
+
+                                if !reviewMetadata.descriptionTitle.isEmpty {
+                                    Text("•")
+                                        .font(.system(size: 13, weight: .regular))
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+
+                                    Text(reviewMetadata.descriptionTitle)
+                                        .font(.system(size: 13, weight: .regular))
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                                        .kerning(-0.1)
+                                        .lineLimit(1)
                                 }
                             }
-                            
-                            Text(showReasonTranslation && !keyTerm.reason.reasonTranslation.isEmpty ? keyTerm.reason.reasonTranslation : keyTerm.reason.reason)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .animation(.easeInOut, value: showReasonTranslation)
+                            .padding(.top, 4)
                         }
-                    }
-
-                    // Example Section
-                    if !keyTerm.example.sentence.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if !isReviewCard {
-                                Text("EXAMPLE")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                            }
-                            
+                    } else {
+                        // Analysis Section (Hidden for Review Card)
+                        if !keyTerm.reason.reason.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(keyTerm.example.sentence)
+                                HStack {
+                                    Text(NSLocalizedString("card.analysis", comment: "Analysis"))
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.secondary)
+
+                                    Spacer()
+
+                                    // Translate button placeholder - functional logic can be added later
+                                    Button(action: {
+                                        showReasonTranslation.toggle()
+                                    }) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "translate")
+                                            Text(NSLocalizedString("card.translate", comment: "Translate"))
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(showReasonTranslation ? .white : .secondary)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(showReasonTranslation ? AppTheme.primaryBlue : Color(.systemGray6))
+                                        .cornerRadius(12)
+                                    }
+                                }
+
+                                Text(showReasonTranslation && !keyTerm.reason.reasonTranslation.isEmpty ? keyTerm.reason.reasonTranslation : keyTerm.reason.reason)
                                     .font(.body)
-                                    .fontWeight(.medium)
                                     .foregroundColor(.primary)
                                     .fixedSize(horizontal: false, vertical: true)
-                                
-                                if !keyTerm.example.sentenceTranslation.isEmpty {
-                                    Text(keyTerm.example.sentenceTranslation)
+                                    .animation(.easeInOut, value: showReasonTranslation)
+                            }
+                        }
+
+                        // Example Section
+                        if !keyTerm.example.sentence.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(NSLocalizedString("card.example", comment: "Example"))
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(keyTerm.example.sentence)
                                         .font(.body)
-                                        .foregroundColor(.secondary)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
                                         .fixedSize(horizontal: false, vertical: true)
+
+                                    if !keyTerm.example.sentenceTranslation.isEmpty {
+                                        Text(keyTerm.example.sentenceTranslation)
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
                                 }
                             }
                         }
-                        // Removed colored wrapper logic
-                    }
-                    
-                    // Date (For Review Card)
-                    if isReviewCard, let _ = date {
-                         Text(formattedDateString)
-                            .font(.system(size: 13, weight: .regular, design: .default))
-                            .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                            .kerning(-0.1)
-                            .padding(.top, 4)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -332,8 +367,9 @@ struct SuggestionCard: View {
     let onFavoriteToggle: (UUID, Bool) -> Void
     let onClickDetailText: (() -> Void)?
     let languageCode: String
+    let reviewMetadata: ReviewMetadata?
 
-    init(isReviewCard: Bool = false, date: Date? = nil, suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US") {
+    init(isReviewCard: Bool = false, date: Date? = nil, suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US", reviewMetadata: ReviewMetadata? = nil) {
         self.isReviewCard = isReviewCard
         self.date = date
         self.suggestion = suggestion
@@ -342,6 +378,7 @@ struct SuggestionCard: View {
         self.onFavoriteToggle = onFavoriteToggle
         self.onClickDetailText = onClickDetailText
         self.languageCode = languageCode
+        self.reviewMetadata = reviewMetadata
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
@@ -353,10 +390,10 @@ struct SuggestionCard: View {
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         speechSynthesizer.speak(utterance)
     }
-    
+
     private var formattedDateString: String {
         guard let date = date else { return "" }
-        
+
         let now = Date()
         // Check if less than 24 hours
         if abs(now.timeIntervalSince(date)) < 24 * 60 * 60 {
@@ -390,11 +427,11 @@ struct SuggestionCard: View {
                             .font(.subheadline)
                             .strikethrough()
                             .foregroundColor(.secondary)
-                        
+
                         Image(systemName: "arrow.turn.right.down")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
+
                         Spacer()
 
                         // Bookmark button (Moved here when expanded)
@@ -525,81 +562,109 @@ struct SuggestionCard: View {
             // Expanded content
             if isExpanded {
                 VStack(alignment: .leading, spacing: 16) {
-                    
                     Rectangle()
                         .fill(Color(red: 0.902, green: 0.902, blue: 0.902))
                         .frame(height: 1)
 
-                    // Analysis Section (Hidden for Review Card)
-                    if !isReviewCard, !suggestion.reason.reason.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("ANALYSIS")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    showReasonTranslation.toggle()
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "translate")
-                                        Text("Translate")
-                                    }
-                                    .font(.caption)
-                                    .foregroundColor(showReasonTranslation ? .white : .secondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(showReasonTranslation ? AppTheme.primaryBlue : Color(.systemGray6))
-                                    .cornerRadius(12)
+                    if let reviewMetadata = reviewMetadata {
+                        // Review Detail Section
+                        Text(reviewMetadata.standardDescription)
+                            .font(.system(size: 17, weight: .regular, design: .default))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.leading)
+                            .kerning(-0.4)
+                            .onTapGesture {
+                                onClickDetailText?()
+                            }
+
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 16))
+                            .foregroundColor(.black)
+                            .padding(.top, 4)
+
+                        // Date (For Review Card)
+                        if let _ = date {
+                            HStack(spacing: 4) {
+                                Text(formattedDateString)
+                                    .font(.system(size: 13, weight: .regular, design: .default))
+                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                                    .kerning(-0.1)
+
+                                if !reviewMetadata.descriptionTitle.isEmpty {
+                                    Text("•")
+                                        .font(.system(size: 13, weight: .regular))
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+
+                                    Text(reviewMetadata.descriptionTitle)
+                                        .font(.system(size: 13, weight: .regular))
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                                        .kerning(-0.1)
+                                        .lineLimit(1)
                                 }
                             }
-                            
-                            Text(showReasonTranslation && !suggestion.reason.reasonTranslation.isEmpty ? suggestion.reason.reasonTranslation : suggestion.reason.reason)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .animation(.easeInOut, value: showReasonTranslation)
+                            .padding(.top, 4)
                         }
-                    }
-
-                    // Example Section
-                    if !suggestion.example.sentence.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if !isReviewCard {
-                                Text("EXAMPLE")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
-                            }
-                            
+                    } else {
+                        // Analysis Section (Hidden for Review Card)
+                        if !suggestion.reason.reason.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(suggestion.example.sentence)
+                                HStack {
+                                    Text(NSLocalizedString("card.analysis", comment: "Analysis"))
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.secondary)
+
+                                    Spacer()
+
+                                    Button(action: {
+                                        showReasonTranslation.toggle()
+                                    }) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "translate")
+                                            Text(NSLocalizedString("card.translate", comment: "Translate"))
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(showReasonTranslation ? .white : .secondary)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(showReasonTranslation ? AppTheme.primaryBlue : Color(.systemGray6))
+                                        .cornerRadius(12)
+                                    }
+                                }
+
+                                Text(showReasonTranslation && !suggestion.reason.reasonTranslation.isEmpty ? suggestion.reason.reasonTranslation : suggestion.reason.reason)
                                     .font(.body)
-                                    .fontWeight(.medium)
                                     .foregroundColor(.primary)
                                     .fixedSize(horizontal: false, vertical: true)
-                                
-                                if !suggestion.example.sentenceTranslation.isEmpty {
-                                    Text(suggestion.example.sentenceTranslation)
-                                        .font(.body)
-                                        .foregroundColor(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
+                                    .animation(.easeInOut, value: showReasonTranslation)
                             }
                         }
-                        // Removed colored wrapper logic
-                    }
-                    
-                    // Date (For Review Card)
-                    if isReviewCard, let _ = date {
-                         Text(formattedDateString)
-                            .font(.system(size: 13, weight: .regular, design: .default))
-                            .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                            .kerning(-0.1)
-                            .padding(.top, 4)
+
+                        // Example Section
+                        if !suggestion.example.sentence.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(NSLocalizedString("card.example", comment: "Example"))
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(suggestion.example.sentence)
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    if !suggestion.example.sentenceTranslation.isEmpty {
+                                        Text(suggestion.example.sentenceTranslation)
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                            // Removed colored wrapper logic
+                        }
                     }
                 }
                 .padding(.horizontal, 16)

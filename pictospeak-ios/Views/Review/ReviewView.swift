@@ -173,7 +173,11 @@ struct ReviewView: View {
                                         }
                                     }
                                 },
-                                languageCode: targetLanguageCode
+                                languageCode: targetLanguageCode,
+                                reviewMetadata: ReviewMetadata(
+                                    descriptionTitle: reviewItem.descriptionTitle,
+                                    standardDescription: reviewItem.standardDescription
+                                )
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -208,7 +212,11 @@ struct ReviewView: View {
                                         }
                                     }
                                 },
-                                languageCode: targetLanguageCode
+                                languageCode: targetLanguageCode,
+                                reviewMetadata: ReviewMetadata(
+                                    descriptionTitle: reviewItem.descriptionTitle,
+                                    standardDescription: reviewItem.standardDescription
+                                )
                             )
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
