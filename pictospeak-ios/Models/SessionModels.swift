@@ -25,6 +25,7 @@ struct SessionItem: Codable, Identifiable {
     var suggestions: [Suggestion]
     let materialUrl: String
     let materialThumbnailUrl: String?
+    let standardDescriptionSegments: [String]
 
     private enum CodingKeys: String, CodingKey {
         case descriptionTeaching = "description_teaching"
@@ -32,6 +33,7 @@ struct SessionItem: Codable, Identifiable {
         case suggestions
         case materialUrl = "material_url"
         case materialThumbnailUrl = "material_thumbnail_url"
+        case standardDescriptionSegments = "standard_description_segments"
     }
 
     // Computed property for SwiftUI Identifiable

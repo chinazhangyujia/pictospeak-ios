@@ -19,9 +19,10 @@ struct FeedbackResponse: Codable {
     let chosenRefinements: [String]?
     let chosenItemsGenerated: Bool
     let pronunciationUrl: String?
+    let standardDescriptionSegments: [String]
 
     // Custom initializer to handle both old and new formats
-    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, chosenItemsGenerated: Bool = false, pronunciationUrl: String? = nil) {
+    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, chosenItemsGenerated: Bool = false, pronunciationUrl: String? = nil, standardDescriptionSegments: [String] = []) {
         self.originalText = originalText
         self.refinedText = refinedText
         self.suggestions = suggestions
@@ -31,6 +32,7 @@ struct FeedbackResponse: Codable {
         self.chosenRefinements = chosenRefinements
         self.chosenItemsGenerated = chosenItemsGenerated
         self.pronunciationUrl = pronunciationUrl
+        self.standardDescriptionSegments = standardDescriptionSegments
     }
 }
 
@@ -62,7 +64,8 @@ struct StreamingFeedbackResponse: Codable {
             chosenKeyTerms: metadata.chosenKeyTerms,
             chosenRefinements: metadata.chosenRefinements,
             chosenItemsGenerated: metadata.chosenItemsGenerated,
-            pronunciationUrl: descriptionTeaching.standardDescriptionPronunciationUrl
+            pronunciationUrl: descriptionTeaching.standardDescriptionPronunciationUrl,
+            standardDescriptionSegments: metadata.standardDescriptionSegments
         )
     }
 }
@@ -88,12 +91,14 @@ struct StreamingMetadata: Codable {
     let chosenKeyTerms: [String]
     let chosenRefinements: [String]
     let chosenItemsGenerated: Bool
+    let standardDescriptionSegments: [String]
 
     private enum CodingKeys: String, CodingKey {
         case userDescription = "user_description"
         case chosenKeyTerms = "chosen_key_terms"
         case chosenRefinements = "chosen_refinements"
         case chosenItemsGenerated = "chosen_items_generated"
+        case standardDescriptionSegments = "standard_description_segments"
     }
 }
 

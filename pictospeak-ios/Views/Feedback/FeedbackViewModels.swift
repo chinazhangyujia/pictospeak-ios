@@ -12,8 +12,9 @@ import Foundation
 struct ClickableTextMatch {
     let range: NSRange
     let text: String
-    let cardType: CardType
-    let cardId: UUID
+    let cardType: CardType? // Optional now, nil if it's a segment
+    let cardId: UUID? // Optional now, nil if it's a segment
+    let isSegment: Bool // New flag
 }
 
 enum CardType {
