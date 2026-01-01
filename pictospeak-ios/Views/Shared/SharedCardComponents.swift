@@ -67,6 +67,58 @@ struct ReviewMetadata: Codable {
     let standardDescription: String
 }
 
+// MARK: - Formatted Review Text
+
+struct FormattedReviewText: View {
+    let text: String
+    let highlight: String
+    let onClick: (() -> Void)?
+
+    var body: some View {
+        let fontRegular = Font.system(size: 15, weight: .regular)
+        let fontHighlight = Font.system(size: 15, weight: .semibold)
+        let colorHighlight = AppTheme.primaryBlue
+        let colorRegular = Color.black
+        let kerning: CGFloat = -0.23
+        let lineSpacing: CGFloat = 9.38
+        let icon = Image(systemName: "arrow.up.right.square")
+
+        var combinedText: Text
+
+        if !highlight.isEmpty, let range = text.range(of: highlight, options: [.caseInsensitive, .diacriticInsensitive]) {
+            let prefix = Text(text[..<range.lowerBound])
+                .font(fontRegular)
+                .foregroundColor(colorRegular)
+                .kerning(kerning)
+
+            let match = Text(text[range])
+                .font(fontHighlight)
+                .foregroundColor(colorHighlight)
+                .kerning(kerning)
+
+            let suffix = Text(text[range.upperBound...])
+                .font(fontRegular)
+                .foregroundColor(colorRegular)
+                .kerning(kerning)
+
+            combinedText = prefix + match + suffix
+        } else {
+            combinedText = Text(text)
+                .font(fontRegular)
+                .foregroundColor(colorRegular)
+                .kerning(kerning)
+        }
+
+        // Add 4px padding-top equivalent (handled by layout if needed, but here we construct the text)
+        return (combinedText + Text(" ") + Text(icon).font(fontRegular).foregroundColor(colorRegular))
+            .lineSpacing(lineSpacing)
+            .multilineTextAlignment(.leading)
+            .onTapGesture {
+                onClick?()
+            }
+    }
+}
+
 // MARK: - Key Term Card
 
 struct KeyTermCard: View {
@@ -168,11 +220,11 @@ struct KeyTermCard: View {
                             onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
                         }) {
                             Image(systemName: keyTerm.favorite ? "bookmark.fill" : "bookmark") // Using bookmark as per image
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : Color.gray)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : AppTheme.gray8c8c8c)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 24, height: 24)
+                        .frame(width: 22, height: 22)
                         .disabled(keyTerm.term.isEmpty || keyTerm.id == .zero)
                     }
                 }
@@ -180,8 +232,8 @@ struct KeyTermCard: View {
                 // Phonetic Symbol Row
                 if let phonetic = keyTerm.phoneticSymbol, !phonetic.isEmpty {
                     Text(phonetic)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(AppTheme.gray8c8c8c)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
@@ -194,20 +246,23 @@ struct KeyTermCard: View {
                                 .font(.caption)
                                 .italic()
                                 .foregroundColor(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
+                                .padding(.vertical, 3)
+                                .padding(.horizontal, 7)
+                                .frame(minWidth: 24)
+                                .frame(height: 24)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(4)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 4)
-                                        .stroke(Color(.systemGray5), lineWidth: 1)
+                                        .stroke(AppTheme.grayE5E5EA, lineWidth: 1)
                                 )
                         }
 
                         // Translation
                         if let translation = keyTerm.translations.first?.translation, !translation.isEmpty {
                             Text(translation)
-                                .font(.body)
+                                .font(.system(size: 15, weight: .regular))
+                                .lineSpacing(5) // Line height 20 - Font size 15 = 5
                                 .foregroundColor(.primary)
                         } else if keyTerm.term.isEmpty {
                             SkeletonPlaceholder(width: 150, height: 14)
@@ -236,7 +291,6 @@ struct KeyTermCard: View {
                 }
             }
             .padding(16)
-            .buttonStyle(PlainButtonStyle())
 
             // Expanded content
             if isExpanded {
@@ -247,37 +301,36 @@ struct KeyTermCard: View {
 
                     if let reviewMetadata = reviewMetadata {
                         // Review Detail Section
-                        Text(reviewMetadata.standardDescription)
-                            .font(.system(size: 17, weight: .regular, design: .default))
-                            .foregroundColor(.black)
-                            .multilineTextAlignment(.leading)
-                            .kerning(-0.4)
-                            .onTapGesture {
-                                onClickDetailText?()
-                            }
-
-                        Image(systemName: "arrow.up.right.square")
-                            .font(.system(size: 16))
-                            .foregroundColor(.black)
-                            .padding(.top, 4)
+                        FormattedReviewText(
+                            text: reviewMetadata.standardDescription,
+                            highlight: keyTerm.term,
+                            onClick: onClickDetailText
+                        )
+                        .padding(.top, 4)
 
                         // Date (For Review Card)
                         if let _ = date {
                             HStack(spacing: 4) {
                                 Text(formattedDateString)
-                                    .font(.system(size: 13, weight: .regular, design: .default))
-                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                                    .kerning(-0.1)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .italic()
+                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                    .kerning(-0.23)
+                                    .lineSpacing(5)
 
                                 if !reviewMetadata.descriptionTitle.isEmpty {
                                     Text("•")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .lineSpacing(5)
 
                                     Text(reviewMetadata.descriptionTitle)
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                                        .kerning(-0.1)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .kerning(-0.23)
+                                        .lineSpacing(5)
                                         .lineLimit(1)
                                 }
                             }
@@ -288,10 +341,11 @@ struct KeyTermCard: View {
                         if !keyTerm.reason.reason.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text(NSLocalizedString("card.analysis", comment: "Analysis"))
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.secondary)
+                                    Text(NSLocalizedString("card.analysis", comment: "Analysis").uppercased())
+                                        .font(.system(size: 12, weight: .medium))
+                                        .kerning(0.61)
+                                        .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                        .foregroundColor(AppTheme.gray8c8c8c)
 
                                     Spacer()
 
@@ -299,21 +353,24 @@ struct KeyTermCard: View {
                                     Button(action: {
                                         showReasonTranslation.toggle()
                                     }) {
-                                        HStack(spacing: 4) {
+                                        HStack(spacing: 3) {
                                             Image(systemName: "translate")
                                             Text(NSLocalizedString("card.translate", comment: "Translate"))
                                         }
                                         .font(.caption)
                                         .foregroundColor(showReasonTranslation ? .white : .secondary)
-                                        .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
-                                        .background(showReasonTranslation ? AppTheme.primaryBlue : Color(.systemGray6))
-                                        .cornerRadius(12)
+                                        .padding(.horizontal, 10)
+                                        .background(showReasonTranslation ? AppTheme.primaryBlue : AppTheme.grayF2F2F7)
+                                        .cornerRadius(1000)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
 
                                 Text(showReasonTranslation && !keyTerm.reason.reasonTranslation.isEmpty ? keyTerm.reason.reasonTranslation : keyTerm.reason.reason)
-                                    .font(.body)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .kerning(-0.23)
+                                    .lineSpacing(9.38) // 24.38 - 15 = 9.38
                                     .foregroundColor(.primary)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeInOut, value: showReasonTranslation)
@@ -322,23 +379,27 @@ struct KeyTermCard: View {
 
                         // Example Section
                         if !keyTerm.example.sentence.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(NSLocalizedString("card.example", comment: "Example"))
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(NSLocalizedString("card.example", comment: "Example").uppercased())
+                                    .font(.system(size: 12, weight: .medium))
+                                    .kerning(0.61)
+                                    .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                    .foregroundColor(AppTheme.gray8c8c8c)
 
-                                VStack(alignment: .leading, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text(keyTerm.example.sentence)
-                                        .font(.body)
-                                        .fontWeight(.medium)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .kerning(-0.23)
+                                        .lineSpacing(9.38) // 24.38 - 15 = 9.38
                                         .foregroundColor(.primary)
                                         .fixedSize(horizontal: false, vertical: true)
 
                                     if !keyTerm.example.sentenceTranslation.isEmpty {
                                         Text(keyTerm.example.sentenceTranslation)
-                                            .font(.body)
-                                            .foregroundColor(.secondary)
+                                            .font(.system(size: 13, weight: .regular))
+                                            .kerning(-0.08)
+                                            .lineSpacing(6.5) // 19.5 - 13 = 6.5
+                                            .foregroundColor(AppTheme.gray8c8c8c)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
@@ -440,11 +501,11 @@ struct SuggestionCard: View {
                                 onFavoriteToggle(suggestion.id, !suggestion.favorite)
                             }) {
                                 Image(systemName: suggestion.favorite ? "bookmark.fill" : "bookmark")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : Color.gray)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.gray8c8c8c)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .frame(width: 24, height: 24)
+                            .frame(width: 22, height: 22)
                         }
                     }
                     .padding(.bottom, 4)
@@ -488,11 +549,11 @@ struct SuggestionCard: View {
                                 onFavoriteToggle(suggestion.id, !suggestion.favorite)
                             }) {
                                 Image(systemName: suggestion.favorite ? "bookmark.fill" : "bookmark")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : Color.gray)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.gray8c8c8c)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .frame(width: 24, height: 24)
+                            .frame(width: 22, height: 22)
                             .disabled(suggestion.refinement.isEmpty || suggestion.id == .zero)
                         }
                     }
@@ -501,8 +562,8 @@ struct SuggestionCard: View {
                 // Phonetic Symbol Row
                 if let phonetic = suggestion.phoneticSymbol, !phonetic.isEmpty {
                     Text(phonetic)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(AppTheme.gray8c8c8c)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
@@ -515,20 +576,23 @@ struct SuggestionCard: View {
                                 .font(.caption)
                                 .italic()
                                 .foregroundColor(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
+                                .padding(.vertical, 3)
+                                .padding(.horizontal, 7)
+                                .frame(minWidth: 24)
+                                .frame(height: 24)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(4)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 4)
-                                        .stroke(Color(.systemGray5), lineWidth: 1)
+                                        .stroke(AppTheme.grayE5E5EA, lineWidth: 1)
                                 )
                         }
 
                         // Translation
                         if let translation = suggestion.translations.first?.translation, !translation.isEmpty {
                             Text(translation)
-                                .font(.body)
+                                .font(.system(size: 15, weight: .regular))
+                                .lineSpacing(5) // Line height 20 - Font size 15 = 5
                                 .foregroundColor(.primary)
                         } else if suggestion.refinement.isEmpty {
                             SkeletonPlaceholder(width: 150, height: 14)
@@ -557,7 +621,6 @@ struct SuggestionCard: View {
                 }
             }
             .padding(16)
-            .buttonStyle(PlainButtonStyle())
 
             // Expanded content
             if isExpanded {
@@ -568,37 +631,36 @@ struct SuggestionCard: View {
 
                     if let reviewMetadata = reviewMetadata {
                         // Review Detail Section
-                        Text(reviewMetadata.standardDescription)
-                            .font(.system(size: 17, weight: .regular, design: .default))
-                            .foregroundColor(.black)
-                            .multilineTextAlignment(.leading)
-                            .kerning(-0.4)
-                            .onTapGesture {
-                                onClickDetailText?()
-                            }
-
-                        Image(systemName: "arrow.up.right.square")
-                            .font(.system(size: 16))
-                            .foregroundColor(.black)
-                            .padding(.top, 4)
+                        FormattedReviewText(
+                            text: reviewMetadata.standardDescription,
+                            highlight: suggestion.refinement,
+                            onClick: onClickDetailText
+                        )
+                        .padding(.top, 4)
 
                         // Date (For Review Card)
                         if let _ = date {
                             HStack(spacing: 4) {
                                 Text(formattedDateString)
-                                    .font(.system(size: 13, weight: .regular, design: .default))
-                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                                    .kerning(-0.1)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .italic()
+                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                    .kerning(-0.23)
+                                    .lineSpacing(5)
 
                                 if !reviewMetadata.descriptionTitle.isEmpty {
                                     Text("•")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .lineSpacing(5)
 
                                     Text(reviewMetadata.descriptionTitle)
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
-                                        .kerning(-0.1)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .kerning(-0.23)
+                                        .lineSpacing(5)
                                         .lineLimit(1)
                                 }
                             }
@@ -609,31 +671,35 @@ struct SuggestionCard: View {
                         if !suggestion.reason.reason.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text(NSLocalizedString("card.analysis", comment: "Analysis"))
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.secondary)
+                                    Text(NSLocalizedString("card.analysis", comment: "Analysis").uppercased())
+                                        .font(.system(size: 12, weight: .medium))
+                                        .kerning(0.61)
+                                        .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                        .foregroundColor(AppTheme.gray8c8c8c)
 
                                     Spacer()
 
                                     Button(action: {
                                         showReasonTranslation.toggle()
                                     }) {
-                                        HStack(spacing: 4) {
+                                        HStack(spacing: 3) {
                                             Image(systemName: "translate")
                                             Text(NSLocalizedString("card.translate", comment: "Translate"))
                                         }
                                         .font(.caption)
                                         .foregroundColor(showReasonTranslation ? .white : .secondary)
-                                        .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
-                                        .background(showReasonTranslation ? AppTheme.primaryBlue : Color(.systemGray6))
-                                        .cornerRadius(12)
+                                        .padding(.horizontal, 10)
+                                        .background(showReasonTranslation ? AppTheme.primaryBlue : AppTheme.grayF2F2F7)
+                                        .cornerRadius(1000)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
 
                                 Text(showReasonTranslation && !suggestion.reason.reasonTranslation.isEmpty ? suggestion.reason.reasonTranslation : suggestion.reason.reason)
-                                    .font(.body)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .kerning(-0.23)
+                                    .lineSpacing(9.38) // 24.38 - 15 = 9.38
                                     .foregroundColor(.primary)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeInOut, value: showReasonTranslation)
@@ -642,23 +708,27 @@ struct SuggestionCard: View {
 
                         // Example Section
                         if !suggestion.example.sentence.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(NSLocalizedString("card.example", comment: "Example"))
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(NSLocalizedString("card.example", comment: "Example").uppercased())
+                                    .font(.system(size: 12, weight: .medium))
+                                    .kerning(0.61)
+                                    .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                    .foregroundColor(AppTheme.gray8c8c8c)
 
-                                VStack(alignment: .leading, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text(suggestion.example.sentence)
-                                        .font(.body)
-                                        .fontWeight(.medium)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .kerning(-0.23)
+                                        .lineSpacing(9.38) // 24.38 - 15 = 9.38
                                         .foregroundColor(.primary)
                                         .fixedSize(horizontal: false, vertical: true)
 
                                     if !suggestion.example.sentenceTranslation.isEmpty {
                                         Text(suggestion.example.sentenceTranslation)
-                                            .font(.body)
-                                            .foregroundColor(.secondary)
+                                            .font(.system(size: 13, weight: .regular))
+                                            .kerning(-0.08)
+                                            .lineSpacing(6.5) // 19.5 - 13 = 6.5
+                                            .foregroundColor(AppTheme.gray8c8c8c)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
