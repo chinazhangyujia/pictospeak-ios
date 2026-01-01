@@ -181,3 +181,8 @@
 "error.store.notAvailable" = "此产品在您所在的地区不可用";
 "error.store.notEntitled" = "您无权使用此产品";
 "error.store.generic" = "发生错误";
+
+/* Card Components */
+"card.analysis" = "分析";
+"card.translate" = "翻译";
+"card.example" = "例句";

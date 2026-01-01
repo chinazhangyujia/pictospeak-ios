@@ -62,26 +62,90 @@ struct SkeletonPlaceholder: View {
     }
 }
 
+struct ReviewMetadata: Codable {
+    let descriptionTitle: String
+    let standardDescription: String
+}
+
+// MARK: - Formatted Review Text
+
+struct FormattedReviewText: View {
+    let text: String
+    let highlight: String
+    let onClick: (() -> Void)?
+
+    var body: some View {
+        let fontRegular = Font.system(size: 15, weight: .regular)
+        let fontHighlight = Font.system(size: 15, weight: .semibold)
+        let colorHighlight = AppTheme.primaryBlue
+        let colorRegular = Color.black
+        let kerning: CGFloat = -0.23
+        let lineSpacing: CGFloat = 9.38
+        let icon = Image(systemName: "arrow.up.right.square")
+
+        var combinedText: Text
+
+        if !highlight.isEmpty, let range = text.range(of: highlight, options: [.caseInsensitive, .diacriticInsensitive]) {
+            let prefix = Text(text[..<range.lowerBound])
+                .font(fontRegular)
+                .foregroundColor(colorRegular)
+                .kerning(kerning)
+
+            let match = Text(text[range])
+                .font(fontHighlight)
+                .foregroundColor(colorHighlight)
+                .kerning(kerning)
+
+            let suffix = Text(text[range.upperBound...])
+                .font(fontRegular)
+                .foregroundColor(colorRegular)
+                .kerning(kerning)
+
+            combinedText = prefix + match + suffix
+        } else {
+            combinedText = Text(text)
+                .font(fontRegular)
+                .foregroundColor(colorRegular)
+                .kerning(kerning)
+        }
+
+        // Add 4px padding-top equivalent (handled by layout if needed, but here we construct the text)
+        return (combinedText + Text(" ") + Text(icon).font(fontRegular).foregroundColor(colorRegular))
+            .lineSpacing(lineSpacing)
+            .multilineTextAlignment(.leading)
+            .onTapGesture {
+                onClick?()
+            }
+    }
+}
+
 // MARK: - Key Term Card
 
 struct KeyTermCard: View {
+    let isReviewCard: Bool
+    let date: Date?
     let keyTerm: KeyTerm
     let isExpanded: Bool
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
     let onClickDetailText: (() -> Void)?
     let languageCode: String
+    let reviewMetadata: ReviewMetadata?
 
-    init(keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US") {
+    init(isReviewCard: Bool, date: Date? = nil, keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US", reviewMetadata: ReviewMetadata? = nil) {
+        self.isReviewCard = isReviewCard
+        self.date = date
         self.keyTerm = keyTerm
         self.isExpanded = isExpanded
         self.onToggle = onToggle
         self.onFavoriteToggle = onFavoriteToggle
         self.onClickDetailText = onClickDetailText
         self.languageCode = languageCode
+        self.reviewMetadata = reviewMetadata
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
+    @State private var showReasonTranslation = false
 
     private func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
@@ -90,42 +154,64 @@ struct KeyTermCard: View {
         speechSynthesizer.speak(utterance)
     }
 
+    private var formattedDateString: String {
+        guard let date = date else { return "" }
+
+        let now = Date()
+        // Check if less than 24 hours
+        if abs(now.timeIntervalSince(date)) < 24 * 60 * 60 {
+            return NSLocalizedString("common.today", comment: "Today")
+        }
+
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: date)
+        let currentYear = calendar.component(.year, from: now)
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+
+        if year == currentYear {
+            formatter.dateFormat = "MMM d"
+        } else {
+            formatter.dateFormat = "MMM d, yyyy"
+        }
+
+        return formatter.string(from: date)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header - always visible
-            VStack(spacing: 26) {
-                // Top row: English word + speaker icon + star
-                HStack(alignment: .top, spacing: 12) {
-                    // Left side: English word + speaker icon
-                    HStack(alignment: .top, spacing: 8) {
-                        // English word
-                        if keyTerm.term.isEmpty {
-                            SkeletonPlaceholder(width: 100, height: 18)
-                        } else {
-                            Text(keyTerm.term)
-                                .appCardHeaderText(color: AppTheme.primaryBlue, weight: .medium)
-                        }
+            VStack(spacing: 8) { // Reduced vertical spacing
+                // Top row: Term + Speaker + Bookmark
+                HStack(alignment: .center, spacing: 8) {
+                    // Term
+                    if keyTerm.term.isEmpty {
+                        SkeletonPlaceholder(width: 100, height: 20)
+                    } else {
+                        Text(keyTerm.term)
+                            .appCardHeaderText(color: AppTheme.primaryBlue, weight: .bold) // Using bold as per image
+                    }
 
-                        // Speaker icon
-                        if keyTerm.term.isEmpty {
-                            SkeletonPlaceholder(width: 16, height: 16)
-                                .modifier(ShimmerEffect())
-                        } else {
-                            Button(action: {
-                                speakText(keyTerm.term)
-                            }) {
-                                Image(systemName: "speaker.wave.2")
-                                    .font(.body.weight(.medium))
-                                    .foregroundColor(AppTheme.primaryBlue)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(width: 20, height: 20)
+                    // Speaker icon
+                    if keyTerm.term.isEmpty {
+                        SkeletonPlaceholder(width: 16, height: 16)
+                            .modifier(ShimmerEffect())
+                    } else {
+                        Button(action: {
+                            speakText(keyTerm.term)
+                        }) {
+                            Image(systemName: "speaker.wave.2")
+                                .font(.body.weight(.medium))
+                                .foregroundColor(AppTheme.primaryBlue)
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .frame(width: 24, height: 24)
                     }
 
                     Spacer()
 
-                    // Right side: Star button
+                    // Bookmark button
                     if keyTerm.term.isEmpty || keyTerm.id == .zero {
                         SkeletonPlaceholder(width: 16, height: 16)
                             .modifier(ShimmerEffect())
@@ -133,9 +219,9 @@ struct KeyTermCard: View {
                         Button(action: {
                             onFavoriteToggle(keyTerm.id, !keyTerm.favorite)
                         }) {
-                            Image(systemName: keyTerm.favorite ? "star.fill" : "star")
+                            Image(systemName: keyTerm.favorite ? "bookmark.fill" : "bookmark") // Using bookmark as per image
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
+                                .foregroundColor(keyTerm.favorite ? AppTheme.primaryBlue : AppTheme.gray8c8c8c)
                         }
                         .buttonStyle(PlainButtonStyle())
                         .frame(width: 22, height: 22)
@@ -143,89 +229,221 @@ struct KeyTermCard: View {
                     }
                 }
 
-                // Bottom row: Chinese translation + chevron
-                HStack(alignment: .top, spacing: 12) {
-                    // Left side: Chinese translation
-                    if keyTerm.translation.isEmpty {
-                        SkeletonPlaceholder(width: 150, height: 14)
-                    } else {
-                        Text(keyTerm.translation)
-                            .appCardHeaderText(color: .primary)
+                // Phonetic Symbol Row
+                if let phonetic = keyTerm.phoneticSymbol, !phonetic.isEmpty {
+                    Text(phonetic)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(AppTheme.gray8c8c8c)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // Bottom row: POS + Translation + Chevron
+                HStack(alignment: .center, spacing: 12) {
+                    HStack(spacing: 8) {
+                        // POS Tag
+                        if let firstTranslation = keyTerm.translations.first, !firstTranslation.pos.isEmpty {
+                            Text(firstTranslation.pos)
+                                .font(.caption)
+                                .italic()
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 3)
+                                .padding(.horizontal, 7)
+                                .frame(minWidth: 24)
+                                .frame(height: 24)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(4)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(AppTheme.grayE5E5EA, lineWidth: 1)
+                                )
+                        }
+
+                        // Translation
+                        if let translation = keyTerm.translations.first?.translation, !translation.isEmpty {
+                            Text(translation)
+                                .font(.system(size: 15, weight: .regular))
+                                .lineSpacing(5) // Line height 20 - Font size 15 = 5
+                                .foregroundColor(.primary)
+                        } else if keyTerm.term.isEmpty {
+                            SkeletonPlaceholder(width: 150, height: 14)
+                        }
                     }
 
                     Spacer()
 
-                    // Right side: Chevron
-                    if keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty {
+                    // Chevron
+                    if keyTerm.term.isEmpty || (keyTerm.translations.first?.translation.isEmpty ?? true) || keyTerm.example.sentence.isEmpty {
                         SkeletonPlaceholder(width: 20, height: 16)
                     } else {
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(AppTheme.feedbackCardTextColor)
-                            .frame(width: 22, height: 22)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color.gray)
+                            .frame(width: 24, height: 24)
                     }
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if !(keyTerm.term.isEmpty || keyTerm.translation.isEmpty || keyTerm.example.isEmpty) {
+                    if !(keyTerm.term.isEmpty || (keyTerm.translations.first?.translation.isEmpty ?? true) || keyTerm.example.sentence.isEmpty) {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             onToggle()
                         }
                     }
                 }
             }
-            .padding(.top, 16)
-            .padding(.bottom, isExpanded ? 0 : 16)
-            .padding(.horizontal, 22)
-            .buttonStyle(PlainButtonStyle())
+            .padding(16)
 
             // Expanded content
             if isExpanded {
-                VStack(alignment: .leading, spacing: 10) {
-                    Divider()
+                VStack(alignment: .leading, spacing: 16) {
+                    Rectangle()
+                        .fill(AppTheme.graye6e6e6)
+                        .frame(height: 1)
 
-                    if keyTerm.example.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            SkeletonPlaceholder(width: .infinity, height: 14)
-                            SkeletonPlaceholder(width: 250, height: 14)
+                    if let reviewMetadata = reviewMetadata {
+                        // Review Detail Section
+                        FormattedReviewText(
+                            text: reviewMetadata.standardDescription,
+                            highlight: keyTerm.term,
+                            onClick: onClickDetailText
+                        )
+                        .padding(.top, 4)
+
+                        // Date (For Review Card)
+                        if let _ = date {
+                            HStack(spacing: 4) {
+                                Text(formattedDateString)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .italic()
+                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                    .kerning(-0.23)
+                                    .lineSpacing(5)
+
+                                if !reviewMetadata.descriptionTitle.isEmpty {
+                                    Text("•")
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .lineSpacing(5)
+
+                                    Text(reviewMetadata.descriptionTitle)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .kerning(-0.23)
+                                        .lineSpacing(5)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(.top, 4)
                         }
                     } else {
-                        Text(keyTerm.example)
-                            .appCardDetailText()
-                            .onTapGesture {
-                                onClickDetailText?()
+                        // Analysis Section (Hidden for Review Card)
+                        if !keyTerm.reason.reason.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text(NSLocalizedString("card.analysis", comment: "Analysis").uppercased())
+                                        .font(.system(size: 12, weight: .medium))
+                                        .kerning(0.61)
+                                        .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                        .foregroundColor(AppTheme.gray8c8c8c)
+
+                                    Spacer()
+
+                                    // Translate button placeholder - functional logic can be added later
+                                    Button(action: {
+                                        showReasonTranslation.toggle()
+                                    }) {
+                                        HStack(spacing: 3) {
+                                            Image(systemName: "translate")
+                                            Text(NSLocalizedString("card.translate", comment: "Translate"))
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(showReasonTranslation ? .white : .secondary)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 10)
+                                        .background(showReasonTranslation ? AppTheme.primaryBlue : AppTheme.grayF2F2F7)
+                                        .cornerRadius(1000)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+
+                                Text(showReasonTranslation && !keyTerm.reason.reasonTranslation.isEmpty ? keyTerm.reason.reasonTranslation : keyTerm.reason.reason)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .kerning(-0.23)
+                                    .lineSpacing(9.38) // 24.38 - 15 = 9.38
+                                    .foregroundColor(.primary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .animation(.easeInOut, value: showReasonTranslation)
                             }
+                        }
+
+                        // Example Section
+                        if !keyTerm.example.sentence.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(NSLocalizedString("card.example", comment: "Example").uppercased())
+                                    .font(.system(size: 12, weight: .medium))
+                                    .kerning(0.61)
+                                    .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                    .foregroundColor(AppTheme.gray8c8c8c)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(keyTerm.example.sentence)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .kerning(-0.23)
+                                        .lineSpacing(9.38) // 24.38 - 15 = 9.38
+                                        .foregroundColor(.primary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    if !keyTerm.example.sentenceTranslation.isEmpty {
+                                        Text(keyTerm.example.sentenceTranslation)
+                                            .font(.system(size: 13, weight: .regular))
+                                            .kerning(-0.08)
+                                            .lineSpacing(6.5) // 19.5 - 13 = 6.5
+                                            .foregroundColor(AppTheme.gray8c8c8c)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                .padding(.horizontal, 22)
+                .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
         }
-        .background(AppTheme.feedbackCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 26))
+        .background(Color.white) // Using white background as per image, assuming card background
+        .clipShape(RoundedRectangle(cornerRadius: 16)) // Slightly reduced corner radius
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2) // Subtle shadow
     }
 }
 
 // MARK: - Suggestion Card
 
 struct SuggestionCard: View {
+    let isReviewCard: Bool
+    let date: Date?
     let suggestion: Suggestion
     let isExpanded: Bool
     let onToggle: () -> Void
     let onFavoriteToggle: (UUID, Bool) -> Void
     let onClickDetailText: (() -> Void)?
     let languageCode: String
+    let reviewMetadata: ReviewMetadata?
 
-    init(suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US") {
+    init(isReviewCard: Bool = false, date: Date? = nil, suggestion: Suggestion, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US", reviewMetadata: ReviewMetadata? = nil) {
+        self.isReviewCard = isReviewCard
+        self.date = date
         self.suggestion = suggestion
         self.isExpanded = isExpanded
         self.onToggle = onToggle
         self.onFavoriteToggle = onFavoriteToggle
         self.onClickDetailText = onClickDetailText
         self.languageCode = languageCode
+        self.reviewMetadata = reviewMetadata
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
+    @State private var showReasonTranslation = false
 
     private func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
@@ -234,148 +452,298 @@ struct SuggestionCard: View {
         speechSynthesizer.speak(utterance)
     }
 
-    private func createRefinementAttributedString() -> AttributedString {
-        var attributedString = AttributedString(suggestion.term + " → " + suggestion.refinement)
+    private var formattedDateString: String {
+        guard let date = date else { return "" }
 
-        // Apply font to the entire string (matching appCardHeaderText style)
-        attributedString.font = .subheadline.weight(.medium)
-
-        // Style the term part
-        if let termRange = attributedString.range(of: suggestion.term) {
-            attributedString[termRange].foregroundColor = .primary
+        let now = Date()
+        // Check if less than 24 hours
+        if abs(now.timeIntervalSince(date)) < 24 * 60 * 60 {
+            return NSLocalizedString("common.today", comment: "Today")
         }
 
-        // Style the arrow
-        if let arrowRange = attributedString.range(of: " → ") {
-            attributedString[arrowRange].foregroundColor = .primary
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: date)
+        let currentYear = calendar.component(.year, from: now)
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+
+        if year == currentYear {
+            formatter.dateFormat = "MMM d"
+        } else {
+            formatter.dateFormat = "MMM d, yyyy"
         }
 
-        // Style the refinement part
-        if let refinementRange = attributedString.range(of: suggestion.refinement) {
-            attributedString[refinementRange].foregroundColor = AppTheme.primaryBlue
-        }
-
-        return attributedString
+        return formatter.string(from: date)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header - always visible
-            VStack(spacing: 26) {
-                // Top row: Term/Refinement + star
-                HStack(alignment: .top, spacing: 12) {
-                    // Left side: Term/Refinement with blue background
-                    HStack(alignment: .top, spacing: 8) {
-                        // Term/Refinement
-                        if suggestion.refinement.isEmpty {
-                            SkeletonPlaceholder(width: 100, height: 18)
-                        } else {
-                            if isExpanded {
-                                Text(createRefinementAttributedString())
+            VStack(spacing: 8) {
+                // Original Term (Only when expanded)
+                if isExpanded {
+                    HStack(spacing: 4) {
+                        Text(suggestion.term)
+                            .font(.subheadline)
+                            .strikethrough()
+                            .foregroundColor(.secondary)
 
-                            } else {
-                                Text(suggestion.refinement)
-                                    .appCardHeaderText(color: AppTheme.primaryBlue, weight: .medium)
-                            }
-                        }
+                        Image(systemName: "arrow.turn.right.down")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                        // Speaker icon
-                        if suggestion.refinement.isEmpty {
-                            SkeletonPlaceholder(width: 16, height: 16)
-                                .modifier(ShimmerEffect())
-                        } else {
+                        Spacer()
+
+                        // Bookmark button (Moved here when expanded)
+                        if !(suggestion.refinement.isEmpty || suggestion.id == .zero) {
                             Button(action: {
-                                speakText(suggestion.refinement)
+                                onFavoriteToggle(suggestion.id, !suggestion.favorite)
                             }) {
-                                Image(systemName: "speaker.wave.2")
-                                    .font(.body.weight(.medium))
-                                    .foregroundColor(AppTheme.primaryBlue)
+                                Image(systemName: suggestion.favorite ? "bookmark.fill" : "bookmark")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.gray8c8c8c)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .frame(width: 20, height: 20)
+                            .frame(width: 22, height: 22)
                         }
                     }
+                    .padding(.bottom, 4)
+                }
 
-                    Spacer()
+                // Top row: Refinement + Speaker + Bookmark (if collapsed)
+                HStack(alignment: .center, spacing: 8) {
+                    // Refinement (Main Term)
+                    if suggestion.refinement.isEmpty {
+                        SkeletonPlaceholder(width: 100, height: 20)
+                    } else {
+                        Text(suggestion.refinement)
+                            .appCardHeaderText(color: AppTheme.primaryBlue, weight: .bold)
+                    }
 
-                    // Right side: Star button
-                    if suggestion.refinement.isEmpty || suggestion.id == .zero {
+                    // Speaker icon
+                    if suggestion.refinement.isEmpty {
                         SkeletonPlaceholder(width: 16, height: 16)
                             .modifier(ShimmerEffect())
                     } else {
                         Button(action: {
-                            onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                            speakText(suggestion.refinement)
                         }) {
-                            Image(systemName: suggestion.favorite ? "star.fill" : "star")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.feedbackCardTextColor)
+                            Image(systemName: "speaker.wave.2")
+                                .font(.body.weight(.medium))
+                                .foregroundColor(AppTheme.primaryBlue)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 22, height: 22)
-                        .disabled(suggestion.refinement.isEmpty || suggestion.id == .zero)
-                    }
-                }
-
-                // Bottom row: Translation + chevron
-                HStack(alignment: .top, spacing: 12) {
-                    // Left side: Translation
-                    if suggestion.translation.isEmpty {
-                        SkeletonPlaceholder(width: 150, height: 14)
-                    } else {
-                        Text(suggestion.translation)
-                            .appCardHeaderText(color: .primary)
+                        .frame(width: 24, height: 24)
                     }
 
                     Spacer()
 
-                    // Right side: Chevron
-                    if suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty {
+                    // Bookmark button (Visible here only when NOT expanded)
+                    if !isExpanded {
+                        if suggestion.refinement.isEmpty || suggestion.id == .zero {
+                            SkeletonPlaceholder(width: 16, height: 16)
+                                .modifier(ShimmerEffect())
+                        } else {
+                            Button(action: {
+                                onFavoriteToggle(suggestion.id, !suggestion.favorite)
+                            }) {
+                                Image(systemName: suggestion.favorite ? "bookmark.fill" : "bookmark")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(suggestion.favorite ? AppTheme.primaryBlue : AppTheme.gray8c8c8c)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 22, height: 22)
+                            .disabled(suggestion.refinement.isEmpty || suggestion.id == .zero)
+                        }
+                    }
+                }
+
+                // Phonetic Symbol Row
+                if let phonetic = suggestion.phoneticSymbol, !phonetic.isEmpty {
+                    Text(phonetic)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(AppTheme.gray8c8c8c)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // Bottom row: POS + Translation + Chevron
+                HStack(alignment: .center, spacing: 12) {
+                    HStack(spacing: 8) {
+                        // POS Tag
+                        if let firstTranslation = suggestion.translations.first, !firstTranslation.pos.isEmpty {
+                            Text(firstTranslation.pos)
+                                .font(.caption)
+                                .italic()
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 3)
+                                .padding(.horizontal, 7)
+                                .frame(minWidth: 24)
+                                .frame(height: 24)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(4)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(AppTheme.grayE5E5EA, lineWidth: 1)
+                                )
+                        }
+
+                        // Translation
+                        if let translation = suggestion.translations.first?.translation, !translation.isEmpty {
+                            Text(translation)
+                                .font(.system(size: 15, weight: .regular))
+                                .lineSpacing(5) // Line height 20 - Font size 15 = 5
+                                .foregroundColor(.primary)
+                        } else if suggestion.refinement.isEmpty {
+                            SkeletonPlaceholder(width: 150, height: 14)
+                        }
+                    }
+
+                    Spacer()
+
+                    // Chevron
+                    if suggestion.refinement.isEmpty || (suggestion.translations.first?.translation.isEmpty ?? true) || suggestion.reason.reason.isEmpty {
                         SkeletonPlaceholder(width: 20, height: 16)
                     } else {
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(AppTheme.feedbackCardTextColor)
-                            .frame(width: 22, height: 22)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color.gray)
+                            .frame(width: 24, height: 24)
                     }
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    if !(suggestion.term.isEmpty || suggestion.refinement.isEmpty || suggestion.translation.isEmpty || suggestion.reason.isEmpty) {
+                    if !(suggestion.refinement.isEmpty || (suggestion.translations.first?.translation.isEmpty ?? true) || suggestion.reason.reason.isEmpty) {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             onToggle()
                         }
                     }
                 }
             }
-            .padding(.top, 16)
-            .padding(.bottom, isExpanded ? 0 : 16)
-            .padding(.horizontal, 22)
-            .buttonStyle(PlainButtonStyle())
+            .padding(16)
 
             // Expanded content
             if isExpanded {
-                VStack(alignment: .leading, spacing: 10) {
-                    Divider()
+                VStack(alignment: .leading, spacing: 16) {
+                    Rectangle()
+                        .fill(Color(red: 0.902, green: 0.902, blue: 0.902))
+                        .frame(height: 1)
 
-                    if suggestion.reason.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            SkeletonPlaceholder(width: .infinity, height: 14)
-                            SkeletonPlaceholder(width: 280, height: 14)
+                    if let reviewMetadata = reviewMetadata {
+                        // Review Detail Section
+                        FormattedReviewText(
+                            text: reviewMetadata.standardDescription,
+                            highlight: suggestion.refinement,
+                            onClick: onClickDetailText
+                        )
+                        .padding(.top, 4)
+
+                        // Date (For Review Card)
+                        if let _ = date {
+                            HStack(spacing: 4) {
+                                Text(formattedDateString)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .italic()
+                                    .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                    .kerning(-0.23)
+                                    .lineSpacing(5)
+
+                                if !reviewMetadata.descriptionTitle.isEmpty {
+                                    Text("•")
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .lineSpacing(5)
+
+                                    Text(reviewMetadata.descriptionTitle)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .italic()
+                                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263).opacity(0.3))
+                                        .kerning(-0.23)
+                                        .lineSpacing(5)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(.top, 4)
                         }
                     } else {
-                        Text(suggestion.reason)
-                            .appCardDetailText()
-                            .onTapGesture {
-                                onClickDetailText?()
+                        // Analysis Section (Hidden for Review Card)
+                        if !suggestion.reason.reason.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text(NSLocalizedString("card.analysis", comment: "Analysis").uppercased())
+                                        .font(.system(size: 12, weight: .medium))
+                                        .kerning(0.61)
+                                        .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                        .foregroundColor(AppTheme.gray8c8c8c)
+
+                                    Spacer()
+
+                                    Button(action: {
+                                        showReasonTranslation.toggle()
+                                    }) {
+                                        HStack(spacing: 3) {
+                                            Image(systemName: "translate")
+                                            Text(NSLocalizedString("card.translate", comment: "Translate"))
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(showReasonTranslation ? .white : .secondary)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 10)
+                                        .background(showReasonTranslation ? AppTheme.primaryBlue : AppTheme.grayF2F2F7)
+                                        .cornerRadius(1000)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+
+                                Text(showReasonTranslation && !suggestion.reason.reasonTranslation.isEmpty ? suggestion.reason.reasonTranslation : suggestion.reason.reason)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .kerning(-0.23)
+                                    .lineSpacing(9.38) // 24.38 - 15 = 9.38
+                                    .foregroundColor(.primary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .animation(.easeInOut, value: showReasonTranslation)
                             }
+                        }
+
+                        // Example Section
+                        if !suggestion.example.sentence.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(NSLocalizedString("card.example", comment: "Example").uppercased())
+                                    .font(.system(size: 12, weight: .medium))
+                                    .kerning(0.61)
+                                    .lineSpacing(4.5) // 16.5 - 12 = 4.5
+                                    .foregroundColor(AppTheme.gray8c8c8c)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(suggestion.example.sentence)
+                                        .font(.system(size: 15, weight: .regular))
+                                        .kerning(-0.23)
+                                        .lineSpacing(9.38) // 24.38 - 15 = 9.38
+                                        .foregroundColor(.primary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    if !suggestion.example.sentenceTranslation.isEmpty {
+                                        Text(suggestion.example.sentenceTranslation)
+                                            .font(.system(size: 13, weight: .regular))
+                                            .kerning(-0.08)
+                                            .lineSpacing(6.5) // 19.5 - 13 = 6.5
+                                            .foregroundColor(AppTheme.gray8c8c8c)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                            // Removed colored wrapper logic
+                        }
                     }
                 }
-                .padding(.horizontal, 22)
+                .padding(.horizontal, 16)
                 .padding(.bottom, 16)
             }
         }
-        .background(AppTheme.feedbackCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 26))
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 }
 

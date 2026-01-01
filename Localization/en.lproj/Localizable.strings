@@ -181,3 +181,8 @@
 "error.store.notAvailable" = "This product is not available in your region";
 "error.store.notEntitled" = "You are not entitled to this product";
 "error.store.generic" = "An error occurred";
+
+/* Card Components */
+"card.analysis" = "ANALYSIS";
+"card.translate" = "Translate";
+"card.example" = "EXAMPLE";

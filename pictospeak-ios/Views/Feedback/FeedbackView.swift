@@ -472,13 +472,16 @@ struct FeedbackView: View {
                         // Create a card with chosen data + real data if available
                         let displayKeyTerm = KeyTerm(
                             term: chosenTerm, // Always use chosen term
-                            translation: matchingKeyTerm?.translation ?? "", // Real translation or empty for skeleton
-                            example: matchingKeyTerm?.example ?? "", // Real example or empty for skeleton
+                            translations: matchingKeyTerm?.translations ?? [], // Real translations or empty for skeleton
+                            reason: matchingKeyTerm?.reason ?? TermReason(reason: "", reasonTranslation: ""),
+                            example: matchingKeyTerm?.example ?? TermExample(sentence: "", sentenceTranslation: ""),
                             favorite: matchingKeyTerm?.favorite ?? false,
+                            phoneticSymbol: matchingKeyTerm?.phoneticSymbol,
                             id: matchingKeyTerm?.id ?? UUID() // Use real ID if available
                         )
 
                         KeyTermCard(
+                            isReviewCard: false,
                             keyTerm: displayKeyTerm,
                             isExpanded: matchingKeyTerm != nil ? expandedCards.contains(displayKeyTerm.id) : false,
                             onToggle: {
@@ -493,7 +496,7 @@ struct FeedbackView: View {
                             },
                             onFavoriteToggle: { termId, isFavorite in
                                 // Only proceed if the keyTerm is fully loaded (has all required data)
-                                guard !displayKeyTerm.term.isEmpty, !displayKeyTerm.translation.isEmpty, !displayKeyTerm.example.isEmpty else {
+                                guard !displayKeyTerm.term.isEmpty, !(displayKeyTerm.translations.first?.translation.isEmpty ?? true), !displayKeyTerm.example.sentence.isEmpty else {
                                     return
                                 }
 
@@ -555,13 +558,16 @@ struct FeedbackView: View {
                         let displaySuggestion = Suggestion(
                             term: matchingSuggestion?.term ?? "", // Real term or empty for skeleton
                             refinement: chosenRefinement, // Always use chosen refinement
-                            translation: matchingSuggestion?.translation ?? "", // Real translation or empty for skeleton
-                            reason: matchingSuggestion?.reason ?? "", // Real reason or empty for skeleton
+                            translations: matchingSuggestion?.translations ?? [], // Real translations or empty for skeleton
+                            reason: matchingSuggestion?.reason ?? TermReason(reason: "", reasonTranslation: ""), // Real reason or empty for skeleton
+                            example: matchingSuggestion?.example ?? TermExample(sentence: "", sentenceTranslation: ""),
                             favorite: matchingSuggestion?.favorite ?? false, // Real favorite status or false for skeleton
+                            phoneticSymbol: matchingSuggestion?.phoneticSymbol,
                             id: matchingSuggestion?.id ?? UUID() // Use real ID if available
                         )
 
                         SuggestionCard(
+                            isReviewCard: false,
                             suggestion: displaySuggestion,
                             isExpanded: matchingSuggestion != nil ? expandedCards.contains(displaySuggestion.id) : false,
                             onToggle: {
@@ -576,7 +582,7 @@ struct FeedbackView: View {
                             },
                             onFavoriteToggle: { suggestionId, isFavorite in
                                 // Only proceed if the suggestion is fully loaded (has all required data)
-                                guard !displaySuggestion.term.isEmpty, !displaySuggestion.refinement.isEmpty, !displaySuggestion.translation.isEmpty, !displaySuggestion.reason.isEmpty else {
+                                guard !displaySuggestion.term.isEmpty, !displaySuggestion.refinement.isEmpty, !(displaySuggestion.translations.first?.translation.isEmpty ?? true), !displaySuggestion.reason.reason.isEmpty else {
                                     return
                                 }
 
@@ -781,6 +787,7 @@ struct FeedbackView: View {
                 // Key Terms - always show actual data from session
                 ForEach(session.keyTerms) { keyTerm in
                     KeyTermCard(
+                        isReviewCard: false,
                         keyTerm: keyTerm,
                         isExpanded: expandedCards.contains(keyTerm.id),
                         onToggle: {
@@ -792,7 +799,7 @@ struct FeedbackView: View {
                         },
                         onFavoriteToggle: { termId, isFavorite in
                             // Only proceed if the keyTerm is fully loaded (has all required data)
-                            guard !keyTerm.term.isEmpty, !keyTerm.translation.isEmpty, !keyTerm.example.isEmpty else {
+                            guard !keyTerm.term.isEmpty, !(keyTerm.translations.first?.translation.isEmpty ?? true), !keyTerm.example.sentence.isEmpty else {
                                 return
                             }
 
@@ -824,6 +831,7 @@ struct FeedbackView: View {
                 // Suggestions - always show actual data from session
                 ForEach(session.suggestions) { suggestion in
                     SuggestionCard(
+                        isReviewCard: false,
                         suggestion: suggestion,
                         isExpanded: expandedCards.contains(suggestion.id),
                         onToggle: {
@@ -835,7 +843,7 @@ struct FeedbackView: View {
                         },
                         onFavoriteToggle: { suggestionId, isFavorite in
                             // Only proceed if the suggestion is fully loaded (has all required data)
-                            guard !suggestion.term.isEmpty, !suggestion.refinement.isEmpty, !suggestion.translation.isEmpty, !suggestion.reason.isEmpty else {
+                            guard !suggestion.term.isEmpty, !suggestion.refinement.isEmpty, !(suggestion.translations.first?.translation.isEmpty ?? true), !suggestion.reason.reason.isEmpty else {
                                 return
                             }
 
@@ -1370,12 +1378,42 @@ struct FeedbackView: View {
                 originalText: "This is the original text that needs improvement.",
                 refinedText: "This is the refined and improved text version.",
                 suggestions: [
-                    Suggestion(term: "text", refinement: "content", translation: "内容", reason: "More specific term", favorite: false, id: UUID()),
-                    Suggestion(term: "needs", refinement: "requires", translation: "需要", reason: "More formal", favorite: false, id: UUID()),
+                    Suggestion(
+                        term: "text",
+                        refinement: "content",
+                        translations: [TermTranslation(pos: "noun", translation: "内容")],
+                        reason: TermReason(reason: "More specific term", reasonTranslation: "更具体的词"),
+                        example: TermExample(sentence: "The content of the email", sentenceTranslation: "邮件的内容"),
+                        favorite: false,
+                        id: UUID()
+                    ),
+                    Suggestion(
+                        term: "needs",
+                        refinement: "requires",
+                        translations: [TermTranslation(pos: "verb", translation: "需要")],
+                        reason: TermReason(reason: "More formal", reasonTranslation: "更正式"),
+                        example: TermExample(sentence: "This task requires attention", sentenceTranslation: "这个任务需要注意"),
+                        favorite: false,
+                        id: UUID()
+                    ),
                 ],
                 keyTerms: [
-                    KeyTerm(term: "original", translation: "原始的", example: "This is the original version", favorite: false, id: UUID()),
-                    KeyTerm(term: "improvement", translation: "改进", example: "We need to make improvements", favorite: false, id: UUID()),
+                    KeyTerm(
+                        term: "original",
+                        translations: [TermTranslation(pos: "adj", translation: "原始的")],
+                        reason: TermReason(reason: "reason", reasonTranslation: "reason translation"),
+                        example: TermExample(sentence: "This is the original version", sentenceTranslation: ""),
+                        favorite: false,
+                        id: UUID()
+                    ),
+                    KeyTerm(
+                        term: "improvement",
+                        translations: [TermTranslation(pos: "noun", translation: "改进")],
+                        reason: TermReason(reason: "reason", reasonTranslation: "reason translation"),
+                        example: TermExample(sentence: "We need to make improvements", sentenceTranslation: ""),
+                        favorite: false,
+                        id: UUID()
+                    ),
                 ],
                 chosenKeyTerms: ["original", "improvement"],
                 chosenRefinements: ["content", "requires"],

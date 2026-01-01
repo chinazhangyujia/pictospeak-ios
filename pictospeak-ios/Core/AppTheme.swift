@@ -36,6 +36,9 @@ enum AppTheme {
     static let grayd9d9d9 = Color(red: 0xD9 / 255, green: 0xD9 / 255, blue: 0xD9 / 255)
     static let grayc7c7cc = Color(red: 0xC7 / 255, green: 0xC7 / 255, blue: 0xCC / 255) // Chevron/separator gray
     static let gray8c8c8c = Color(red: 0x8C / 255, green: 0x8C / 255, blue: 0x8C / 255) // Icon gray
+    static let graye6e6e6 = Color(red: 0xE6 / 255, green: 0xE6 / 255, blue: 0xE6 / 255) // Divider gray
+    static let grayE5E5EA = Color(red: 0xE5 / 255, green: 0xE5 / 255, blue: 0xEA / 255) // Border gray
+    static let grayF2F2F7 = Color(red: 0xF2 / 255, green: 0xF2 / 255, blue: 0xF7 / 255) // Translate button background
 
     // MARK: - Letter Spacing (Kerning)
 
