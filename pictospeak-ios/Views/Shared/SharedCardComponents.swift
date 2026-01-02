@@ -131,8 +131,9 @@ struct KeyTermCard: View {
     let onClickDetailText: (() -> Void)?
     let languageCode: String
     let reviewMetadata: ReviewMetadata?
+    let isUserChosen: Bool
 
-    init(isReviewCard: Bool, date: Date? = nil, keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US", reviewMetadata: ReviewMetadata? = nil) {
+    init(isReviewCard: Bool, date: Date? = nil, keyTerm: KeyTerm, isExpanded: Bool, onToggle: @escaping () -> Void, onFavoriteToggle: @escaping (UUID, Bool) -> Void, onClickDetailText: (() -> Void)? = nil, languageCode: String = "en-US", reviewMetadata: ReviewMetadata? = nil, isUserChosen: Bool = false) {
         self.isReviewCard = isReviewCard
         self.date = date
         self.keyTerm = keyTerm
@@ -142,6 +143,7 @@ struct KeyTermCard: View {
         self.onClickDetailText = onClickDetailText
         self.languageCode = languageCode
         self.reviewMetadata = reviewMetadata
+        self.isUserChosen = isUserChosen
     }
 
     @State private var speechSynthesizer = AVSpeechSynthesizer()
@@ -225,7 +227,7 @@ struct KeyTermCard: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .frame(width: 22, height: 22)
-                        .disabled(keyTerm.term.isEmpty || keyTerm.id == .zero)
+                        .disabled(keyTerm.term.isEmpty || keyTerm.id == .zero && !isUserChosen)
                     }
                 }
 
@@ -506,6 +508,7 @@ struct SuggestionCard: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             .frame(width: 22, height: 22)
+                            .disabled(suggestion.refinement.isEmpty || suggestion.id == .zero)
                         }
                     }
                     .padding(.bottom, 4)

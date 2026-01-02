@@ -322,6 +322,19 @@ class PastSessionsViewModel: ObservableObject {
         }
     }
 
+    func addKeyTerm(to sessionId: UUID, keyTerm: KeyTerm) {
+        if let sessionIndex = sessions.firstIndex(where: { $0.id == sessionId }) {
+            var updatedSession = sessions[sessionIndex]
+            if !updatedSession.keyTerms.contains(where: { $0.id == keyTerm.id }) {
+                updatedSession.keyTerms.append(keyTerm)
+                sessions[sessionIndex] = updatedSession
+                print("✅ Added new KeyTerm to session: \(sessionId)")
+            }
+        } else {
+            print("❌ Session not found with ID: \(sessionId)")
+        }
+    }
+
     // MARK: - Helper Methods
 
     /// Clear any error messages

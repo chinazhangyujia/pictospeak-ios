@@ -262,8 +262,53 @@ struct FeedbackView: View {
                                             isOverlayCardExpanded.toggle()
                                         }
                                     },
-                                    onFavoriteToggle: { _, _ in },
-                                    languageCode: targetLanguageCode
+                                    onFavoriteToggle: { _, isFavorite in
+                                        guard isFavorite else { return }
+
+                                        Task {
+                                            do {
+                                                // Determine the correct ID to use for descriptionGuidanceId
+                                                let guidanceId: UUID?
+                                                if let currentSession = session {
+                                                    guidanceId = currentSession.id
+                                                } else {
+                                                    guidanceId = viewModel.feedbackResponse?.id
+                                                }
+
+                                                guard let descriptionGuidanceId = guidanceId else { return }
+
+                                                let createdKeyTerm = try await FavoriteService.shared.createKeyTerm(
+                                                    authToken: contentViewModel.authToken!,
+                                                    descriptionGuidanceId: descriptionGuidanceId.uuidString,
+                                                    term: keyTermToDisplay.term,
+                                                    translations: keyTermToDisplay.translations,
+                                                    reason: keyTermToDisplay.reason,
+                                                    example: keyTermToDisplay.example,
+                                                    favorite: true,
+                                                    phoneticSymbol: keyTermToDisplay.phoneticSymbol
+                                                )
+
+                                                await MainActor.run {
+                                                    if let currentSession = session {
+                                                        pastSessionsViewModel.addKeyTerm(to: currentSession.id, keyTerm: createdKeyTerm)
+                                                        viewModel.updateTeachingResponse(with: createdKeyTerm)
+                                                    } else {
+                                                        viewModel.addKeyTerm(createdKeyTerm)
+                                                    }
+
+                                                    // Dismiss the overlay
+                                                    withAnimation {
+                                                        showTeachingOverlay = false
+                                                    }
+                                                }
+                                                print("✅ Successfully created and favorited new key term")
+                                            } catch {
+                                                print("❌ Failed to create and favorite key term: \(error)")
+                                            }
+                                        }
+                                    },
+                                    languageCode: targetLanguageCode,
+                                    isUserChosen: true
                                 )
                                 .frame(width: proxy.size.width - 48) // Match padding (24 left + 24 right)
                                 .shadow(radius: 10)
