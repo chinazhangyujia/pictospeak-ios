@@ -106,6 +106,40 @@ class FeedbackService {
         }
     }
 
+    func getTeachSingleTermStream(authToken: String, descriptionGuidanceId: UUID, term: String) -> AsyncThrowingStream<KeyTermTeachingStreamingResponse, Error> {
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    guard var components = URLComponents(string: self.baseURL + "/key-term-and-suggestion/teach-single-term") else {
+                        throw FeedbackError.invalidURL
+                    }
+
+                    components.queryItems = [
+                        URLQueryItem(name: "description_guidance_id", value: descriptionGuidanceId.uuidString),
+                        URLQueryItem(name: "term", value: term),
+                    ]
+
+                    guard let url = components.url else {
+                        throw FeedbackError.invalidURL
+                    }
+
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "GET"
+                    request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+
+                    print("🌐 Making request to FastAPI endpoint: \(url)")
+
+                    try await self.performStreamingRequest(request: request) { (response: KeyTermTeachingStreamingResponse) in
+                        continuation.yield(response)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     private func generateFrames(from videoURL: URL, count: Int = 5) async -> [Data] {
         let asset = AVAsset(url: videoURL)
         let generator = AVAssetImageGenerator(asset: asset)
@@ -268,11 +302,20 @@ class FeedbackService {
         print("🌐 Making request to FastAPI endpoint: \(url)")
         print("📦 Request body size: \(body.count) bytes")
 
+        try await performStreamingRequest(request: urlRequest) { (streamingResponse: StreamingFeedbackResponse) in
+            onUpdate(streamingResponse.toFeedbackResponse())
+        }
+    }
+
+    private func performStreamingRequest<T: Decodable>(
+        request: URLRequest,
+        onUpdate: @escaping (T) -> Void
+    ) async throws {
         let startTime = Date()
         print("⏱️ Start time: \(startTime)")
 
         do {
-            let (bytes, response) = try await URLSession.shared.bytes(for: urlRequest)
+            let (bytes, response) = try await URLSession.shared.bytes(for: request)
 
             let endTime = Date()
             let latency = endTime.timeIntervalSince(startTime)
@@ -344,11 +387,10 @@ class FeedbackService {
                         if bracketCount == 0 {
                             // Try to decode this chunk
                             do {
-                                let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: buffer)
+                                let decodedObject = try JSONDecoder().decode(T.self, from: buffer)
                                 chunkCount += 1
 
-                                let feedbackResponse = streamingResponse.toFeedbackResponse()
-                                onUpdate(feedbackResponse)
+                                onUpdate(decodedObject)
                             } catch {
                                 print("⚠️ Failed to decode JSON chunk: \(error)")
                                 if let jsonString = String(data: buffer, encoding: .utf8) {
@@ -368,12 +410,11 @@ class FeedbackService {
                 if !trimmed.isEmpty {
                     if let jsonData = trimmed.data(using: .utf8) {
                         do {
-                            let streamingResponse = try JSONDecoder().decode(StreamingFeedbackResponse.self, from: jsonData)
+                            let decodedObject = try JSONDecoder().decode(T.self, from: jsonData)
                             chunkCount += 1
                             print("📦 Final Object \(chunkCount): \(trimmed)")
 
-                            let feedbackResponse = streamingResponse.toFeedbackResponse()
-                            onUpdate(feedbackResponse)
+                            onUpdate(decodedObject)
                         } catch {
                             print("⚠️ Failed to decode final JSON: \(error)")
                         }

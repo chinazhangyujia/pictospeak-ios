@@ -20,9 +20,10 @@ struct FeedbackResponse: Codable {
     let chosenItemsGenerated: Bool
     let pronunciationUrl: String?
     let standardDescriptionSegments: [String]
+    let id: UUID?
 
     // Custom initializer to handle both old and new formats
-    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, chosenItemsGenerated: Bool = false, pronunciationUrl: String? = nil, standardDescriptionSegments: [String] = []) {
+    init(originalText: String, refinedText: String, suggestions: [Suggestion], keyTerms: [KeyTerm], score: Int? = nil, chosenKeyTerms: [String]? = nil, chosenRefinements: [String]? = nil, chosenItemsGenerated: Bool = false, pronunciationUrl: String? = nil, standardDescriptionSegments: [String] = [], id: UUID? = nil) {
         self.originalText = originalText
         self.refinedText = refinedText
         self.suggestions = suggestions
@@ -33,6 +34,7 @@ struct FeedbackResponse: Codable {
         self.chosenItemsGenerated = chosenItemsGenerated
         self.pronunciationUrl = pronunciationUrl
         self.standardDescriptionSegments = standardDescriptionSegments
+        self.id = id
     }
 }
 
@@ -65,7 +67,8 @@ struct StreamingFeedbackResponse: Codable {
             chosenRefinements: metadata.chosenRefinements,
             chosenItemsGenerated: metadata.chosenItemsGenerated,
             pronunciationUrl: descriptionTeaching.standardDescriptionPronunciationUrl,
-            standardDescriptionSegments: metadata.standardDescriptionSegments
+            standardDescriptionSegments: metadata.standardDescriptionSegments,
+            id: descriptionTeaching.id
         )
     }
 }
@@ -99,6 +102,16 @@ struct StreamingMetadata: Codable {
         case chosenRefinements = "chosen_refinements"
         case chosenItemsGenerated = "chosen_items_generated"
         case standardDescriptionSegments = "standard_description_segments"
+    }
+}
+
+struct KeyTermTeachingStreamingResponse: Codable {
+    let isFinal: Bool
+    let keyTerm: KeyTerm
+
+    private enum CodingKeys: String, CodingKey {
+        case isFinal = "is_final"
+        case keyTerm = "key_term"
     }
 }
 

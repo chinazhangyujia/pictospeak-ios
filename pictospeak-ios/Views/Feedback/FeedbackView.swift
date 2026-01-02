@@ -99,6 +99,11 @@ struct FeedbackView: View {
     @State private var selectedDetent: PresentationDetent = .fraction(0.5)
     @State private var pendingNavigation: PendingNavigation?
 
+    // Teaching Overlay State
+    @State private var showTeachingOverlay = false
+    @State private var teachingOverlayRect: CGRect = .zero
+    @State private var isOverlayCardExpanded = false
+
     private var targetLanguageCode: String {
         let languageName = contentViewModel.userInfo.userSetting?.targetLanguage ?? "English"
         return LanguageService.getBCP47Code(for: languageName)
@@ -226,6 +231,51 @@ struct FeedbackView: View {
             .onDisappear {
                 handlePendingNavigation()
             }
+            .coordinateSpace(name: "feedbackSheet")
+            .overlay(
+                Group {
+                    if showTeachingOverlay {
+                        GeometryReader { proxy in
+                            ZStack(alignment: .topLeading) {
+                                Color.black.opacity(0.2)
+                                    .edgesIgnoringSafeArea(.all)
+                                    .onTapGesture { showTeachingOverlay = false }
+
+                                // Unified Card Logic to prevent jumping
+                                let keyTermToDisplay: KeyTerm = viewModel.keyTermTeachingResponse?.keyTerm ?? KeyTerm(
+                                    term: "",
+                                    translations: [],
+                                    reason: TermReason(reason: "", reasonTranslation: ""),
+                                    example: TermExample(sentence: "", sentenceTranslation: ""),
+                                    favorite: false
+                                )
+
+                                // Convert the teaching rect (in global coords) into this overlay's local space
+                                let overlayTop = teachingOverlayRect.maxY + 12 - proxy.frame(in: .global).minY
+
+                                KeyTermCard(
+                                    isReviewCard: false,
+                                    keyTerm: keyTermToDisplay,
+                                    isExpanded: isOverlayCardExpanded,
+                                    onToggle: {
+                                        withAnimation {
+                                            isOverlayCardExpanded.toggle()
+                                        }
+                                    },
+                                    onFavoriteToggle: { _, _ in },
+                                    languageCode: targetLanguageCode
+                                )
+                                .frame(width: proxy.size.width - 48) // Match padding (24 left + 24 right)
+                                .shadow(radius: 10)
+                                .offset(
+                                    x: 24, // Left align with 24pt padding
+                                    y: overlayTop // Position 12pt below the segment in local overlay space
+                                )
+                            }
+                        }
+                    }
+                }
+            )
         }
         .onAppear {
             configureBackgroundVideoIfNeeded()
@@ -424,8 +474,12 @@ struct FeedbackView: View {
                             text: feedback.refinedText,
                             clickableMatches: clickableMatches,
                             segments: feedback.standardDescriptionSegments
-                        ) { match in
-                            handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                        ) { match, globalRect in
+                            if match.isSegment {
+                                handleSegmentTap(match: match, globalRect: globalRect)
+                            } else {
+                                handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                            }
                         }
                         .font(.system(size: 17, weight: .regular))
                         .foregroundColor(.black)
@@ -701,8 +755,12 @@ struct FeedbackView: View {
                         text: session.standardDescription,
                         clickableMatches: clickableMatches,
                         segments: session.standardDescriptionSegments
-                    ) { match in
-                        handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                    ) { match, globalRect in
+                        if match.isSegment {
+                            handleSegmentTap(match: match, globalRect: globalRect)
+                        } else {
+                            handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                        }
                     }
                     .font(.system(size: 17, weight: .regular))
                     .foregroundColor(.black)
@@ -1083,11 +1141,6 @@ struct FeedbackView: View {
     }
 
     private func handleTextTap(match: ClickableTextMatch, feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
-        if match.isSegment {
-            print(match.text)
-            return
-        }
-
         // Verify that the corresponding card actually exists
         let cardExists: Bool
         if let cardType = match.cardType {
@@ -1116,11 +1169,6 @@ struct FeedbackView: View {
     }
 
     private func handleTextTap(match: ClickableTextMatch, session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
-        if match.isSegment {
-            print(match.text)
-            return
-        }
-
         // Verify that the corresponding card actually exists
         let cardExists: Bool
         if let cardType = match.cardType {
@@ -1145,6 +1193,26 @@ struct FeedbackView: View {
         // Scroll to the card with animation
         withAnimation(.easeInOut(duration: 0.5)) {
             scrollProxy(cardId, UnitPoint.center)
+        }
+    }
+
+    private func handleSegmentTap(match: ClickableTextMatch, globalRect: CGRect) {
+        teachingOverlayRect = globalRect
+
+        // Determine the correct ID to use
+        let guidanceId: UUID?
+        if let currentSession = session {
+            guidanceId = currentSession.id
+        } else {
+            guidanceId = viewModel.feedbackResponse?.id
+        }
+
+        // Trigger teaching
+        viewModel.teachSingleTerm(term: match.text, descriptionGuidanceId: guidanceId)
+
+        isOverlayCardExpanded = false
+        withAnimation {
+            showTeachingOverlay = true
         }
     }
 
@@ -1203,7 +1271,7 @@ struct FeedbackView: View {
         let text: String
         let clickableMatches: [ClickableTextMatch]
         let segments: [String]?
-        let onTap: (ClickableTextMatch) -> Void
+        let onTap: (ClickableTextMatch, CGRect) -> Void
 
         func makeUIView(context: Context) -> UITextView {
             // Create text stack with custom layout manager for dotted underlines
@@ -1359,7 +1427,7 @@ struct FeedbackView: View {
 
         class Coordinator: NSObject, UITextViewDelegate {
             var clickableMatches: [ClickableTextMatch] = []
-            var onTap: ((ClickableTextMatch) -> Void)?
+            var onTap: ((ClickableTextMatch, CGRect) -> Void)?
             weak var textView: UITextView?
 
             // iOS 17+ text item delegate methods
@@ -1396,7 +1464,15 @@ struct FeedbackView: View {
                 // Find if the tap is within any clickable match
                 for match in clickableMatches {
                     if NSLocationInRange(characterIndex, match.range) {
-                        onTap?(match)
+                        // Get the rect of the match
+                        let glyphRange = textView.layoutManager.glyphRange(forCharacterRange: match.range, actualCharacterRange: nil)
+                        let boundingRect = textView.layoutManager.boundingRect(forGlyphRange: glyphRange, in: textView.textContainer)
+                        // boundingRect is in text container coordinates.
+                        // Add textContainerInset, then convert to global coordinates
+                        let rect = boundingRect.offsetBy(dx: textView.textContainerInset.left, dy: textView.textContainerInset.top)
+                        let globalRect = textView.convert(rect, to: nil)
+
+                        onTap?(match, globalRect)
                         break
                     }
                 }
@@ -1493,6 +1569,15 @@ struct FeedbackView: View {
                     super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineType, baselineOffset: baselineOffset, lineFragmentRect: lineFragmentRect, lineFragmentGlyphRange: lineFragmentGlyphRange, containerOrigin: containerOrigin)
                 }
             }
+        }
+    }
+
+    // MARK: - Helper Types
+
+    struct ViewOffsetKey: PreferenceKey {
+        static var defaultValue: CGRect = .zero
+        static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+            value = nextValue()
         }
     }
 }
