@@ -11,6 +11,7 @@ import SwiftUI
 @MainActor
 class FeedbackViewModel: ObservableObject {
     @Published var feedbackResponse: FeedbackResponse?
+    @Published var keyTermTeachingResponse: KeyTermTeachingStreamingResponse?
     @Published var isLoading = true
     @Published var errorMessage: String?
 
@@ -185,7 +186,9 @@ class FeedbackViewModel: ObservableObject {
             chosenKeyTerms: newResponse.chosenKeyTerms,
             chosenRefinements: newResponse.chosenRefinements,
             chosenItemsGenerated: newResponse.chosenItemsGenerated,
-            pronunciationUrl: newResponse.pronunciationUrl
+            pronunciationUrl: newResponse.pronunciationUrl,
+            standardDescriptionSegments: newResponse.standardDescriptionSegments,
+            id: newResponse.id
         )
     }
 
@@ -215,7 +218,9 @@ class FeedbackViewModel: ObservableObject {
             chosenKeyTerms: currentFeedback.chosenKeyTerms,
             chosenRefinements: currentFeedback.chosenRefinements,
             chosenItemsGenerated: currentFeedback.chosenItemsGenerated,
-            pronunciationUrl: currentFeedback.pronunciationUrl
+            pronunciationUrl: currentFeedback.pronunciationUrl,
+            standardDescriptionSegments: currentFeedback.standardDescriptionSegments,
+            id: currentFeedback.id
         )
     }
 
@@ -246,7 +251,42 @@ class FeedbackViewModel: ObservableObject {
             chosenKeyTerms: currentFeedback.chosenKeyTerms,
             chosenRefinements: currentFeedback.chosenRefinements,
             chosenItemsGenerated: currentFeedback.chosenItemsGenerated,
-            pronunciationUrl: currentFeedback.pronunciationUrl
+            pronunciationUrl: currentFeedback.pronunciationUrl,
+            standardDescriptionSegments: currentFeedback.standardDescriptionSegments,
+            id: currentFeedback.id
         )
+    }
+
+    func teachSingleTerm(term: String, descriptionGuidanceId: UUID? = nil) {
+        guard let id = descriptionGuidanceId ?? feedbackResponse?.id else {
+            print("❌ Missing descriptionGuidanceId")
+            return
+        }
+
+        guard let authToken = contentViewModel.authToken else {
+            print("❌ Authentication required")
+            return
+        }
+
+        // Reset previous response
+        keyTermTeachingResponse = nil
+
+        Task {
+            do {
+                let stream = feedbackService.getTeachSingleTermStream(
+                    authToken: authToken,
+                    descriptionGuidanceId: id,
+                    term: term
+                )
+
+                for try await response in stream {
+                    await MainActor.run {
+                        self.keyTermTeachingResponse = response
+                    }
+                }
+            } catch {
+                print("❌ Error teaching single term: \(error)")
+            }
+        }
     }
 }

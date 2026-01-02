@@ -212,7 +212,7 @@ struct KeyTermCard: View {
                     Spacer()
 
                     // Bookmark button
-                    if keyTerm.term.isEmpty || keyTerm.id == .zero {
+                    if keyTerm.term.isEmpty {
                         SkeletonPlaceholder(width: 16, height: 16)
                             .modifier(ShimmerEffect())
                     } else {
@@ -496,7 +496,7 @@ struct SuggestionCard: View {
                         Spacer()
 
                         // Bookmark button (Moved here when expanded)
-                        if !(suggestion.refinement.isEmpty || suggestion.id == .zero) {
+                        if !(suggestion.refinement.isEmpty) {
                             Button(action: {
                                 onFavoriteToggle(suggestion.id, !suggestion.favorite)
                             }) {

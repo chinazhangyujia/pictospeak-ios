@@ -99,6 +99,11 @@ struct FeedbackView: View {
     @State private var selectedDetent: PresentationDetent = .fraction(0.5)
     @State private var pendingNavigation: PendingNavigation?
 
+    // Teaching Overlay State
+    @State private var showTeachingOverlay = false
+    @State private var teachingOverlayRect: CGRect = .zero
+    @State private var isOverlayCardExpanded = false
+
     private var targetLanguageCode: String {
         let languageName = contentViewModel.userInfo.userSetting?.targetLanguage ?? "English"
         return LanguageService.getBCP47Code(for: languageName)
@@ -226,6 +231,51 @@ struct FeedbackView: View {
             .onDisappear {
                 handlePendingNavigation()
             }
+            .coordinateSpace(name: "feedbackSheet")
+            .overlay(
+                Group {
+                    if showTeachingOverlay {
+                        GeometryReader { proxy in
+                            ZStack(alignment: .topLeading) {
+                                Color.black.opacity(0.2)
+                                    .edgesIgnoringSafeArea(.all)
+                                    .onTapGesture { showTeachingOverlay = false }
+
+                                // Unified Card Logic to prevent jumping
+                                let keyTermToDisplay: KeyTerm = viewModel.keyTermTeachingResponse?.keyTerm ?? KeyTerm(
+                                    term: "",
+                                    translations: [],
+                                    reason: TermReason(reason: "", reasonTranslation: ""),
+                                    example: TermExample(sentence: "", sentenceTranslation: ""),
+                                    favorite: false
+                                )
+
+                                // Convert the teaching rect (in global coords) into this overlay's local space
+                                let overlayTop = teachingOverlayRect.maxY + 12 - proxy.frame(in: .global).minY
+
+                                KeyTermCard(
+                                    isReviewCard: false,
+                                    keyTerm: keyTermToDisplay,
+                                    isExpanded: isOverlayCardExpanded,
+                                    onToggle: {
+                                        withAnimation {
+                                            isOverlayCardExpanded.toggle()
+                                        }
+                                    },
+                                    onFavoriteToggle: { _, _ in },
+                                    languageCode: targetLanguageCode
+                                )
+                                .frame(width: proxy.size.width - 48) // Match padding (24 left + 24 right)
+                                .shadow(radius: 10)
+                                .offset(
+                                    x: 24, // Left align with 24pt padding
+                                    y: overlayTop // Position 12pt below the segment in local overlay space
+                                )
+                            }
+                        }
+                    }
+                }
+            )
         }
         .onAppear {
             configureBackgroundVideoIfNeeded()
@@ -422,9 +472,14 @@ struct FeedbackView: View {
                     } else {
                         ClickableHighlightedTextView(
                             text: feedback.refinedText,
-                            clickableMatches: clickableMatches
-                        ) { match in
-                            handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                            clickableMatches: clickableMatches,
+                            segments: feedback.standardDescriptionSegments
+                        ) { match, globalRect in
+                            if match.isSegment {
+                                handleSegmentTap(match: match, globalRect: globalRect)
+                            } else {
+                                handleTextTap(match: match, feedback: feedback, scrollProxy: scrollProxy)
+                            }
                         }
                         .font(.system(size: 17, weight: .regular))
                         .foregroundColor(.black)
@@ -698,9 +753,14 @@ struct FeedbackView: View {
                 } else {
                     ClickableHighlightedTextView(
                         text: session.standardDescription,
-                        clickableMatches: clickableMatches
-                    ) { match in
-                        handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                        clickableMatches: clickableMatches,
+                        segments: session.standardDescriptionSegments
+                    ) { match, globalRect in
+                        if match.isSegment {
+                            handleSegmentTap(match: match, globalRect: globalRect)
+                        } else {
+                            handleTextTap(match: match, session: session, scrollProxy: scrollProxy)
+                        }
                     }
                     .font(.system(size: 17, weight: .regular))
                     .foregroundColor(.black)
@@ -969,7 +1029,8 @@ struct FeedbackView: View {
                                 range: foundRange,
                                 text: chosenTerm,
                                 cardType: .keyTerm,
-                                cardId: keyTerm.id
+                                cardId: keyTerm.id,
+                                isSegment: false
                             ))
                         }
 
@@ -997,7 +1058,8 @@ struct FeedbackView: View {
                                 range: foundRange,
                                 text: chosenRefinement,
                                 cardType: .suggestion,
-                                cardId: suggestion.id
+                                cardId: suggestion.id,
+                                isSegment: false
                             ))
                         }
 
@@ -1033,7 +1095,8 @@ struct FeedbackView: View {
                             range: foundRange,
                             text: chosenTerm.term,
                             cardType: .keyTerm,
-                            cardId: keyTerm.id
+                            cardId: keyTerm.id,
+                            isSegment: false
                         ))
                     }
 
@@ -1059,7 +1122,8 @@ struct FeedbackView: View {
                             range: foundRange,
                             text: chosenSuggestion.refinement,
                             cardType: .suggestion,
-                            cardId: suggestion.id
+                            cardId: suggestion.id,
+                            isSegment: false
                         ))
                     }
 
@@ -1079,48 +1143,76 @@ struct FeedbackView: View {
     private func handleTextTap(match: ClickableTextMatch, feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
         // Verify that the corresponding card actually exists
         let cardExists: Bool
-        switch match.cardType {
-        case .keyTerm:
-            cardExists = feedback.keyTerms.contains { $0.id == match.cardId }
-        case .suggestion:
-            cardExists = feedback.suggestions.contains { $0.id == match.cardId }
+        if let cardType = match.cardType {
+            switch cardType {
+            case .keyTerm:
+                cardExists = feedback.keyTerms.contains { $0.id == match.cardId }
+            case .suggestion:
+                cardExists = feedback.suggestions.contains { $0.id == match.cardId }
+            }
+        } else {
+            cardExists = false
         }
 
         // Only respond if the card exists
-        guard cardExists else {
+        guard cardExists, let cardId = match.cardId else {
             return
         }
 
         // Expand the corresponding card
-        expandedCards.insert(match.cardId)
+        expandedCards.insert(cardId)
 
         // Scroll to the card with animation
         withAnimation(.easeInOut(duration: 0.5)) {
-            scrollProxy(match.cardId, UnitPoint.center)
+            scrollProxy(cardId, UnitPoint.center)
         }
     }
 
     private func handleTextTap(match: ClickableTextMatch, session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
         // Verify that the corresponding card actually exists
         let cardExists: Bool
-        switch match.cardType {
-        case .keyTerm:
-            cardExists = session.keyTerms.contains { $0.id == match.cardId }
-        case .suggestion:
-            cardExists = session.suggestions.contains { $0.id == match.cardId }
+        if let cardType = match.cardType {
+            switch cardType {
+            case .keyTerm:
+                cardExists = session.keyTerms.contains { $0.id == match.cardId }
+            case .suggestion:
+                cardExists = session.suggestions.contains { $0.id == match.cardId }
+            }
+        } else {
+            cardExists = false
         }
 
         // Only respond if the card exists
-        guard cardExists else {
+        guard cardExists, let cardId = match.cardId else {
             return
         }
 
         // Expand the corresponding card
-        expandedCards.insert(match.cardId)
+        expandedCards.insert(cardId)
 
         // Scroll to the card with animation
         withAnimation(.easeInOut(duration: 0.5)) {
-            scrollProxy(match.cardId, UnitPoint.center)
+            scrollProxy(cardId, UnitPoint.center)
+        }
+    }
+
+    private func handleSegmentTap(match: ClickableTextMatch, globalRect: CGRect) {
+        teachingOverlayRect = globalRect
+
+        // Determine the correct ID to use
+        let guidanceId: UUID?
+        if let currentSession = session {
+            guidanceId = currentSession.id
+        } else {
+            guidanceId = viewModel.feedbackResponse?.id
+        }
+
+        // Trigger teaching
+        viewModel.teachSingleTerm(term: match.text, descriptionGuidanceId: guidanceId)
+
+        isOverlayCardExpanded = false
+        withAnimation {
+            showTeachingOverlay = true
         }
     }
 
@@ -1178,22 +1270,30 @@ struct FeedbackView: View {
     struct ClickableHighlightedTextView: UIViewRepresentable {
         let text: String
         let clickableMatches: [ClickableTextMatch]
-        let onTap: (ClickableTextMatch) -> Void
+        let segments: [String]?
+        let onTap: (ClickableTextMatch, CGRect) -> Void
 
         func makeUIView(context: Context) -> UITextView {
-            let textView = SelfSizingTextView()
+            // Create text stack with custom layout manager for dotted underlines
+            let textStorage = NSTextStorage()
+            let layoutManager = DottedLayoutManager()
+            textStorage.addLayoutManager(layoutManager)
+
+            let textContainer = NSTextContainer(size: CGSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
+            textContainer.widthTracksTextView = true
+            textContainer.heightTracksTextView = false
+            textContainer.lineFragmentPadding = 0
+            textContainer.lineBreakMode = .byWordWrapping
+            layoutManager.addTextContainer(textContainer)
+
+            // Use specific frame to avoid auto-constraints issues initially
+            let textView = SelfSizingTextView(frame: .zero, textContainer: textContainer)
             textView.isEditable = false
             textView.isScrollEnabled = false
             textView.backgroundColor = UIColor.clear
-            textView.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-            textView.textContainerInset = UIEdgeInsets.zero
-            textView.textContainer.lineFragmentPadding = 0
+            textView.textContainerInset = UIEdgeInsets(top: 0, left: 0, bottom: 6, right: 0) // Add bottom padding for underlines
+            textView.clipsToBounds = false // Allow drawing outside bounds (prevent last line underline clipping)
             textView.delegate = context.coordinator
-
-            // Set proper text container constraints
-            textView.textContainer.widthTracksTextView = true
-            textView.textContainer.maximumNumberOfLines = 0
-            textView.textContainer.lineBreakMode = .byWordWrapping
 
             // Ensure the text view doesn't expand beyond its container
             textView.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -1208,11 +1308,48 @@ struct FeedbackView: View {
         }
 
         func updateUIView(_ uiView: UITextView, context: Context) {
-            let attributedString = createAttributedString()
+            var allMatches = clickableMatches
+
+            if let segments = segments {
+                let nsString = NSString(string: text)
+                var searchRange = NSRange(location: 0, length: nsString.length)
+
+                for segment in segments {
+                    let foundRange = nsString.range(of: segment, options: [], range: searchRange)
+                    if foundRange.location != NSNotFound {
+                        // Check for overlap with existing matches
+                        let overlaps = clickableMatches.contains { existingMatch in
+                            NSIntersectionRange(existingMatch.range, foundRange).length > 0
+                        }
+
+                        if !overlaps {
+                            allMatches.append(ClickableTextMatch(
+                                range: foundRange,
+                                text: segment,
+                                cardType: nil,
+                                cardId: nil,
+                                isSegment: true
+                            ))
+                        }
+
+                        // Move search range forward
+                        let newLocation = foundRange.location + foundRange.length
+                        if newLocation < nsString.length {
+                            searchRange = NSRange(location: newLocation, length: nsString.length - newLocation)
+                        } else {
+                            break
+                        }
+                    }
+                }
+            }
+
+            allMatches.sort { $0.range.location < $1.range.location }
+
+            let attributedString = createAttributedString(matches: allMatches)
             uiView.attributedText = attributedString
 
             // Store matches in coordinator for tap handling
-            context.coordinator.clickableMatches = clickableMatches
+            context.coordinator.clickableMatches = allMatches
             context.coordinator.onTap = onTap
 
             // Update intrinsic content size after setting text
@@ -1223,7 +1360,7 @@ struct FeedbackView: View {
             Coordinator()
         }
 
-        private func createAttributedString() -> NSAttributedString {
+        private func createAttributedString(matches: [ClickableTextMatch]) -> NSAttributedString {
             let attributedString = NSMutableAttributedString(string: text)
 
             // Create paragraph style for line spacing
@@ -1241,19 +1378,48 @@ struct FeedbackView: View {
             attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: text.count))
 
             // Add styling for clickable matches
-            for match in clickableMatches {
+            for (index, match) in matches.enumerated() {
                 let range = match.range
 
-                // Add underline with vertical gap
-                attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
-                attributedString.addAttribute(.underlineColor, value: UIColor(AppTheme.primaryBlue), range: range)
+                // Add visual separation (kerning) to the last character of the match
+                // This creates a gap between this segment and the next content (text or segment)
+                if range.length > 0 {
+                    let lastCharIndex = range.location + range.length - 1
+                    let extraSpacing: CGFloat = 4.0 // set spacing between segments
+                    let currentKern: CGFloat = -0.43
+                    attributedString.addAttribute(.kern, value: currentKern + extraSpacing, range: NSRange(location: lastCharIndex, length: 1))
+                }
 
-                // Add small vertical gap between text and underline
-                attributedString.addAttribute(.baselineOffset, value: 2, range: range)
+                if match.isSegment {
+                    // Dotted underline for segments matching Figma specs
+                    // Style: Dotted
+                    attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.patternDot.rawValue | NSUnderlineStyle.single.rawValue, range: range)
 
-                // Make it look clickable
-                attributedString.addAttribute(.foregroundColor, value: UIColor(AppTheme.primaryBlue), range: range)
-                attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 17, weight: .medium), range: range)
+                    // Color: #8C8C8C
+                    attributedString.addAttribute(.underlineColor, value: UIColor(red: 0.549, green: 0.549, blue: 0.549, alpha: 1.0), range: range)
+
+                    // Use a tiny unique baseline offset to force NSLayoutManager to treat each segment as a separate run.
+                    // This ensures drawUnderline is called separately for each segment, allowing us to add gaps.
+                    let uniqueOffset = 0.0 + (Double(index) * 0.0001)
+                    attributedString.addAttribute(.baselineOffset, value: NSNumber(value: uniqueOffset), range: range)
+
+                    // Keep original text color (black) and font (regular)
+                } else {
+                    // Similar dot lines for keyTerms/suggestions as requested
+                    // Style: Dotted
+                    attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.patternDot.rawValue | NSUnderlineStyle.single.rawValue, range: range)
+
+                    // Color: primaryBlue
+                    attributedString.addAttribute(.underlineColor, value: UIColor(AppTheme.primaryBlue), range: range)
+
+                    // Unique baseline offset for run separation
+                    let uniqueOffset = 0.0 + (Double(index) * 0.0001)
+                    attributedString.addAttribute(.baselineOffset, value: NSNumber(value: uniqueOffset), range: range)
+
+                    // Make it look clickable
+                    attributedString.addAttribute(.foregroundColor, value: UIColor(AppTheme.primaryBlue), range: range)
+                    attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 17, weight: .medium), range: range)
+                }
             }
 
             return attributedString
@@ -1261,7 +1427,7 @@ struct FeedbackView: View {
 
         class Coordinator: NSObject, UITextViewDelegate {
             var clickableMatches: [ClickableTextMatch] = []
-            var onTap: ((ClickableTextMatch) -> Void)?
+            var onTap: ((ClickableTextMatch, CGRect) -> Void)?
             weak var textView: UITextView?
 
             // iOS 17+ text item delegate methods
@@ -1298,11 +1464,120 @@ struct FeedbackView: View {
                 // Find if the tap is within any clickable match
                 for match in clickableMatches {
                     if NSLocationInRange(characterIndex, match.range) {
-                        onTap?(match)
+                        // Get the rect of the match
+                        let glyphRange = textView.layoutManager.glyphRange(forCharacterRange: match.range, actualCharacterRange: nil)
+                        let boundingRect = textView.layoutManager.boundingRect(forGlyphRange: glyphRange, in: textView.textContainer)
+                        // boundingRect is in text container coordinates.
+                        // Add textContainerInset, then convert to global coordinates
+                        let rect = boundingRect.offsetBy(dx: textView.textContainerInset.left, dy: textView.textContainerInset.top)
+                        let globalRect = textView.convert(rect, to: nil)
+
+                        onTap?(match, globalRect)
                         break
                     }
                 }
             }
+        }
+
+        // Custom Layout Manager to draw round dots instead of squares for patternDot
+        class DottedLayoutManager: NSLayoutManager {
+            override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect: CGRect, lineFragmentGlyphRange: NSRange, containerOrigin: CGPoint) {
+                if underlineType.contains(.patternDot) {
+                    guard let container = textContainer(forGlyphAt: glyphRange.location, effectiveRange: nil),
+                          let context = UIGraphicsGetCurrentContext()
+                    else {
+                        super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineType, baselineOffset: baselineOffset, lineFragmentRect: lineFragmentRect, lineFragmentGlyphRange: lineFragmentGlyphRange, containerOrigin: containerOrigin)
+                        return
+                    }
+
+                    context.saveGState()
+
+                    // Get bounds of the glyphs to determine where to draw
+                    let boundingRect = self.boundingRect(forGlyphRange: glyphRange, in: container)
+                    let rect = boundingRect.offsetBy(dx: containerOrigin.x, dy: containerOrigin.y)
+
+                    // Add horizontal padding to create gaps between adjacent segments
+                    // We only apply trimming to the RIGHT side at the end of a segment to clear the kerning gap.
+                    // We do NOT inset the left side, to ensure alignment with the text start (fixing the "shift right" issue).
+
+                    var insetLeft: CGFloat = 0
+                    var insetRight: CGFloat = 0
+                    let gapTrimming: CGFloat = 4.0 // set spacing between dots lines of segments
+
+                    // Find the full range of the segment by looking for the continuous run of our unique baselineOffset attribute
+                    if let textStorage = textStorage {
+                        var effectiveRange = NSRange(location: NSNotFound, length: 0)
+
+                        // We use baselineOffset attribute because we made it unique per segment
+                        textStorage.attribute(.baselineOffset, at: glyphRange.location, longestEffectiveRange: &effectiveRange, in: NSRange(location: 0, length: textStorage.length))
+
+                        // We don't inset left (0) to keep alignment with text start
+
+                        if glyphRange.upperBound == effectiveRange.upperBound {
+                            // End of the segment: trim right to clear the kerned whitespace
+                            insetRight = gapTrimming
+                        }
+                    } else {
+                        // Fallback
+                        insetRight = gapTrimming
+                    }
+
+                    // Apply calculated insets
+                    var drawRect = rect
+                    drawRect.origin.x += insetLeft
+                    drawRect.size.width -= (insetLeft + insetRight)
+
+                    if drawRect.size.width <= 0 {
+                        context.restoreGState()
+                        return
+                    }
+
+                    // Get color from attributes
+                    let attributes = textStorage?.attributes(at: glyphRange.location, effectiveRange: nil)
+                    let color = (attributes?[.underlineColor] as? UIColor) ?? .black
+                    context.setFillColor(color.cgColor)
+
+                    // Dot configuration
+                    // Larger dots for keyTerms/suggestions (Primary Blue), smaller for segments (Gray)
+                    let isPrimaryBlue = color.isEqual(UIColor(AppTheme.primaryBlue))
+                    let dotDiameter: CGFloat = isPrimaryBlue ? 2.5 : 1.5
+                    let dotSpacing: CGFloat = 3.0 // Center to center spacing
+
+                    // Calculate Y position based on baseline for consistent alignment
+                    // lineFragmentRect is in container coords.
+                    // Baseline Y in container coords = lineFragmentRect.maxY - baselineOffset
+                    // Add containerOrigin.y for drawing context coords
+                    let baselineY = lineFragmentRect.maxY - baselineOffset + containerOrigin.y
+
+                    // Draw dots slightly below the baseline
+                    // Adjust this offset to control distance from text.
+                    // Baseline is where text sits. Text is shifted up by 1.0 (base attribute).
+                    // So we put dots just below the line baseline.
+                    let yPos = baselineY + 5
+
+                    var x = drawRect.minX
+                    // Adjust starting X to align nicely
+
+                    while x < drawRect.maxX {
+                        let dotRect = CGRect(x: x, y: yPos, width: dotDiameter, height: dotDiameter)
+                        context.fillEllipse(in: dotRect)
+                        x += dotSpacing
+                    }
+
+                    context.restoreGState()
+                } else {
+                    super.drawUnderline(forGlyphRange: glyphRange, underlineType: underlineType, baselineOffset: baselineOffset, lineFragmentRect: lineFragmentRect, lineFragmentGlyphRange: lineFragmentGlyphRange, containerOrigin: containerOrigin)
+                }
+            }
+        }
+    }
+
+    // MARK: - Helper Types
+
+    struct ViewOffsetKey: PreferenceKey {
+        static var defaultValue: CGRect = .zero
+        static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+            value = nextValue()
         }
     }
 }
