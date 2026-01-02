@@ -257,6 +257,45 @@ class FeedbackViewModel: ObservableObject {
         )
     }
 
+    func addKeyTerm(_ keyTerm: KeyTerm) {
+        guard let currentFeedback = feedbackResponse else {
+            // Even if feedbackResponse is nil, we might need to update the teaching response
+            updateTeachingResponse(with: keyTerm)
+            return
+        }
+
+        // Check if already exists to prevent duplicates
+        if !currentFeedback.keyTerms.contains(where: { $0.id == keyTerm.id }) {
+            var updatedKeyTerms = currentFeedback.keyTerms
+            updatedKeyTerms.append(keyTerm)
+
+            feedbackResponse = FeedbackResponse(
+                originalText: currentFeedback.originalText,
+                refinedText: currentFeedback.refinedText,
+                suggestions: currentFeedback.suggestions,
+                keyTerms: updatedKeyTerms,
+                score: currentFeedback.score,
+                chosenKeyTerms: currentFeedback.chosenKeyTerms,
+                chosenRefinements: currentFeedback.chosenRefinements,
+                chosenItemsGenerated: currentFeedback.chosenItemsGenerated,
+                pronunciationUrl: currentFeedback.pronunciationUrl,
+                standardDescriptionSegments: currentFeedback.standardDescriptionSegments,
+                id: currentFeedback.id
+            )
+        }
+
+        updateTeachingResponse(with: keyTerm)
+    }
+
+    func updateTeachingResponse(with keyTerm: KeyTerm) {
+        if let teachingResponse = keyTermTeachingResponse, teachingResponse.keyTerm.term == keyTerm.term {
+            keyTermTeachingResponse = KeyTermTeachingStreamingResponse(
+                isFinal: teachingResponse.isFinal,
+                keyTerm: keyTerm
+            )
+        }
+    }
+
     func teachSingleTerm(term: String, descriptionGuidanceId: UUID? = nil) {
         guard let id = descriptionGuidanceId ?? feedbackResponse?.id else {
             print("❌ Missing descriptionGuidanceId")
