@@ -34,13 +34,13 @@ class ReviewViewModel: ObservableObject {
             guard !isLoading else { return }
 
             isLoading = true
+            defer { isLoading = false }
             errorMessage = nil
 
             do {
                 guard let authToken = contentViewModel.authToken else {
                     print("❌ No auth token available for loading review items")
                     errorMessage = "Authentication required"
-                    isLoading = false
                     return
                 }
 
@@ -79,8 +79,6 @@ class ReviewViewModel: ObservableObject {
                 errorMessage = "Failed to load review items: \(errorDescription)"
                 print("❌ Error loading initial review items: \(error)")
             }
-
-            isLoading = false
         }
 
         await loadingTask?.value
@@ -96,12 +94,12 @@ class ReviewViewModel: ObservableObject {
             guard !isLoading, hasMorePages, let cursor = currentCursor else { return }
 
             isLoading = true
+            defer { isLoading = false }
 
             do {
                 guard let authToken = contentViewModel.authToken else {
                     print("❌ No auth token available for loading more review items")
                     errorMessage = "Authentication required"
-                    isLoading = false
                     return
                 }
 
@@ -140,8 +138,6 @@ class ReviewViewModel: ObservableObject {
                 errorMessage = "Failed to load more review items: \(errorDescription)"
                 print("❌ Error loading more review items: \(error)")
             }
-
-            isLoading = false
         }
 
         await loadingTask?.value

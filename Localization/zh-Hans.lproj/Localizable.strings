@@ -102,14 +102,16 @@
 "home.loadingSessions" = "加载会话中...";
 "home.loadingMore" = "加载更多...";
 "home.sessionDeleted" = "会话已删除";
+"home.capture.title" = "捕捉精彩瞬间";
+"home.capture.subtitle" = "然后描述你看到的内容";
 
 /* Review View */
 "review.title" = "复习";
 "review.tab.review" = "复习";
 "review.section.vocabulary" = "词汇";
 "review.section.sessions" = "所有会话";
-"review.empty.vocabulary.title" = "暂无复习项目";
-"review.empty.vocabulary.subtitle" = "完成一些会话后，您的词汇和建议将显示在这里";
+"review.empty.vocabulary.title" = "还没有复习内容";
+"review.empty.vocabulary.subtitle" = "点击相机开始学习";
 "review.empty.sessions.title" = "暂无会话";
 "review.empty.sessions.subtitle" = "完成一些口语会话后，它们将显示在这里";
 

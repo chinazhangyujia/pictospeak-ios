@@ -102,14 +102,16 @@
 "home.loadingSessions" = "セッションを読み込み中...";
 "home.loadingMore" = "さらに読み込み中...";
 "home.sessionDeleted" = "セッションを削除しました";
+"home.capture.title" = "瞬間を捉える";
+"home.capture.subtitle" = "そして、見たものについて話しましょう";
 
 /* Review View */
 "review.title" = "復習";
 "review.tab.review" = "復習タブ";
 "review.section.vocabulary" = "単語帳";
 "review.section.sessions" = "すべてのセッション";
-"review.empty.vocabulary.title" = "復習アイテムがありません";
-"review.empty.vocabulary.subtitle" = "セッションを完了すると、単語やアドバイスがここに表示されます";
+"review.empty.vocabulary.title" = "復習する項目がありません";
+"review.empty.vocabulary.subtitle" = "カメラをタップして学習を開始しましょう";
 "review.empty.sessions.title" = "セッションがありません";
 "review.empty.sessions.subtitle" = "スピーキングセッションを完了すると、ここに表示されます";
 

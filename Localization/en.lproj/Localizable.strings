@@ -102,14 +102,16 @@
 "home.loadingSessions" = "Loading sessions...";
 "home.loadingMore" = "Loading more...";
 "home.sessionDeleted" = "Session deleted";
+"home.capture.title" = "Capture a moment";
+"home.capture.subtitle" = "Then talk about what you see";
 
 /* Review View */
 "review.title" = "Review";
 "review.tab.review" = "Review Tab";
 "review.section.vocabulary" = "Vocabulary";
 "review.section.sessions" = "All sessions";
-"review.empty.vocabulary.title" = "No review items yet";
-"review.empty.vocabulary.subtitle" = "Complete some sessions to see your vocabulary and suggestions here";
+"review.empty.vocabulary.title" = "Nothing to review yet";
+"review.empty.vocabulary.subtitle" = "Tap the camera to start learning";
 "review.empty.sessions.title" = "No sessions yet";
 "review.empty.sessions.subtitle" = "Complete some speaking sessions to see them here";
 

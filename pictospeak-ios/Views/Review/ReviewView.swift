@@ -104,11 +104,13 @@ struct ReviewView: View {
     private var vocabularyContent: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Vocabulary Section Header
-            Text("review.section.vocabulary")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.primary)
-                .padding(.top, 5)
-                .padding(.bottom, 10)
+            if !reviewViewModel.reviewItems.isEmpty {
+                Text("review.section.vocabulary")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .padding(.top, 5)
+                    .padding(.bottom, 10)
+            }
 
             // Loading State
             if reviewViewModel.isLoading && reviewViewModel.reviewItems.isEmpty {
@@ -249,21 +251,11 @@ struct ReviewView: View {
 
             // Empty State
             if !reviewViewModel.isLoading && reviewViewModel.reviewItems.isEmpty && reviewViewModel.errorMessage == nil {
-                VStack(spacing: 16) {
-                    Image(systemName: "book.closed")
-                        .font(.largeTitle)
-                        .foregroundColor(.secondary)
-                    Text("review.empty.vocabulary.title")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    Text("review.empty.vocabulary.subtitle")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.vertical, 40)
-
-                Spacer() // Push content to top
+                ReviewEmptyStateView(
+                    iconName: "book",
+                    titleKey: "review.empty.vocabulary.title",
+                    subtitleKey: "review.empty.vocabulary.subtitle"
+                )
             }
         }
         .refreshable {
@@ -329,11 +321,13 @@ struct ReviewView: View {
     private var sessionsContent: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Sessions Section Header
-            Text("review.section.sessions")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.primary)
-                .padding(.top, 5)
-                .padding(.bottom, 10)
+            if !sessionsViewModel.sessions.isEmpty {
+                Text("review.section.sessions")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .padding(.top, 5)
+                    .padding(.bottom, 10)
+            }
 
             // Loading State
             if sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty {
@@ -412,21 +406,11 @@ struct ReviewView: View {
 
             // Empty State
             if !sessionsViewModel.isLoading && sessionsViewModel.sessions.isEmpty && sessionsViewModel.errorMessage == nil {
-                VStack(spacing: 16) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.largeTitle)
-                        .foregroundColor(.secondary)
-                    Text("review.empty.sessions.title")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    Text("review.empty.sessions.subtitle")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.vertical, 40)
-
-                Spacer() // Push content to top
+                ReviewEmptyStateView(
+                    iconName: "book",
+                    titleKey: "review.empty.vocabulary.title",
+                    subtitleKey: "review.empty.vocabulary.subtitle"
+                )
             }
         }
         .refreshable {

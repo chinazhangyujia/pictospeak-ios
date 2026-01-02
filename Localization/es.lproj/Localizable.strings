@@ -102,14 +102,16 @@
 "home.loadingSessions" = "Cargando sesiones...";
 "home.loadingMore" = "Cargando más...";
 "home.sessionDeleted" = "Sesión eliminada";
+"home.capture.title" = "Captura un momento";
+"home.capture.subtitle" = "Luego habla sobre lo que ves";
 
 /* Review View */
 "review.title" = "Repaso";
 "review.tab.review" = "Pestaña de repaso";
 "review.section.vocabulary" = "Vocabulario";
 "review.section.sessions" = "Todas las sesiones";
-"review.empty.vocabulary.title" = "Aún no hay elementos";
-"review.empty.vocabulary.subtitle" = "Completa algunas sesiones para ver tu vocabulario y sugerencias aquí";
+"review.empty.vocabulary.title" = "Nada que repasar todavía";
+"review.empty.vocabulary.subtitle" = "Toca la cámara para empezar a aprender";
 "review.empty.sessions.title" = "Aún no hay sesiones";
 "review.empty.sessions.subtitle" = "Completa algunas sesiones de habla para verlas aquí";
 

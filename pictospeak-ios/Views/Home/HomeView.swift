@@ -38,14 +38,22 @@ struct HomeView: View {
         ZStack {
             ScrollView {
                 VStack(spacing: 32) {
-                    // Internal Materials Section
-                    internalMaterialsSection
+                    if sessionsViewModel.sessions.isEmpty {
+                        // Capture Moment Section (Empty State)
+                        captureMomentSection
 
-                    // Review Section
-                    reviewSection
+                        // Internal Materials Section
+                        internalMaterialsSection
+                    } else {
+                        // Internal Materials Section
+                        internalMaterialsSection
 
-                    // Recent Sessions Section
-                    recentSessionsSection
+                        // Review Section
+                        reviewSection
+
+                        // Recent Sessions Section
+                        recentSessionsSection
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
@@ -125,6 +133,52 @@ struct HomeView: View {
             }
         }
         .toast(isPresented: $showDeleteToast, message: NSLocalizedString("home.sessionDeleted", comment: "Session deleted"), icon: "trash.fill")
+    }
+
+    // MARK: - Capture Moment Section (Empty State)
+
+    private var captureMomentSection: some View {
+        Button(action: {
+            router.selectedTab = .capture
+        }) {
+            VStack(spacing: 10) {
+                Image(systemName: "camera")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(Color(red: 1.0, green: 154 / 255.0, blue: 90 / 255.0))
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        Circle()
+                            .stroke(Color(red: 1.0, green: 154 / 255.0, blue: 90 / 255.0), lineWidth: 1.5)
+                            .opacity(0.5)
+                    )
+
+                VStack(spacing: 4) {
+                    Text("home.capture.title")
+                        .font(.system(size: 20, weight: .semibold, design: .default))
+                        .kerning(0.07)
+                        .lineSpacing(12)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.primary)
+
+                    Text("home.capture.subtitle")
+                        .font(.system(size: 16, weight: .medium, design: .default))
+                        .kerning(-0.31)
+                        .lineSpacing(8)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
+            .background(
+                Image("CaptureTheMomentCardBackground")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 26))
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 
     private var internalMaterialsSection: some View {
