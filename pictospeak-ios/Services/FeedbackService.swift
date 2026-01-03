@@ -26,10 +26,12 @@ class FeedbackService {
     // MARK: - Helper Methods
 
     // New streaming method that emits updates as they arrive
-    func getFeedbackStreamForImage(authToken: String, image: UIImage, audioData: Data?) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForImage(authToken: String, image: UIImage, audioData: Data?) -> AsyncThrowingStream<FeedbackStreamEvent, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
+                    continuation.yield(.status(.uploadingMedia))
+
                     // Compress audio if present
                     var finalAudioData = audioData
                     if let audio = audioData {
@@ -41,8 +43,8 @@ class FeedbackService {
                         }
                     }
 
-                    try await streamImageAPI(authToken: authToken, image: image, audioData: finalAudioData) { feedbackResponse in
-                        continuation.yield(feedbackResponse)
+                    try await streamImageAPI(authToken: authToken, image: image, audioData: finalAudioData) { event in
+                        continuation.yield(event)
                     }
                     continuation.finish()
                 } catch {
@@ -52,10 +54,12 @@ class FeedbackService {
         }
     }
 
-    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data?) -> AsyncThrowingStream<FeedbackResponse, Error> {
+    func getFeedbackStreamForVideo(authToken: String, videoData: Data, videoFileExtension: String?, audioData: Data?) -> AsyncThrowingStream<FeedbackStreamEvent, Error> {
         return AsyncThrowingStream { continuation in
             Task {
                 do {
+                    continuation.yield(.status(.uploadingMedia))
+
                     print("📹 Original video size: \(ByteCountFormatter.string(fromByteCount: Int64(videoData.count), countStyle: .file))")
 
                     // Create temp file for original video data
@@ -95,8 +99,8 @@ class FeedbackService {
                         videoFileExtension: "mp4", // Compressed output is always mp4
                         frames: frames,
                         audioData: finalAudioData
-                    ) { feedbackResponse in
-                        continuation.yield(feedbackResponse)
+                    ) { event in
+                        continuation.yield(event)
                     }
                     continuation.finish()
                 } catch {
@@ -176,7 +180,7 @@ class FeedbackService {
         return frames
     }
 
-    private func streamImageAPI(authToken: String, image: UIImage, audioData: Data?, onUpdate: @escaping (FeedbackResponse) -> Void) async throws {
+    private func streamImageAPI(authToken: String, image: UIImage, audioData: Data?, onUpdate: @escaping (FeedbackStreamEvent) -> Void) async throws {
         // 1. Resize Image
         let originalSize = image.jpegData(compressionQuality: 1.0)?.count ?? 0
         print("🖼️ Original image size (est. full quality): \(ByteCountFormatter.string(fromByteCount: Int64(originalSize), countStyle: .file))")
@@ -220,7 +224,7 @@ class FeedbackService {
         videoFileExtension: String?,
         frames: [Data],
         audioData: Data?,
-        onUpdate: @escaping (FeedbackResponse) -> Void
+        onUpdate: @escaping (FeedbackStreamEvent) -> Void
     ) async throws {
         let normalizedExtension = videoFileExtension?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -261,7 +265,7 @@ class FeedbackService {
         authToken: String,
         endpoint: String,
         parts: [MultipartFormPart],
-        onUpdate: @escaping (FeedbackResponse) -> Void
+        onUpdate: @escaping (FeedbackStreamEvent) -> Void
     ) async throws {
         guard let url = URL(string: baseURL + endpoint) else {
             throw FeedbackError.invalidURL
@@ -302,14 +306,24 @@ class FeedbackService {
         print("🌐 Making request to FastAPI endpoint: \(url)")
         print("📦 Request body size: \(body.count) bytes")
 
-        try await performStreamingRequest(request: urlRequest) { (streamingResponse: StreamingFeedbackResponse) in
-            onUpdate(streamingResponse.toFeedbackResponse())
-        }
+        try await performStreamingRequest(
+            request: urlRequest,
+            onUpdate: { (streamingResponse: StreamingFeedbackResponse) in
+                onUpdate(.response(streamingResponse.toFeedbackResponse()))
+            },
+            onSignal: { signal in
+                print("🔔 Signal received: \(signal.status)")
+                if let status = FeedbackStatus(rawValue: signal.status) {
+                    onUpdate(.status(status))
+                }
+            }
+        )
     }
 
     private func performStreamingRequest<T: Decodable>(
         request: URLRequest,
-        onUpdate: @escaping (T) -> Void
+        onUpdate: @escaping (T) -> Void,
+        onSignal: ((DescriptionGuidanceProcessingSignal) -> Void)? = nil
     ) async throws {
         let startTime = Date()
         print("⏱️ Start time: \(startTime)")
@@ -392,9 +406,14 @@ class FeedbackService {
 
                                 onUpdate(decodedObject)
                             } catch {
-                                print("⚠️ Failed to decode JSON chunk: \(error)")
-                                if let jsonString = String(data: buffer, encoding: .utf8) {
-                                    print("📦 Invalid JSON content: \(jsonString)")
+                                // Try to decode as signal
+                                if let onSignal = onSignal, let signal = try? JSONDecoder().decode(DescriptionGuidanceProcessingSignal.self, from: buffer) {
+                                    onSignal(signal)
+                                } else {
+                                    print("⚠️ Failed to decode JSON chunk: \(error)")
+                                    if let jsonString = String(data: buffer, encoding: .utf8) {
+                                        print("📦 Invalid JSON content: \(jsonString)")
+                                    }
                                 }
                             }
                             // Clear buffer for next object
@@ -416,7 +435,12 @@ class FeedbackService {
 
                             onUpdate(decodedObject)
                         } catch {
-                            print("⚠️ Failed to decode final JSON: \(error)")
+                            // Try to decode as signal
+                            if let onSignal = onSignal, let signal = try? JSONDecoder().decode(DescriptionGuidanceProcessingSignal.self, from: jsonData) {
+                                onSignal(signal)
+                            } else {
+                                print("⚠️ Failed to decode final JSON: \(error)")
+                            }
                         }
                     }
                 }

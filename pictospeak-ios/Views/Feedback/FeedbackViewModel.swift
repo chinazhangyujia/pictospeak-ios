@@ -14,6 +14,7 @@ class FeedbackViewModel: ObservableObject {
     @Published var keyTermTeachingResponse: KeyTermTeachingStreamingResponse?
     @Published var isLoading = true
     @Published var errorMessage: String?
+    @Published var currentStatus: FeedbackStatus = .uploadingMedia
 
     private let feedbackService = FeedbackService.shared
     var contentViewModel: ContentViewModel
@@ -25,12 +26,14 @@ class FeedbackViewModel: ObservableObject {
             feedbackResponse = previewData
             isLoading = false
             errorMessage = nil
+            currentStatus = .completed
         }
     }
 
     func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data?, mediaType: MediaType) {
         isLoading = true
         errorMessage = nil
+        currentStatus = .uploadingMedia
 
         Task {
             do {
@@ -104,21 +107,29 @@ class FeedbackViewModel: ObservableObject {
         }
     }
 
-    private func consumeStream(_ stream: AsyncThrowingStream<FeedbackResponse, Error>) async throws {
+    private func consumeStream(_ stream: AsyncThrowingStream<FeedbackStreamEvent, Error>) async throws {
         var lastResponse: FeedbackResponse?
         var lastUpdateTime = Date.distantPast
 
-        for try await response in stream {
-            lastResponse = response
-            let now = Date()
-
-            // Throttle updates to ~20 FPS (50ms) to prevent UI blocking
-            if now.timeIntervalSince(lastUpdateTime) >= 0.05 {
+        for try await event in stream {
+            switch event {
+            case let .status(status):
                 await MainActor.run {
-                    self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
-                    self.isLoading = false
+                    self.currentStatus = status
                 }
-                lastUpdateTime = now
+            case let .response(response):
+                lastResponse = response
+                let now = Date()
+
+                // Throttle updates to ~20 FPS (50ms) to prevent UI blocking
+                if now.timeIntervalSince(lastUpdateTime) >= 0.05 {
+                    await MainActor.run {
+                        self.feedbackResponse = self.createNewStreamingResponse(newResponse: response)
+                        // Only mark loading false when we have response, though thinking process handles its own UI
+                        // self.isLoading = false
+                    }
+                    lastUpdateTime = now
+                }
             }
         }
 
@@ -127,6 +138,7 @@ class FeedbackViewModel: ObservableObject {
             await MainActor.run {
                 self.feedbackResponse = self.createNewStreamingResponse(newResponse: finalResponse)
                 self.isLoading = false
+                self.currentStatus = .completed
             }
         }
     }
@@ -140,11 +152,11 @@ class FeedbackViewModel: ObservableObject {
         let favoritedKeyTermIds = Set(oldResponse.keyTerms.filter { $0.favorite && $0.id != .zero }.map { $0.id })
         let favoritedSuggestionIds = Set(oldResponse.suggestions.filter { $0.favorite && $0.id != .zero }.map { $0.id })
 
-        if favoritedKeyTermIds.isEmpty && favoritedSuggestionIds.isEmpty {
-            return newResponse
-        }
+        // Preserve any locally added items that the stream hasn't sent yet (e.g., overlay adds)
+        let localKeyTermsById = Dictionary(uniqueKeysWithValues: oldResponse.keyTerms.map { ($0.id, $0) })
+        let localSuggestionsById = Dictionary(uniqueKeysWithValues: oldResponse.suggestions.map { ($0.id, $0) })
 
-        let updatedKeyTerms = newResponse.keyTerms.map { item -> KeyTerm in
+        var updatedKeyTerms: [KeyTerm] = newResponse.keyTerms.map { item in
             if favoritedKeyTermIds.contains(item.id) {
                 return KeyTerm(
                     term: item.term,
@@ -160,7 +172,7 @@ class FeedbackViewModel: ObservableObject {
             return item
         }
 
-        let updatedSuggestions = newResponse.suggestions.map { item -> Suggestion in
+        var updatedSuggestions: [Suggestion] = newResponse.suggestions.map { item in
             if favoritedSuggestionIds.contains(item.id) {
                 return Suggestion(
                     term: item.term,
@@ -175,6 +187,18 @@ class FeedbackViewModel: ObservableObject {
                 )
             }
             return item
+        }
+
+        // Append any local key terms/suggestions that are not present in the streamed payload
+        let streamedKeyTermIds = Set(updatedKeyTerms.map { $0.id })
+        let streamedSuggestionIds = Set(updatedSuggestions.map { $0.id })
+
+        for (id, localKeyTerm) in localKeyTermsById where !streamedKeyTermIds.contains(id) {
+            updatedKeyTerms.append(localKeyTerm)
+        }
+
+        for (id, localSuggestion) in localSuggestionsById where !streamedSuggestionIds.contains(id) {
+            updatedSuggestions.append(localSuggestion)
         }
 
         return FeedbackResponse(
@@ -269,13 +293,21 @@ class FeedbackViewModel: ObservableObject {
             var updatedKeyTerms = currentFeedback.keyTerms
             updatedKeyTerms.append(keyTerm)
 
+            // Keep chosenKeyTerms in sync so newly added terms render in the UI
+            var updatedChosenKeyTerms = currentFeedback.chosenKeyTerms ?? []
+            if currentFeedback.chosenItemsGenerated {
+                if !updatedChosenKeyTerms.contains(where: { $0.caseInsensitiveCompare(keyTerm.term) == .orderedSame }) {
+                    updatedChosenKeyTerms.append(keyTerm.term)
+                }
+            }
+
             feedbackResponse = FeedbackResponse(
                 originalText: currentFeedback.originalText,
                 refinedText: currentFeedback.refinedText,
                 suggestions: currentFeedback.suggestions,
                 keyTerms: updatedKeyTerms,
                 score: currentFeedback.score,
-                chosenKeyTerms: currentFeedback.chosenKeyTerms,
+                chosenKeyTerms: currentFeedback.chosenItemsGenerated ? updatedChosenKeyTerms : currentFeedback.chosenKeyTerms,
                 chosenRefinements: currentFeedback.chosenRefinements,
                 chosenItemsGenerated: currentFeedback.chosenItemsGenerated,
                 pronunciationUrl: currentFeedback.pronunciationUrl,
