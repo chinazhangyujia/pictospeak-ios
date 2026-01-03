@@ -27,15 +27,6 @@ struct FeedbackView: View {
     @ObservedObject private var pastSessionsViewModel: PastSessionsViewModel
 
     // Thinking process animation
-    @State private var currentThinkingStep = 0
-    @State private var thinkingTimer: Timer?
-    private let thinkingSteps = [
-        NSLocalizedString("feedback.thinking.organizing", comment: ""),
-        NSLocalizedString("feedback.thinking.distilling", comment: ""),
-        NSLocalizedString("feedback.thinking.polishing", comment: ""),
-        NSLocalizedString("feedback.thinking.highlighting", comment: ""),
-        NSLocalizedString("feedback.thinking.ready", comment: ""),
-    ]
 
     // For normal feedback mode
     let selectedImage: UIImage?
@@ -330,7 +321,6 @@ struct FeedbackView: View {
 
             // Only load feedback if we don't already have preview data and we're in normal mode
             if session == nil && viewModel.feedbackResponse == nil {
-                startThinkingAnimation()
                 guard let mediaType = mediaType else { return }
                 viewModel.loadFeedback(
                     image: selectedImage,
@@ -338,12 +328,6 @@ struct FeedbackView: View {
                     audioData: audioData,
                     mediaType: mediaType
                 )
-            }
-        }
-        .onChange(of: viewModel.feedbackResponse?.refinedText) { newValue in
-            // Stop thinking animation when refined text is loaded
-            if let newValue = newValue, !newValue.isEmpty {
-                stopThinkingAnimation()
             }
         }
         .onChange(of: session?.materialUrl) { newValue in
@@ -391,7 +375,6 @@ struct FeedbackView: View {
         }
         .onDisappear {
             // Stop thinking animation timer
-            stopThinkingAnimation()
             backgroundVideoPlayer?.pause()
             if let observer = backgroundVideoObserver {
                 NotificationCenter.default.removeObserver(observer)
@@ -413,39 +396,25 @@ struct FeedbackView: View {
 
                     // Content sits inside with padding
                     HStack(spacing: 0) {
-                        Group {
-                            if feedback.refinedText.isEmpty {
-                                SkeletonPlaceholder(width: 60, height: 20)
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                Text("feedback.tab.mine")
-                                    .font(.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                            }
-                        }
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity)
-                        .background(selectedTab == .mine ? Color.white : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 100))
-                        .onTapGesture { selectedTab = .mine }
+                        Text("feedback.tab.mine")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(selectedTab == .mine ? Color.white : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 100))
+                            .onTapGesture { selectedTab = .mine }
 
-                        Group {
-                            if feedback.refinedText.isEmpty {
-                                SkeletonPlaceholder(width: 80, height: 20)
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                Text("feedback.tab.aiRefined")
-                                    .font(.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                            }
-                        }
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity)
-                        .background(selectedTab == .aiRefined ? Color.white : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 100))
-                        .onTapGesture { selectedTab = .aiRefined }
+                        Text("feedback.tab.aiRefined")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(selectedTab == .aiRefined ? Color.white : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 100))
+                            .onTapGesture { selectedTab = .aiRefined }
                     }
                     .padding(4)
                 }
@@ -471,18 +440,9 @@ struct FeedbackView: View {
                         // Show animated thinking process and skeleton placeholders when refinedText is empty
                         VStack(alignment: .leading, spacing: 12) {
                             // Animated thinking process step
-                            ThinkingProcessView(
-                                currentStep: currentThinkingStep,
-                                thinkingSteps: thinkingSteps
-                            )
-                            .padding(.bottom, 8)
-
-                            // Skeleton placeholders
-                            VStack(alignment: .leading, spacing: 8) {
-                                SkeletonPlaceholder(width: 200, height: 16)
-                                SkeletonPlaceholder(width: 230, height: 16)
-                                SkeletonPlaceholder(width: 180, height: 16)
-                            }
+                            ProgressProcessView(currentStatus: viewModel.currentStatus)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.bottom, 8)
                         }
                     } else {
                         Text(feedback.originalText)
@@ -501,18 +461,9 @@ struct FeedbackView: View {
                         // Show animated thinking process and skeleton placeholders when refinedText is empty
                         VStack(alignment: .leading, spacing: 12) {
                             // Animated thinking process step
-                            ThinkingProcessView(
-                                currentStep: currentThinkingStep,
-                                thinkingSteps: thinkingSteps
-                            )
-                            .padding(.bottom, 8)
-
-                            // Skeleton placeholders
-                            VStack(alignment: .leading, spacing: 8) {
-                                SkeletonPlaceholder(width: 200, height: 16)
-                                SkeletonPlaceholder(width: 230, height: 16)
-                                SkeletonPlaceholder(width: 180, height: 16)
-                            }
+                            ProgressProcessView(currentStatus: viewModel.currentStatus)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.bottom, 8)
                         }
                     } else {
                         ClickableHighlightedTextView(
@@ -565,7 +516,7 @@ struct FeedbackView: View {
                 // Key Terms - show chosenKeyTerms if available and generated, otherwise show skeleton
                 if let chosenKeyTerms = feedback.chosenKeyTerms {
                     // Show cards based on chosen items when they are generated
-                    ForEach(Array(chosenKeyTerms.enumerated()), id: \.offset) { index, chosenTerm in
+                    ForEach(Array(chosenKeyTerms.enumerated()), id: \.offset) { _, chosenTerm in
                         // Find matching real keyTerm if available
                         let matchingKeyTerm = feedback.keyTerms.first { $0.term == chosenTerm }
 
@@ -618,7 +569,7 @@ struct FeedbackView: View {
                             },
                             languageCode: targetLanguageCode
                         )
-                        .id("chosen-keyterm-\(index)")
+                        .id(displayKeyTerm.id)
                     }
                 } else {
                     // Show fake waving cards when chosen items are not generated
@@ -648,7 +599,7 @@ struct FeedbackView: View {
                 // Suggestions - show chosenRefinements if available and generated, otherwise show skeleton
                 if let chosenRefinements = feedback.chosenRefinements {
                     // Show cards based on chosen items when they are generated
-                    ForEach(Array(chosenRefinements.enumerated()), id: \.offset) { index, chosenRefinement in
+                    ForEach(Array(chosenRefinements.enumerated()), id: \.offset) { _, chosenRefinement in
                         // Find matching real suggestion if available
                         let matchingSuggestion = feedback.suggestions.first {
                             $0.term + $0.refinement == chosenRefinement || $0.refinement == chosenRefinement
@@ -704,7 +655,7 @@ struct FeedbackView: View {
                             },
                             languageCode: targetLanguageCode
                         )
-                        .id("chosen-suggestion-\(index)")
+                        .id(displaySuggestion.id)
                     }
                 } else {
                     // Show fake waving cards when chosen items are not generated
@@ -1263,38 +1214,100 @@ struct FeedbackView: View {
 
     // MARK: - Thinking Process View
 
-    struct ThinkingProcessView: View {
-        let currentStep: Int
-        let thinkingSteps: [String]
+    struct ProgressProcessView: View {
+        let currentStatus: FeedbackStatus
+
+        // Define steps in order
+        private let steps: [FeedbackStatus] = [
+            .uploadingMedia,
+            .understandingContent,
+            .writingAiRefinedParagraph,
+        ]
+
+        private func iconName(for step: FeedbackStatus) -> String {
+            switch step {
+            case .uploadingMedia:
+                return "arrow.up"
+            case .understandingContent:
+                return "brain"
+            case .writingAiRefinedParagraph:
+                return "pencil.tip" // Pen-style icon
+            case .completed:
+                return "checkmark"
+            }
+        }
 
         var body: some View {
-            Text(thinkingSteps[currentStep])
-                .font(.system(size: 16, weight: .regular, design: .default))
-                .italic()
-                .foregroundColor(.secondary)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: currentStep)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(steps, id: \.self) { step in
+                    HStack(spacing: 14) {
+                        // Icon
+                        ZStack {
+                            if step.order < currentStatus.order {
+                                // Completed
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(Color(red: 0 / 255, green: 166 / 255, blue: 62 / 255)) // #00A63E
+                                    .frame(width: 32, height: 32)
+                                    .background(Color(red: 240 / 255, green: 253 / 255, blue: 244 / 255)) // #F0FDF4
+                                    .clipShape(Circle())
+                            } else if step.order == currentStatus.order && currentStatus != .completed {
+                                // In Progress - keep step icon, blue on light blue background
+                                Image(systemName: iconName(for: step))
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(AppTheme.primaryBlue)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color(red: 239 / 255, green: 246 / 255, blue: 255 / 255)) // #EFF6FF
+                                    .overlay(
+                                        Circle()
+                                            .stroke(
+                                                Color(red: 43 / 255, green: 127 / 255, blue: 255 / 255).opacity(0.3), // #2B7FFF4D
+                                                lineWidth: 2
+                                            )
+                                    )
+                                    .clipShape(Circle())
+                            } else if currentStatus == .completed {
+                                // All completed
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(Color(red: 0 / 255, green: 166 / 255, blue: 62 / 255)) // #00A63E
+                                    .frame(width: 32, height: 32)
+                                    .background(Color(red: 240 / 255, green: 253 / 255, blue: 244 / 255)) // #F0FDF4
+                                    .clipShape(Circle())
+                            } else {
+                                // Pending
+                                Image(systemName: iconName(for: step))
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color.gray.opacity(0.5))
+                                    .frame(width: 32, height: 32)
+                                    .background(Color(red: 249 / 255, green: 250 / 255, blue: 251 / 255)) // #F9FAFB
+                                    .clipShape(Circle())
+                            }
+                        }
+
+                        // Text
+                        Text(NSLocalizedString(step.rawValue, comment: ""))
+                            .font(.system(size: 14, weight: .regular))
+                            .lineSpacing(7) // Target line height 21px
+                            .kerning(-0.15)
+                            .foregroundColor(step.order <= currentStatus.order || currentStatus == .completed ? .primary : .secondary.opacity(0.5))
+                            .fontWeight(step.order == currentStatus.order && currentStatus != .completed ? .semibold : .regular)
+                    }
+
+                    // Connecting line (except for last item)
+                    if step != steps.last {
+                        Rectangle()
+                            .fill(Color(red: 220 / 255, green: 252 / 255, blue: 231 / 255)) // #DCFCE7
+                            .frame(width: 2, height: 18)
+                            .padding(.leading, 16) // center-align with 32pt circle
+                    }
+                }
+            }
+            .padding(.vertical, 8)
         }
     }
 
     // MARK: - Thinking Animation Methods
-
-    private func startThinkingAnimation() {
-        // Stop any existing timer
-        stopThinkingAnimation()
-
-        // Start new timer that cycles through thinking steps every 1.5 seconds
-        thinkingTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
-            withAnimation(.easeInOut(duration: 0.3)) {
-                currentThinkingStep = (currentThinkingStep + 1) % thinkingSteps.count
-            }
-        }
-    }
-
-    private func stopThinkingAnimation() {
-        thinkingTimer?.invalidate()
-        thinkingTimer = nil
-    }
 
     // MARK: - Self-Sizing Text View
 
@@ -1741,4 +1754,12 @@ struct FeedbackView: View {
             ),
         )
     }
+}
+
+#Preview("Progress Process States") {
+    VStack(alignment: .leading, spacing: 24) {
+        FeedbackView.ProgressProcessView(currentStatus: .understandingContent)
+    }
+    .padding()
+    .background(Color(uiColor: .systemGroupedBackground))
 }

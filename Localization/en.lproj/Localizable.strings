@@ -126,11 +126,9 @@
 "feedback.title" = "AI feedback";
 "feedback.tab.mine" = "Mine";
 "feedback.tab.aiRefined" = "AI Refined";
-"feedback.thinking.organizing" = "Organizing your input…";
-"feedback.thinking.distilling" = "Distilling key ideas…";
-"feedback.thinking.polishing" = "Polishing for natural phrasing…";
-"feedback.thinking.highlighting" = "Picking & highlighting keywords…";
-"feedback.thinking.ready" = "Almost ready…";
+"feedback.thinking.uploadingMedia" = "Uploading media";
+"feedback.thinking.understandingContent" = "Understanding content";
+"feedback.thinking.writingAiRefinedParagraph" = "Writing AI Refined paragraph";
 
 /* Subscription View */
 "subscription.title" = "Learn faster with AI feedback";

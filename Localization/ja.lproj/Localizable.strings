@@ -126,11 +126,9 @@
 "feedback.title" = "AIフィードバック";
 "feedback.tab.mine" = "自分";
 "feedback.tab.aiRefined" = "AI修正";
-"feedback.thinking.organizing" = "入力を整理しています…";
-"feedback.thinking.distilling" = "キーとなるアイデアを抽出しています…";
-"feedback.thinking.polishing" = "自然な表現に修正しています…";
-"feedback.thinking.highlighting" = "キーワードを選定・強調しています…";
-"feedback.thinking.ready" = "もうすぐ完了します…";
+"feedback.thinking.uploadingMedia" = "メディアをアップロードしています";
+"feedback.thinking.understandingContent" = "コンテンツを理解しています";
+"feedback.thinking.writingAiRefinedParagraph" = "AI修正の段落を書いています";
 
 /* Subscription View */
 "subscription.title" = "AIフィードバックで速く学ぶ";

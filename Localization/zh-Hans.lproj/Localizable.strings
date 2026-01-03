@@ -126,11 +126,9 @@
 "feedback.title" = "AI 反馈";
 "feedback.tab.mine" = "我的";
 "feedback.tab.aiRefined" = "AI 润色";
-"feedback.thinking.organizing" = "正在整理您的输入…";
-"feedback.thinking.distilling" = "提炼关键思想…";
-"feedback.thinking.polishing" = "润色以更自然表达…";
-"feedback.thinking.highlighting" = "挑选并高亮关键词…";
-"feedback.thinking.ready" = "即将完成…";
+"feedback.thinking.uploadingMedia" = "正在上传媒体";
+"feedback.thinking.understandingContent" = "正在理解内容";
+"feedback.thinking.writingAiRefinedParagraph" = "正在撰写 AI 润色段落";
 
 /* Subscription View */
 "subscription.title" = "通过 AI 反馈学得更快";

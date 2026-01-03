@@ -126,11 +126,9 @@
 "feedback.title" = "Feedback IA";
 "feedback.tab.mine" = "Mío";
 "feedback.tab.aiRefined" = "Mejorado por IA";
-"feedback.thinking.organizing" = "Organizando tu entrada…";
-"feedback.thinking.distilling" = "Destilando ideas clave…";
-"feedback.thinking.polishing" = "Puliendo para fraseo natural…";
-"feedback.thinking.highlighting" = "Seleccionando y destacando palabras clave…";
-"feedback.thinking.ready" = "Casi listo…";
+"feedback.thinking.uploadingMedia" = "Subiendo contenido multimedia";
+"feedback.thinking.understandingContent" = "Comprendiendo el contenido";
+"feedback.thinking.writingAiRefinedParagraph" = "Escribiendo párrafo refinado por IA";
 
 /* Subscription View */
 "subscription.title" = "Aprende más rápido con feedback de IA";

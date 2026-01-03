@@ -73,6 +73,32 @@ struct StreamingFeedbackResponse: Codable {
     }
 }
 
+struct DescriptionGuidanceProcessingSignal: Codable {
+    let status: String
+}
+
+enum FeedbackStatus: String, CaseIterable {
+    case uploadingMedia = "feedback.thinking.uploadingMedia"
+    case understandingContent = "feedback.thinking.understandingContent"
+    case writingAiRefinedParagraph = "feedback.thinking.writingAiRefinedParagraph"
+    case completed = "feedback.thinking.completed" // Internal state for completion
+
+    // Order for UI progress
+    var order: Int {
+        switch self {
+        case .uploadingMedia: return 0
+        case .understandingContent: return 1
+        case .writingAiRefinedParagraph: return 2
+        case .completed: return 3
+        }
+    }
+}
+
+enum FeedbackStreamEvent {
+    case response(FeedbackResponse)
+    case status(FeedbackStatus)
+}
+
 struct DescriptionTeaching: Codable {
     let userDescription: String
     let standardDescription: String
