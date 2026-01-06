@@ -29,7 +29,7 @@ enum AppRoute: Hashable {
     case speakFromVideo(selectedVideo: URL)
     case speakFromMaterials(materialsModel: InternalUploadedMaterialsViewModel)
     case feedbackFromSession(sessionId: UUID, pastSessionsViewModel: PastSessionsViewModel)
-    case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType)
+    case feedbackFromSpeak(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType, materialId: UUID?)
     case onboardingTargetLanguage(sourceView: SourceView?)
     case onboardingNativeLanguage(selectedTargetLanguage: String, sourceView: SourceView?)
     case auth(initialMode: AuthMode)
@@ -63,12 +63,13 @@ enum AppRoute: Hashable {
             hasher.combine(6)
             hasher.combine(sessionId)
             hasher.combine(ObjectIdentifier(pastSessionsViewModel))
-        case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
+        case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType, materialId):
             hasher.combine(7)
             hasher.combine(selectedImage?.hashValue ?? 0)
             hasher.combine(selectedVideo?.hashValue ?? 0)
             hasher.combine(audioData?.hashValue ?? 0)
             hasher.combine(mediaType)
+            hasher.combine(materialId)
         case let .onboardingTargetLanguage(sourceView):
             hasher.combine(8)
             hasher.combine(sourceView.hashValue)
@@ -119,8 +120,8 @@ enum AppRoute: Hashable {
             return lhsMaterialsModel === rhsMaterialsModel
         case let (.feedbackFromSession(lhsSessionId, lhsPastSessionsViewModel), .feedbackFromSession(rhsSessionId, rhsPastSessionsViewModel)):
             return lhsSessionId == rhsSessionId && lhsPastSessionsViewModel === rhsPastSessionsViewModel
-        case let (.feedbackFromSpeak(lhsImage, lhsVideo, lhsAudioData, lhsMediaType), .feedbackFromSpeak(rhsImage, rhsVideo, rhsAudioData, rhsMediaType)):
-            return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsAudioData?.hashValue == rhsAudioData?.hashValue && lhsMediaType == rhsMediaType
+        case let (.feedbackFromSpeak(lhsImage, lhsVideo, lhsAudioData, lhsMediaType, lhsMaterialId), .feedbackFromSpeak(rhsImage, rhsVideo, rhsAudioData, rhsMediaType, rhsMaterialId)):
+            return lhsImage?.hashValue == rhsImage?.hashValue && lhsVideo?.hashValue == rhsVideo?.hashValue && lhsAudioData?.hashValue == rhsAudioData?.hashValue && lhsMediaType == rhsMediaType && lhsMaterialId == rhsMaterialId
         case let (.onboardingTargetLanguage(lhsSourceView), .onboardingTargetLanguage(rhsSourceView)):
             return lhsSourceView == rhsSourceView
         case let (.onboardingNativeLanguage(lhsSelectedTargetLanguage, lhsSourceView), .onboardingNativeLanguage(rhsSelectedTargetLanguage, rhsSourceView)):

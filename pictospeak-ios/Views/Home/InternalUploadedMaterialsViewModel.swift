@@ -5,6 +5,7 @@
 //  Created by AI Assistant.
 //
 
+import AVFoundation
 import Foundation
 import SwiftUI
 
@@ -17,6 +18,11 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
     @Published var nextCursor: String?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+
+    // MARK: - Cache
+
+    var videoPlayerCache: [UUID: AVPlayer] = [:]
+    var imageCache: [UUID: UIImage] = [:]
 
     // MARK: - Private Properties
 
@@ -89,8 +95,8 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
             materials = response.items
             nextCursor = response.nextCursor
             currentIndex = 0
-
-            print("✅ Loaded initial materials: \(materials.count) items")
+            // Preload first 10 materials
+            preloadFirstFewMaterials()
         } catch {
             // Check if task was cancelled
             if Task.isCancelled { return }
@@ -134,6 +140,32 @@ class InternalUploadedMaterialsViewModel: ObservableObject {
         return currentIndex >= materials.count - 2 &&
             nextCursor != nil &&
             !isLoading
+    }
+
+    /// Preload the first 10 materials to improve initial playback performance
+    private func preloadFirstFewMaterials() {
+        let itemsToPreload = materials.prefix(10)
+
+        for material in itemsToPreload {
+            if material.type == .video {
+                if videoPlayerCache[material.id] == nil, let url = URL(string: material.materialUrl) {
+                    let player = AVPlayer(url: url)
+                    player.actionAtItemEnd = .none
+                    player.isMuted = true // Mute preloaded videos by default
+                    videoPlayerCache[material.id] = player
+                }
+            } else if material.type == .image {
+                if imageCache[material.id] == nil, let url = URL(string: material.materialUrl) {
+                    URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                        if let data = data, let image = UIImage(data: data) {
+                            Task { @MainActor [weak self] in
+                                self?.imageCache[material.id] = image
+                            }
+                        }
+                    }.resume()
+                }
+            }
+        }
     }
 
     // MARK: - Computed Properties

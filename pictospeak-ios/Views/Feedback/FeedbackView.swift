@@ -33,15 +33,24 @@ struct FeedbackView: View {
     let selectedVideo: URL?
     let audioData: Data?
     let mediaType: MediaType?
+    let materialId: UUID?
 
     // Default initializer for normal use
-    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType, materialId: UUID? = nil) {
         self.selectedImage = selectedImage
         self.selectedVideo = selectedVideo
         self.audioData = audioData
         self.mediaType = mediaType
+        self.materialId = materialId
         if let selectedVideo {
             _backgroundVideoPlayer = State(initialValue: FeedbackView.makeBackgroundPlayer(for: selectedVideo))
+        } else if let materialId, mediaType == .video {
+            // For material video, we don't have local URL easily unless passed or cached?
+            // Usually SpeakView passes selectedVideo (URL) OR materialsModel (which has URL)
+            // If we have materialId, we likely have the URL in SpeakView, so selectedVideo MIGHT be passed even if materialId is passed.
+            // If not, we might fail to show background video until loaded?
+            // For now, let's assume selectedVideo is passed if available.
+            _backgroundVideoPlayer = State(initialValue: nil)
         } else {
             _backgroundVideoPlayer = State(initialValue: nil)
         }
@@ -51,11 +60,12 @@ struct FeedbackView: View {
     }
 
     // Initializer for previews with fake data
-    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType, previewData: FeedbackResponse) {
+    init(selectedImage: UIImage?, selectedVideo: URL?, audioData: Data?, mediaType: MediaType, materialId: UUID? = nil, previewData: FeedbackResponse) {
         self.selectedImage = selectedImage
         self.selectedVideo = selectedVideo
         self.audioData = audioData
         self.mediaType = mediaType
+        self.materialId = materialId
         if let selectedVideo {
             _backgroundVideoPlayer = State(initialValue: FeedbackView.makeBackgroundPlayer(for: selectedVideo))
         } else {
@@ -72,6 +82,7 @@ struct FeedbackView: View {
         selectedVideo = nil
         audioData = nil
         mediaType = nil
+        materialId = nil
         _backgroundVideoPlayer = State(initialValue: nil)
         _viewModel = StateObject(wrappedValue: FeedbackViewModel(contentViewModel: ContentViewModel()))
         _pastSessionsViewModel = ObservedObject(wrappedValue: pastSessionsViewModel)
@@ -326,7 +337,8 @@ struct FeedbackView: View {
                     image: selectedImage,
                     videoURL: selectedVideo,
                     audioData: audioData,
-                    mediaType: mediaType
+                    mediaType: mediaType,
+                    materialId: materialId
                 )
             }
         }

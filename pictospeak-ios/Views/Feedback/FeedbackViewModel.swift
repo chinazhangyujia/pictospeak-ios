@@ -30,7 +30,7 @@ class FeedbackViewModel: ObservableObject {
         }
     }
 
-    func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data?, mediaType: MediaType) {
+    func loadFeedback(image: UIImage?, videoURL: URL?, audioData: Data?, mediaType: MediaType, materialId: UUID? = nil) {
         isLoading = true
         errorMessage = nil
         currentStatus = .uploadingMedia
@@ -39,7 +39,8 @@ class FeedbackViewModel: ObservableObject {
             do {
                 switch mediaType {
                 case .image:
-                    guard let image = image else {
+                    // If no materialId, we must have an image
+                    if materialId == nil, image == nil {
                         await MainActor.run {
                             self.errorMessage = "Missing image for feedback request."
                             self.isLoading = false
@@ -55,10 +56,17 @@ class FeedbackViewModel: ObservableObject {
                         return
                     }
 
-                    let stream = feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, audioData: audioData)
+                    let stream = feedbackService.getFeedbackStreamForImage(authToken: authToken, image: image, materialId: materialId, audioData: audioData)
                     try await consumeStream(stream)
 
                 case .video:
+                    // For video, we always need the video data locally to generate frames,
+                    // even if we have a materialId (because we don't want to rely on backend generating frames).
+                    // So we must have videoURL or we fail.
+                    // Wait, if we are in "material" mode, do we have the video locally?
+                    // SpeakView loads it into AVPlayer. If it's a remote URL, we might need to download it or stream it.
+                    // If videoURL is present, we use it.
+
                     guard let videoURL = videoURL else {
                         await MainActor.run {
                             self.errorMessage = "Missing video for feedback request."
@@ -67,11 +75,15 @@ class FeedbackViewModel: ObservableObject {
                         return
                     }
 
-                    let videoData: Data
+                    var videoData: Data
+                    var fileExtension: String?
+
                     do {
+                        // Load video data to generate frames
                         videoData = try await Task.detached(priority: .userInitiated) {
                             try Data(contentsOf: videoURL)
                         }.value
+                        fileExtension = videoURL.pathExtension.isEmpty ? nil : videoURL.pathExtension
                     } catch {
                         await MainActor.run {
                             self.errorMessage = "Unable to load the selected video."
@@ -88,12 +100,11 @@ class FeedbackViewModel: ObservableObject {
                         return
                     }
 
-                    let fileExtension = videoURL.pathExtension.isEmpty ? nil : videoURL.pathExtension
-
                     let stream = feedbackService.getFeedbackStreamForVideo(
                         authToken: authToken,
                         videoData: videoData,
                         videoFileExtension: fileExtension,
+                        materialId: materialId,
                         audioData: audioData
                     )
                     try await consumeStream(stream)

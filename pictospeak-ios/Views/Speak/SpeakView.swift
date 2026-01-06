@@ -27,6 +27,8 @@ struct SpeakView: View {
     @State private var currentImage: UIImage?
     @State private var currentVideo: URL?
     @State private var videoPlayer: AVPlayer?
+    @State private var playerObserver: NSObjectProtocol?
+    @State private var isLoading = false
 
     init(selectedImage: UIImage) {
         self.selectedImage = selectedImage
@@ -104,6 +106,18 @@ struct SpeakView: View {
                         .ignoresSafeArea()
                 }
 
+                // Loading Indicator
+                if isLoading {
+                    ZStack {
+                        Color.black.opacity(0.2)
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.5)
+                    }
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .ignoresSafeArea()
+                }
+
                 VStack {
                     Spacer()
 
@@ -175,6 +189,10 @@ struct SpeakView: View {
             stopRecording()
             // Stop video playback when leaving the view
             videoPlayer?.pause()
+            if let observer = playerObserver {
+                NotificationCenter.default.removeObserver(observer)
+                playerObserver = nil
+            }
         }
         .onChange(of: isRecording) { _, newValue in
             if !newValue {
@@ -200,10 +218,12 @@ struct SpeakView: View {
 
                         recordedAudioData = audioDataToSend
 
+                        let materialId = materialsModel?.currentMaterial?.id
+
                         if let currentImage = currentImage {
-                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: audioDataToSend, mediaType: .image))
+                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: audioDataToSend, mediaType: .image, materialId: materialId))
                         } else if let currentVideo = currentVideo {
-                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: audioDataToSend, mediaType: .video))
+                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: audioDataToSend, mediaType: .video, materialId: materialId))
                         }
                     } catch {
                         print("Failed to read audio data: \(error)")
@@ -317,61 +337,157 @@ struct SpeakView: View {
     }
 
     private func loadMaterial(_ material: Material) {
-        guard let url = URL(string: material.materialUrl) else {
+        guard let url = URL(string: material.materialUrl), let model = materialsModel else {
             return
         }
 
-        // Use URLSession for asynchronous loading
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("Error downloading data from URL: \(error)")
-                    return
-                }
+        // Trigger preloading for adjacent materials
+        preloadAdjacentMaterials()
 
-                guard let data = data else {
-                    print("No data received from URL")
-                    return
-                }
+        isLoading = true
 
-                if material.type == .image {
+        if material.type == .image {
+            // Check cache first
+            if let cachedImage = model.imageCache[material.id] {
+                setupImage(cachedImage)
+                return
+            }
+
+            // Use URLSession for asynchronous loading
+            URLSession.shared.dataTask(with: url) { data, _, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("Error downloading data from URL: \(error)")
+                        self.isLoading = false
+                        return
+                    }
+
+                    guard let data = data else {
+                        print("No data received from URL")
+                        self.isLoading = false
+                        return
+                    }
+
                     if let image = UIImage(data: data) {
-                        // Stop any existing video
-                        videoPlayer?.pause()
-                        currentImage = image
-                        currentVideo = nil
-                        videoPlayer = nil
+                        model.imageCache[material.id] = image
+                        self.setupImage(image)
+                    } else {
+                        self.isLoading = false
                     }
-                } else if material.type == .video {
-                    // For video, save to temp file and create player
-                    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                    let videoName = "temp_video_\(Date().timeIntervalSince1970).mov"
-                    let videoURL = documentsPath.appendingPathComponent(videoName)
+                }
+            }.resume()
+        } else if material.type == .video {
+            // Check cache first
+            if let cachedPlayer = model.videoPlayerCache[material.id] {
+                setupVideo(cachedPlayer, url: url)
+                return
+            }
 
-                    do {
-                        try data.write(to: videoURL)
-                        // Stop any existing video
-                        videoPlayer?.pause()
-                        currentImage = nil
-                        currentVideo = videoURL
-                        let player = AVPlayer(url: videoURL)
-                        player.actionAtItemEnd = .none
-                        videoPlayer = player
-                    } catch {
-                        print("Error saving video data: \(error)")
-                    }
+            // For video, stream directly from URL instead of downloading
+            DispatchQueue.main.async {
+                let player = AVPlayer(url: url)
+                player.actionAtItemEnd = .none
+                model.videoPlayerCache[material.id] = player
+                self.setupVideo(player, url: url)
+            }
+        }
+    }
+
+    private func setupImage(_ image: UIImage) {
+        isLoading = false
+        // Stop any existing video
+        videoPlayer?.pause()
+        if let observer = playerObserver {
+            NotificationCenter.default.removeObserver(observer)
+            playerObserver = nil
+        }
+        currentImage = image
+        currentVideo = nil
+        videoPlayer = nil
+    }
+
+    private func setupVideo(_ player: AVPlayer, url: URL) {
+        isLoading = false // Player created immediately
+
+        // Stop any existing video if it's different
+        if videoPlayer != player {
+            videoPlayer?.pause()
+        }
+
+        currentImage = nil
+        currentVideo = url
+
+        videoPlayer = player
+        player.seek(to: .zero)
+        player.play()
+        setupVideoLooping()
+    }
+
+    private func preloadAdjacentMaterials() {
+        guard let model = materialsModel else { return }
+        let currentIndex = model.currentIndex
+        let materials = model.materials
+
+        // Calculate adjacent indices
+        let indicesToPreload = [currentIndex - 1, currentIndex + 1]
+
+        // Keep track of IDs we want to keep in cache (current + adjacent)
+        var keepIds: Set<UUID> = [materials[currentIndex].id]
+
+        for index in indicesToPreload {
+            guard index >= 0, index < materials.count else { continue }
+            let material = materials[index]
+            keepIds.insert(material.id)
+
+            // Preload if not in cache
+            if material.type == .video {
+                if model.videoPlayerCache[material.id] == nil, let url = URL(string: material.materialUrl) {
+                    let player = AVPlayer(url: url)
+                    player.actionAtItemEnd = .none
+                    player.isMuted = true // Mute preloaded videos by default
+                    model.videoPlayerCache[material.id] = player
+                }
+            } else if material.type == .image {
+                if model.imageCache[material.id] == nil, let url = URL(string: material.materialUrl) {
+                    URLSession.shared.dataTask(with: url) { data, _, _ in
+                        if let data = data, let image = UIImage(data: data) {
+                            DispatchQueue.main.async {
+                                model.imageCache[material.id] = image
+                            }
+                        }
+                    }.resume()
                 }
             }
-        }.resume()
+        }
+
+        // Cleanup cache - remove items that are too far away
+        // We allow a slightly larger buffer (e.g., keep 2 away) to prevent thrashing if user swipes back and forth quickly
+        // But for strict memory management as requested ("almost have no delay"), strict neighbors is usually enough.
+        // Let's stick to strict neighbors + current to match "TikTok-like" aggressive resource management but safe.
+
+        for id in model.videoPlayerCache.keys {
+            if !keepIds.contains(id) {
+                model.videoPlayerCache.removeValue(forKey: id)
+            }
+        }
+
+        for id in model.imageCache.keys {
+            if !keepIds.contains(id) {
+                model.imageCache.removeValue(forKey: id)
+            }
+        }
     }
 
     private func setupVideoLooping() {
         guard let videoPlayer = videoPlayer else { return }
 
         // Remove any existing observers first
-        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+        if let observer = playerObserver {
+            NotificationCenter.default.removeObserver(observer)
+            playerObserver = nil
+        }
 
-        NotificationCenter.default.addObserver(
+        playerObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: videoPlayer.currentItem,
             queue: .main

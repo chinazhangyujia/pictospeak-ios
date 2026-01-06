@@ -36,8 +36,8 @@ struct ContentView: View {
                                         guarded(SpeakView(materialsModel: materialsModel))
                                     case let .feedbackFromSession(sessionId, pastSessionsViewModel):
                                         guarded(FeedbackView(sessionId: sessionId, pastSessionsViewModel: pastSessionsViewModel))
-                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
-                                        guarded(FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType))
+                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType, materialId):
+                                        guarded(FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType, materialId: materialId))
                                     case let .review(initialTab):
                                         guarded(ReviewView(initialTab: initialTab ?? .vocabulary))
                                     case .auth:
@@ -102,8 +102,8 @@ struct ContentView: View {
                                         guarded(SpeakView(selectedImage: selectedImage))
                                     case let .speakFromVideo(selectedVideo):
                                         guarded(SpeakView(selectedVideo: selectedVideo))
-                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType):
-                                        guarded(FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType))
+                                    case let .feedbackFromSpeak(selectedImage, selectedVideo, audioData, mediaType, materialId):
+                                        guarded(FeedbackView(selectedImage: selectedImage, selectedVideo: selectedVideo, audioData: audioData, mediaType: mediaType, materialId: materialId))
                                     case let .verificationCode(email, flowType, fullName):
                                         VerificationCodeView(email: email, flowType: flowType, fullName: fullName)
                                     case let .createNewPassword(verificationId, verificationCode, email, fullName):
