@@ -774,15 +774,25 @@ struct SessionCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
 
             VStack(alignment: .leading, spacing: 1) {
+                // Title (first row)
+                Text(session.descriptionTeaching.title)
+                    .font(.system(size: 17, weight: .semibold, design: .default))
+                    .foregroundColor(.black)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.leading)
+                    .kerning(-0.43)
+
+                // Description (second row)
                 Text(session.standardDescription)
                     .font(.system(size: 17, weight: .regular, design: .default))
                     .foregroundColor(.black)
-                    .lineLimit(2)
+                    .lineLimit(1)
                     .multilineTextAlignment(.leading)
                     .kerning(-0.4)
 
                 Spacer()
 
+                // Date (third row)
                 Text(dateString)
                     .font(.system(size: 13, weight: .regular, design: .default))
                     .foregroundColor(Color(red: 0.235, green: 0.235, blue: 0.263, opacity: 0.6))
