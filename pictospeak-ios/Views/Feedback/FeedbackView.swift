@@ -1020,6 +1020,9 @@ struct FeedbackView: View {
         let refinedText = feedback.refinedText
         let nsString = NSString(string: refinedText)
 
+        // Check if the language has space. If so, for the language like English, French, etc. we should highlight part of a word.
+        let languageHasSpace = refinedText.contains(" ")
+
         // Check if chosen items are generated
         let chosenItemsGenerated = feedback.chosenItemsGenerated
 
@@ -1031,15 +1034,35 @@ struct FeedbackView: View {
                 while searchRange.location < nsString.length {
                     let foundRange = nsString.range(of: chosenTerm, options: [.caseInsensitive], range: searchRange)
                     if foundRange.location != NSNotFound {
-                        // Find the corresponding keyTerm to get its ID
-                        if let keyTerm = feedback.keyTerms.first(where: { $0.term == chosenTerm }) {
-                            matches.append(ClickableTextMatch(
-                                range: foundRange,
-                                text: chosenTerm,
-                                cardType: .keyTerm,
-                                cardId: keyTerm.id,
-                                isSegment: false
-                            ))
+                        var isValidMatch = true
+
+                        if languageHasSpace {
+                            if let range = Range(foundRange, in: refinedText) {
+                                if range.lowerBound > refinedText.startIndex {
+                                    let before = refinedText.index(before: range.lowerBound)
+                                    if refinedText[before].isLetter {
+                                        isValidMatch = false
+                                    }
+                                }
+                                if isValidMatch && range.upperBound < refinedText.endIndex {
+                                    if refinedText[range.upperBound].isLetter {
+                                        isValidMatch = false
+                                    }
+                                }
+                            }
+                        }
+
+                        if isValidMatch {
+                            // Find the corresponding keyTerm to get its ID
+                            if let keyTerm = feedback.keyTerms.first(where: { $0.term == chosenTerm }) {
+                                matches.append(ClickableTextMatch(
+                                    range: foundRange,
+                                    text: chosenTerm,
+                                    cardType: .keyTerm,
+                                    cardId: keyTerm.id,
+                                    isSegment: false
+                                ))
+                            }
                         }
 
                         // Move search range past this match
@@ -1060,15 +1083,35 @@ struct FeedbackView: View {
                 while searchRange.location < nsString.length {
                     let foundRange = nsString.range(of: chosenRefinement, options: [.caseInsensitive], range: searchRange)
                     if foundRange.location != NSNotFound {
-                        // Find the corresponding suggestion to get its ID
-                        if let suggestion = feedback.suggestions.first(where: { $0.refinement == chosenRefinement }) {
-                            matches.append(ClickableTextMatch(
-                                range: foundRange,
-                                text: chosenRefinement,
-                                cardType: .suggestion,
-                                cardId: suggestion.id,
-                                isSegment: false
-                            ))
+                        var isValidMatch = true
+
+                        if languageHasSpace {
+                            if let range = Range(foundRange, in: refinedText) {
+                                if range.lowerBound > refinedText.startIndex {
+                                    let before = refinedText.index(before: range.lowerBound)
+                                    if refinedText[before].isLetter {
+                                        isValidMatch = false
+                                    }
+                                }
+                                if isValidMatch && range.upperBound < refinedText.endIndex {
+                                    if refinedText[range.upperBound].isLetter {
+                                        isValidMatch = false
+                                    }
+                                }
+                            }
+                        }
+
+                        if isValidMatch {
+                            // Find the corresponding suggestion to get its ID
+                            if let suggestion = feedback.suggestions.first(where: { $0.refinement == chosenRefinement }) {
+                                matches.append(ClickableTextMatch(
+                                    range: foundRange,
+                                    text: chosenRefinement,
+                                    cardType: .suggestion,
+                                    cardId: suggestion.id,
+                                    isSegment: false
+                                ))
+                            }
                         }
 
                         // Move search range past this match
@@ -1089,6 +1132,7 @@ struct FeedbackView: View {
         var matches: [ClickableTextMatch] = []
         let refinedText = session.standardDescription
         let nsString = NSString(string: refinedText)
+        let languageHasSpace = refinedText.contains(" ")
 
         // Only use chosen key terms for highlighting when they are generated
         for chosenTerm in session.keyTerms {
@@ -1097,15 +1141,35 @@ struct FeedbackView: View {
             while searchRange.location < nsString.length {
                 let foundRange = nsString.range(of: chosenTerm.term, options: [.caseInsensitive], range: searchRange)
                 if foundRange.location != NSNotFound {
-                    // Find the corresponding keyTerm to get its ID
-                    if let keyTerm = session.keyTerms.first(where: { $0.term == chosenTerm.term }) {
-                        matches.append(ClickableTextMatch(
-                            range: foundRange,
-                            text: chosenTerm.term,
-                            cardType: .keyTerm,
-                            cardId: keyTerm.id,
-                            isSegment: false
-                        ))
+                    var isValidMatch = true
+
+                    if languageHasSpace {
+                        if let range = Range(foundRange, in: refinedText) {
+                            if range.lowerBound > refinedText.startIndex {
+                                let before = refinedText.index(before: range.lowerBound)
+                                if refinedText[before].isLetter {
+                                    isValidMatch = false
+                                }
+                            }
+                            if isValidMatch && range.upperBound < refinedText.endIndex {
+                                if refinedText[range.upperBound].isLetter {
+                                    isValidMatch = false
+                                }
+                            }
+                        }
+                    }
+
+                    if isValidMatch {
+                        // Find the corresponding keyTerm to get its ID
+                        if let keyTerm = session.keyTerms.first(where: { $0.term == chosenTerm.term }) {
+                            matches.append(ClickableTextMatch(
+                                range: foundRange,
+                                text: chosenTerm.term,
+                                cardType: .keyTerm,
+                                cardId: keyTerm.id,
+                                isSegment: false
+                            ))
+                        }
                     }
 
                     // Move search range past this match
@@ -1124,15 +1188,35 @@ struct FeedbackView: View {
             while searchRange.location < nsString.length {
                 let foundRange = nsString.range(of: chosenSuggestion.refinement, options: [.caseInsensitive], range: searchRange)
                 if foundRange.location != NSNotFound {
-                    // Find the corresponding suggestion to get its ID
-                    if let suggestion = session.suggestions.first(where: { $0.refinement == chosenSuggestion.refinement }) {
-                        matches.append(ClickableTextMatch(
-                            range: foundRange,
-                            text: chosenSuggestion.refinement,
-                            cardType: .suggestion,
-                            cardId: suggestion.id,
-                            isSegment: false
-                        ))
+                    var isValidMatch = true
+
+                    if languageHasSpace {
+                        if let range = Range(foundRange, in: refinedText) {
+                            if range.lowerBound > refinedText.startIndex {
+                                let before = refinedText.index(before: range.lowerBound)
+                                if refinedText[before].isLetter {
+                                    isValidMatch = false
+                                }
+                            }
+                            if isValidMatch && range.upperBound < refinedText.endIndex {
+                                if refinedText[range.upperBound].isLetter {
+                                    isValidMatch = false
+                                }
+                            }
+                        }
+                    }
+
+                    if isValidMatch {
+                        // Find the corresponding suggestion to get its ID
+                        if let suggestion = session.suggestions.first(where: { $0.refinement == chosenSuggestion.refinement }) {
+                            matches.append(ClickableTextMatch(
+                                range: foundRange,
+                                text: chosenSuggestion.refinement,
+                                cardType: .suggestion,
+                                cardId: suggestion.id,
+                                isSegment: false
+                            ))
+                        }
                     }
 
                     // Move search range past this match
