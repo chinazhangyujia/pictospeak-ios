@@ -24,6 +24,8 @@ struct SpeakView: View {
     @State private var recordingTime: TimeInterval = 0
     @State private var showFeedbackView = false
     @State private var recordedAudioData: Data?
+
+    // States for Single Item Mode (when materialsModel is nil)
     @State private var currentImage: UIImage?
     @State private var currentVideo: URL?
     @State private var videoPlayer: AVPlayer?
@@ -32,7 +34,6 @@ struct SpeakView: View {
 
     init(selectedImage: UIImage) {
         self.selectedImage = selectedImage
-        print("SpeakView: init: selectedImage: \(selectedImage)")
         selectedVideo = nil
         materialsModel = nil
         _currentImage = State(initialValue: selectedImage)
@@ -64,25 +65,24 @@ struct SpeakView: View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 // Background Media
-                if let currentImage = currentImage {
-                    // Show image as background
-                    Image(uiImage: currentImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .clipped()
-                        .ignoresSafeArea()
-                        .gesture(
-                            // Only enable gestures if we have a materialsModel
-                            materialsModel != nil ?
-                                DragGesture()
-                                .onEnded { value in
-                                    handleSwipeGesture(value)
-                                } : nil
-                        )
-                } else if let videoPlayer = videoPlayer {
-                    // Show video player as background
-                    VideoPlayer(player: videoPlayer)
+                if let materialsModel = materialsModel {
+                    SwipeableMaterialsView(
+                        viewModel: materialsModel,
+                        size: geometry.size
+                    )
+                } else {
+                    // Single Item Mode
+                    if let currentImage = currentImage {
+                        Image(uiImage: currentImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .ignoresSafeArea()
+                    } else if let videoPlayer = videoPlayer {
+                        BackgroundVideoPlayer(player: videoPlayer) {
+                            isLoading = false
+                        }
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
                         .ignoresSafeArea()
@@ -90,38 +90,29 @@ struct SpeakView: View {
                             videoPlayer.play()
                             setupVideoLooping()
                         }
-                        .gesture(
-                            // Only enable gestures if we have a materialsModel
-                            materialsModel != nil ?
-                                DragGesture()
-                                .onEnded { value in
-                                    handleSwipeGesture(value)
-                                } : nil
-                        )
-                } else {
-                    // Placeholder while loading
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .ignoresSafeArea()
+                    }
+
+                    if isLoading {
+                        ZStack {
+                            Color.black.opacity(0.2)
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                        }
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .ignoresSafeArea()
-                }
-
-                // Loading Indicator
-                if isLoading {
-                    ZStack {
-                        Color.black.opacity(0.2)
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.5)
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .ignoresSafeArea()
                 }
 
+                // Recording UI Overlay
                 VStack {
                     Spacer()
 
-                    // Timer display (only shown when recording)
                     if isRecording {
                         Text(String(format: "%02d:%02d", Int(recordingTime) / 60, Int(recordingTime) % 60))
                             .font(.system(size: 18, weight: .medium))
@@ -179,15 +170,9 @@ struct SpeakView: View {
         }
         .onAppear {
             setupAudioRecorder()
-
-            // Load material if we have a materials model
-            if let model = materialsModel, let material = model.currentMaterial {
-                loadMaterial(material)
-            }
         }
         .onDisappear {
             stopRecording()
-            // Stop video playback when leaving the view
             videoPlayer?.pause()
             if let observer = playerObserver {
                 NotificationCenter.default.removeObserver(observer)
@@ -196,39 +181,7 @@ struct SpeakView: View {
         }
         .onChange(of: isRecording) { _, newValue in
             if !newValue {
-                // Capture duration before reset
-                let finalDuration = recordingTime
-
-                // Stop recording
-                recordingTimer?.invalidate()
-                recordingTimer = nil
-                recordingTime = 0
-
-                // Get recorded audio data and navigate to feedback
-                if let url = recordingURL {
-                    do {
-                        let audioDataToSend: Data?
-
-                        if finalDuration < 2.0 {
-                            print("Recording too short (< 2s), sending without audio")
-                            audioDataToSend = nil
-                        } else {
-                            audioDataToSend = try Data(contentsOf: url)
-                        }
-
-                        recordedAudioData = audioDataToSend
-
-                        let materialId = materialsModel?.currentMaterial?.id
-
-                        if let currentImage = currentImage {
-                            router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: audioDataToSend, mediaType: .image, materialId: materialId))
-                        } else if let currentVideo = currentVideo {
-                            router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: audioDataToSend, mediaType: .video, materialId: materialId))
-                        }
-                    } catch {
-                        print("Failed to read audio data: \(error)")
-                    }
-                }
+                handleRecordingFinished()
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -262,7 +215,6 @@ struct SpeakView: View {
             let audioFilename = documentsPath.appendingPathComponent("recording.m4a")
             recordingURL = audioFilename
 
-            // Use default settings for simplest recording
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: [:])
             audioRecorder?.prepareToRecord()
 
@@ -278,7 +230,6 @@ struct SpeakView: View {
         isRecording = true
         recordingTime = 0
 
-        // Start timer to track recording time
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             recordingTime += 0.1
             if recordingTime >= maxRecordingDuration {
@@ -294,186 +245,58 @@ struct SpeakView: View {
         recordingTimer = nil
     }
 
-    // MARK: - Swipe Gesture Functions
+    private func handleRecordingFinished() {
+        // Capture duration before reset
+        let finalDuration = recordingTime
 
-    private func handleSwipeGesture(_ value: DragGesture.Value) {
-        guard materialsModel != nil else { return }
+        // Stop recording just in case
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        recordingTime = 0
 
-        let verticalThreshold: CGFloat = 50
+        // Get recorded audio data and navigate to feedback
+        if let url = recordingURL {
+            do {
+                let audioDataToSend: Data?
 
-        // Determine swipe direction
-        if abs(value.translation.height) > abs(value.translation.width) {
-            // Vertical swipe
-            if value.translation.height > verticalThreshold {
-                // Swipe down - go to next material
-                handleSwipeDown()
-            } else if value.translation.height < -verticalThreshold {
-                // Swipe up - go to previous material
-                handleSwipeUp()
-            }
-        }
-    }
+                if finalDuration < 2.0 {
+                    print("Recording too short (< 2s), sending without audio")
+                    audioDataToSend = nil
+                } else {
+                    audioDataToSend = try Data(contentsOf: url)
+                }
 
-    private func handleSwipeUp() {
-        guard let model = materialsModel else { return }
+                recordedAudioData = audioDataToSend
 
-        // Check if we can go to next material
-        if model.currentIndex < model.materials.count - 1 || model.hasMoreMaterials {
-            let newIndex = model.currentIndex + 1
-            model.setCurrentIndex(newIndex)
-            loadMaterial(model.currentMaterial!)
-        }
-    }
+                // Determine what media to pass
+                if let model = materialsModel, let material = model.currentMaterial {
+                    // List Mode
+                    // We need to fetch the image or video from cache to pass it to Feedback
+                    // Or rely on the material properties
 
-    private func handleSwipeDown() {
-        guard let model = materialsModel else { return }
+                    var image: UIImage? = nil
+                    var video: URL? = nil
+                    let mediaType: MediaType = material.type
 
-        // Check if we can go to previous material (index > 0)
-        if model.currentIndex > 0 {
-            let newIndex = model.currentIndex - 1
-            model.setCurrentIndex(newIndex)
-            loadMaterial(model.currentMaterial!)
-        }
-    }
-
-    private func loadMaterial(_ material: Material) {
-        guard let url = URL(string: material.materialUrl), let model = materialsModel else {
-            return
-        }
-
-        // Trigger preloading for adjacent materials
-        preloadAdjacentMaterials()
-
-        isLoading = true
-
-        if material.type == .image {
-            // Check cache first
-            if let cachedImage = model.imageCache[material.id] {
-                setupImage(cachedImage)
-                return
-            }
-
-            // Use URLSession for asynchronous loading
-            URLSession.shared.dataTask(with: url) { data, _, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        print("Error downloading data from URL: \(error)")
-                        self.isLoading = false
-                        return
+                    if material.type == .image {
+                        image = model.imageCache[material.id]
+                    } else if material.type == .video {
+                        // For video, we pass the URL. The cache has the AVPlayer, but FeedbackView expects URL.
+                        video = URL(string: material.materialUrl)
                     }
 
-                    guard let data = data else {
-                        print("No data received from URL")
-                        self.isLoading = false
-                        return
-                    }
+                    router.goTo(.feedbackFromSpeak(selectedImage: image, selectedVideo: video, audioData: audioDataToSend, mediaType: mediaType, materialId: material.id))
 
-                    if let image = UIImage(data: data) {
-                        model.imageCache[material.id] = image
-                        self.setupImage(image)
-                    } else {
-                        self.isLoading = false
+                } else {
+                    // Single Mode
+                    if let currentImage = currentImage {
+                        router.goTo(.feedbackFromSpeak(selectedImage: currentImage, selectedVideo: nil, audioData: audioDataToSend, mediaType: .image, materialId: nil))
+                    } else if let currentVideo = currentVideo {
+                        router.goTo(.feedbackFromSpeak(selectedImage: nil, selectedVideo: currentVideo, audioData: audioDataToSend, mediaType: .video, materialId: nil))
                     }
                 }
-            }.resume()
-        } else if material.type == .video {
-            // Check cache first
-            if let cachedPlayer = model.videoPlayerCache[material.id] {
-                setupVideo(cachedPlayer, url: url)
-                return
-            }
-
-            // For video, stream directly from URL instead of downloading
-            DispatchQueue.main.async {
-                let player = AVPlayer(url: url)
-                player.actionAtItemEnd = .none
-                model.videoPlayerCache[material.id] = player
-                self.setupVideo(player, url: url)
-            }
-        }
-    }
-
-    private func setupImage(_ image: UIImage) {
-        isLoading = false
-        // Stop any existing video
-        videoPlayer?.pause()
-        if let observer = playerObserver {
-            NotificationCenter.default.removeObserver(observer)
-            playerObserver = nil
-        }
-        currentImage = image
-        currentVideo = nil
-        videoPlayer = nil
-    }
-
-    private func setupVideo(_ player: AVPlayer, url: URL) {
-        isLoading = false // Player created immediately
-
-        // Stop any existing video if it's different
-        if videoPlayer != player {
-            videoPlayer?.pause()
-        }
-
-        currentImage = nil
-        currentVideo = url
-
-        videoPlayer = player
-        player.seek(to: .zero)
-        player.play()
-        setupVideoLooping()
-    }
-
-    private func preloadAdjacentMaterials() {
-        guard let model = materialsModel else { return }
-        let currentIndex = model.currentIndex
-        let materials = model.materials
-
-        // Calculate adjacent indices
-        let indicesToPreload = [currentIndex - 1, currentIndex + 1]
-
-        // Keep track of IDs we want to keep in cache (current + adjacent)
-        var keepIds: Set<UUID> = [materials[currentIndex].id]
-
-        for index in indicesToPreload {
-            guard index >= 0, index < materials.count else { continue }
-            let material = materials[index]
-            keepIds.insert(material.id)
-
-            // Preload if not in cache
-            if material.type == .video {
-                if model.videoPlayerCache[material.id] == nil, let url = URL(string: material.materialUrl) {
-                    let player = AVPlayer(url: url)
-                    player.actionAtItemEnd = .none
-                    player.isMuted = true // Mute preloaded videos by default
-                    model.videoPlayerCache[material.id] = player
-                }
-            } else if material.type == .image {
-                if model.imageCache[material.id] == nil, let url = URL(string: material.materialUrl) {
-                    URLSession.shared.dataTask(with: url) { data, _, _ in
-                        if let data = data, let image = UIImage(data: data) {
-                            DispatchQueue.main.async {
-                                model.imageCache[material.id] = image
-                            }
-                        }
-                    }.resume()
-                }
-            }
-        }
-
-        // Cleanup cache - remove items that are too far away
-        // We allow a slightly larger buffer (e.g., keep 2 away) to prevent thrashing if user swipes back and forth quickly
-        // But for strict memory management as requested ("almost have no delay"), strict neighbors is usually enough.
-        // Let's stick to strict neighbors + current to match "TikTok-like" aggressive resource management but safe.
-
-        for id in model.videoPlayerCache.keys {
-            if !keepIds.contains(id) {
-                model.videoPlayerCache.removeValue(forKey: id)
-            }
-        }
-
-        for id in model.imageCache.keys {
-            if !keepIds.contains(id) {
-                model.imageCache.removeValue(forKey: id)
+            } catch {
+                print("Failed to read audio data: \(error)")
             }
         }
     }
@@ -481,7 +304,6 @@ struct SpeakView: View {
     private func setupVideoLooping() {
         guard let videoPlayer = videoPlayer else { return }
 
-        // Remove any existing observers first
         if let observer = playerObserver {
             NotificationCenter.default.removeObserver(observer)
             playerObserver = nil
@@ -498,8 +320,291 @@ struct SpeakView: View {
     }
 }
 
-#Preview {
-    // Create a sample image for preview
-    let sampleImage = UIImage(systemName: "photo") ?? UIImage()
-    SpeakView(selectedImage: sampleImage)
+// MARK: - Swipeable Materials Components
+
+struct SwipeableMaterialsView: View {
+    @ObservedObject var viewModel: InternalUploadedMaterialsViewModel
+    let size: CGSize
+
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDragging: Bool = false
+
+    var body: some View {
+        ZStack {
+            // Background color
+            Color.black.ignoresSafeArea()
+
+            // Calculate indices to show: [current-1, current, current+1]
+            // We use ForEach with material ID to preserve view identity across index changes
+            let indices = getVisibleIndices()
+
+            ForEach(indices, id: \.self) { index in
+                if let material = getMaterial(at: index) {
+                    let relativePos = index - viewModel.currentIndex
+
+                    SingleMaterialView(
+                        material: material,
+                        viewModel: viewModel,
+                        isActive: index == viewModel.currentIndex,
+                        shouldPlay: index == viewModel.currentIndex || (index == viewModel.currentIndex && isDragging)
+                    )
+                    .frame(width: size.width, height: size.height)
+                    .offset(y: calculateOffset(relativePos: relativePos) + (relativePos == 0 ? dragOffset : 0))
+                    // Opacity logic:
+                    // If relativePos is 0 (current): fades out as you drag away
+                    // If relativePos is -1 (prev) or 1 (next): fades in as you drag it in
+                    .opacity(calculateOpacity(relativePos: relativePos))
+                    .zIndex(relativePos == 0 ? 2 : 1) // Current on top
+                }
+            }
+        }
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    isDragging = true
+                    dragOffset = value.translation.height
+                }
+                .onEnded { value in
+                    let threshold = size.height / 2
+                    let translation = value.translation.height
+
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        if translation < -threshold {
+                            // Swiped Up -> Next
+                            if getNextIndex() != nil {
+                                dragOffset = -size.height
+                                completeTransition(direction: 1)
+                            } else {
+                                dragOffset = 0
+                            }
+                        } else if translation > threshold {
+                            // Swiped Down -> Prev
+                            if getPreviousIndex() != nil {
+                                dragOffset = size.height
+                                completeTransition(direction: -1)
+                            } else {
+                                dragOffset = 0
+                            }
+                        } else {
+                            // Reset
+                            dragOffset = 0
+                        }
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        isDragging = false
+                    }
+                }
+        )
+    }
+
+    private func getVisibleIndices() -> [Int] {
+        let current = viewModel.currentIndex
+        return [current - 1, current, current + 1].filter { $0 >= 0 && $0 < viewModel.materials.count }
+    }
+
+    private func getMaterial(at index: Int) -> Material? {
+        guard index >= 0, index < viewModel.materials.count else { return nil }
+        return viewModel.materials[index]
+    }
+
+    private func getPreviousIndex() -> Int? {
+        let prev = viewModel.currentIndex - 1
+        return prev >= 0 ? prev : nil
+    }
+
+    private func getNextIndex() -> Int? {
+        let next = viewModel.currentIndex + 1
+        return next < viewModel.materials.count ? next : nil
+    }
+
+    private func calculateOffset(relativePos: Int) -> CGFloat {
+        // If it's current (0), offset is handled by dragOffset
+        if relativePos == 0 { return 0 }
+
+        // If it's prev (-1), it sits above (-height).
+        // If it's next (1), it sits below (height).
+        // Plus the dragOffset to bring it into view.
+        return CGFloat(relativePos) * size.height + dragOffset
+    }
+
+    private func calculateOpacity(relativePos: Int) -> Double {
+        if relativePos == 0 {
+            // Current item: Fade out based on drag distance
+            return 1.0 - Double(abs(dragOffset) / size.height)
+        } else {
+            // Adjacent items: Fade in based on drag distance
+            // Only fade in if we are dragging in that direction
+            if (relativePos == -1 && dragOffset > 0) || (relativePos == 1 && dragOffset < 0) {
+                return Double(abs(dragOffset) / size.height) + 0.5
+            }
+            return 0
+        }
+    }
+
+    private func completeTransition(direction: Int) {
+        // Wait for animation to finish then update index
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let newIndex = viewModel.currentIndex + direction
+            viewModel.setCurrentIndex(newIndex)
+            dragOffset = 0
+        }
+    }
+}
+
+struct SingleMaterialView: View {
+    let material: Material
+    @ObservedObject var viewModel: InternalUploadedMaterialsViewModel
+    let isActive: Bool
+    let shouldPlay: Bool
+
+    @State private var isLoading = false
+    @State private var playerObserver: NSObjectProtocol?
+
+    var body: some View {
+        ZStack {
+            Color.black // Background
+
+            if material.type == .image {
+                if let image = viewModel.imageCache[material.id] {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .ignoresSafeArea()
+                } else {
+                    ProgressView()
+                        .onAppear {
+                            loadContent()
+                        }
+                }
+            } else if material.type == .video {
+                if let player = viewModel.videoPlayerCache[material.id] {
+                    // Video Player
+                    BackgroundVideoPlayer(player: player) {
+                        // Ready
+                    }
+                    .ignoresSafeArea()
+                    .onAppear {
+                        if isActive {
+                            stopOtherVideos(currentId: material.id)
+                            player.isMuted = true // Always mute in SpeakView
+
+                            // Only seek to zero if we are not resuming from a paused state during drag
+                            // If we just became active, and we weren't dragging, or we are at end...
+                            // Actually, safer to seek to zero if not playing
+                            if player.timeControlStatus != .playing {
+                                player.seek(to: .zero)
+                            }
+
+                            if shouldPlay {
+                                player.play()
+                            }
+                        } else {
+                            player.pause()
+                            player.isMuted = true
+                        }
+                        setupLooping(for: player)
+                    }
+                    .onDisappear {
+                        // Pause player when view disappears to prevent background audio
+                        player.pause()
+                        removeObserver()
+                    }
+                    .onChange(of: isActive) { _, active in
+                        if active {
+                            stopOtherVideos(currentId: material.id)
+                            player.isMuted = true
+
+                            // Ensure we start from beginning if becoming active
+                            player.seek(to: .zero)
+
+                            if shouldPlay { player.play() }
+                        } else {
+                            player.pause()
+                        }
+                    }
+                    .onChange(of: shouldPlay) { _, play in
+                        if isActive {
+                            if play { player.play() }
+                            else { player.pause() }
+                        }
+                    }
+                } else {
+                    // Show thumbnail if available, otherwise loader
+                    if let thumbUrl = material.thumbnailUrl, let url = URL(string: thumbUrl) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case let .success(image):
+                                image.resizable().scaledToFill()
+                            default:
+                                ProgressView()
+                            }
+                        }
+                        .ignoresSafeArea()
+                    } else {
+                        ProgressView()
+                    }
+
+                    // Trigger load
+                    Color.clear.onAppear {
+                        loadContent()
+                    }
+                }
+            }
+        }
+    }
+
+    private func loadContent() {
+        // Trigger cache load via logic similar to preload
+        // We can manually add to cache here if not present
+        guard let url = URL(string: material.materialUrl) else { return }
+
+        if material.type == .image {
+            if viewModel.imageCache[material.id] == nil {
+                URLSession.shared.dataTask(with: url) { data, _, _ in
+                    if let data = data, let image = UIImage(data: data) {
+                        DispatchQueue.main.async {
+                            viewModel.imageCache[material.id] = image
+                        }
+                    }
+                }.resume()
+            }
+        } else if material.type == .video {
+            if viewModel.videoPlayerCache[material.id] == nil {
+                let player = AVPlayer(url: url)
+                player.actionAtItemEnd = .none
+                DispatchQueue.main.async {
+                    viewModel.videoPlayerCache[material.id] = player
+                }
+            }
+        }
+    }
+
+    private func setupLooping(for player: AVPlayer) {
+        removeObserver()
+
+        playerObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem,
+            queue: .main
+        ) { _ in
+            player.seek(to: .zero)
+            player.play()
+        }
+    }
+
+    private func removeObserver() {
+        if let observer = playerObserver {
+            NotificationCenter.default.removeObserver(observer)
+            playerObserver = nil
+        }
+    }
+
+    private func stopOtherVideos(currentId: UUID) {
+        for (id, player) in viewModel.videoPlayerCache {
+            if id != currentId {
+                player.pause()
+            }
+        }
+    }
 }

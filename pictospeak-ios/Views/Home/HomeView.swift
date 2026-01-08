@@ -55,7 +55,6 @@ struct HomeView: View {
                         recentSessionsSection
                     }
                 }
-                .padding(.horizontal, 16)
                 .padding(.top, 20)
                 .padding(.bottom, 120) // Add bottom padding for navigation overlay
             }
@@ -179,6 +178,7 @@ struct HomeView: View {
             .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 16)
     }
 
     private var internalMaterialsSection: some View {
@@ -206,6 +206,7 @@ struct HomeView: View {
                     }
                 }
             }
+            .padding(.horizontal, 16)
             .padding(.top, 5)
             .padding(.bottom, 10)
 
@@ -235,6 +236,7 @@ struct HomeView: View {
                             .contentShape(Rectangle()) // Ensures the entire area is tappable
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
             }
         }
@@ -284,6 +286,7 @@ struct HomeView: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 26))
         .shadow(color: Color(red: 0, green: 0, blue: 0, opacity: 0.05), radius: 16, x: 0, y: 1)
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Recent Sessions Section
@@ -350,6 +353,7 @@ struct HomeView: View {
                 }
             }
         }
+        .padding(.horizontal, 16)
     }
 
     private func loadMoreSessionsIfNeeded(currentSession: SessionItem) {
