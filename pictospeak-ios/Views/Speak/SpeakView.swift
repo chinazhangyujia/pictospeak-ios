@@ -82,22 +82,25 @@ struct SpeakView: View {
                         )
                 } else if let videoPlayer = videoPlayer {
                     // Show video player as background
-                    VideoPlayer(player: videoPlayer)
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .clipped()
-                        .ignoresSafeArea()
-                        .onAppear {
-                            videoPlayer.play()
-                            setupVideoLooping()
-                        }
-                        .gesture(
-                            // Only enable gestures if we have a materialsModel
-                            materialsModel != nil ?
-                                DragGesture()
-                                .onEnded { value in
-                                    handleSwipeGesture(value)
-                                } : nil
-                        )
+                    BackgroundVideoPlayer(player: videoPlayer) {
+                        // Video is ready for display, hide loading
+                        isLoading = false
+                    }
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .ignoresSafeArea()
+                    .onAppear {
+                        videoPlayer.play()
+                        setupVideoLooping()
+                    }
+                    .gesture(
+                        // Only enable gestures if we have a materialsModel
+                        materialsModel != nil ?
+                            DragGesture()
+                            .onEnded { value in
+                                handleSwipeGesture(value)
+                            } : nil
+                    )
                 } else {
                     // Placeholder while loading
                     Rectangle()
@@ -407,7 +410,8 @@ struct SpeakView: View {
     }
 
     private func setupVideo(_ player: AVPlayer, url: URL) {
-        isLoading = false // Player created immediately
+        // Keep isLoading true until the layer is actually ready for display
+        // This prevents the black flash
 
         // Stop any existing video if it's different
         if videoPlayer != player {

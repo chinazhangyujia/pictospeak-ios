@@ -125,7 +125,7 @@ struct FeedbackView: View {
                         .ignoresSafeArea()
                 } else if let player = backgroundVideoPlayer {
                     // Show video as background from either a directly selected video or a session material
-                    VideoPlayer(player: player)
+                    BackgroundVideoPlayer(player: player)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
                         .ignoresSafeArea()
