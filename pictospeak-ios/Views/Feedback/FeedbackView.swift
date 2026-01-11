@@ -104,7 +104,12 @@ struct FeedbackView: View {
     // Teaching Overlay State
     @State private var showTeachingOverlay = false
     @State private var teachingOverlayRect: CGRect = .zero
+    @State private var overlayTopOffset: CGFloat = 0
+    @State private var activeMatch: ClickableTextMatch?
+    @State private var sheetContentFrame: CGRect = .zero
+    @State private var isProgrammaticallyExpandingSheet = false
     @State private var isOverlayCardExpanded = false
+    @State private var isInteractingWithOverlay = false
 
     private var targetLanguageCode: String {
         let languageName = contentViewModel.userInfo.userSetting?.targetLanguage ?? "English"
@@ -226,6 +231,25 @@ struct FeedbackView: View {
                     }
                 }
             }
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            sheetContentFrame = proxy.frame(in: .global)
+                        }
+                        .onChange(of: proxy.frame(in: .global)) { newFrame in
+                            if !isProgrammaticallyExpandingSheet && !isInteractingWithOverlay {
+                                if abs(newFrame.minY - sheetContentFrame.minY) > 5 {
+                                    if showTeachingOverlay {
+                                        showTeachingOverlay = false
+                                        activeMatch = nil
+                                    }
+                                }
+                            }
+                            sheetContentFrame = newFrame
+                        }
+                }
+            )
             .navigationBarTitleDisplayMode(.inline)
             .presentationDetents([.fraction(0.15), .fraction(0.5), .fraction(0.95)], selection: $selectedDetent)
             .presentationDragIndicator(.visible)
@@ -241,7 +265,10 @@ struct FeedbackView: View {
                             ZStack(alignment: .topLeading) {
                                 Color.black.opacity(0.2)
                                     .edgesIgnoringSafeArea(.all)
-                                    .onTapGesture { showTeachingOverlay = false }
+                                    .onTapGesture {
+                                        showTeachingOverlay = false
+                                        activeMatch = nil
+                                    }
 
                                 // Unified Card Logic to prevent jumping
                                 let keyTermToDisplay: KeyTerm = viewModel.keyTermTeachingResponse?.keyTerm ?? KeyTerm(
@@ -252,8 +279,9 @@ struct FeedbackView: View {
                                     favorite: false
                                 )
 
-                                // Convert the teaching rect (in global coords) into this overlay's local space
-                                let overlayTop = teachingOverlayRect.maxY + 12 - proxy.frame(in: .global).minY
+                                // Use pre-calculated offset relative to sheet top
+                                let minOverlayY: CGFloat = 300
+                                let overlayTop = min(overlayTopOffset + 12, minOverlayY)
 
                                 KeyTermCard(
                                     isReviewCard: false,
@@ -301,6 +329,7 @@ struct FeedbackView: View {
                                                     // Dismiss the overlay
                                                     withAnimation {
                                                         showTeachingOverlay = false
+                                                        activeMatch = nil
                                                     }
                                                 }
                                                 print("✅ Successfully created and favorited new key term")
@@ -311,6 +340,11 @@ struct FeedbackView: View {
                                     },
                                     languageCode: targetLanguageCode,
                                     isUserChosen: true
+                                )
+                                .simultaneousGesture(
+                                    DragGesture(minimumDistance: 0)
+                                        .onChanged { _ in isInteractingWithOverlay = true }
+                                        .onEnded { _ in isInteractingWithOverlay = false }
                                 )
                                 .frame(width: proxy.size.width - 48) // Match padding (24 left + 24 right)
                                 .shadow(radius: 10)
@@ -481,7 +515,8 @@ struct FeedbackView: View {
                         ClickableHighlightedTextView(
                             text: feedback.refinedText,
                             clickableMatches: clickableMatches,
-                            segments: feedback.standardDescriptionSegments
+                            segments: feedback.standardDescriptionSegments,
+                            activeMatch: activeMatch
                         ) { match, globalRect in
                             if match.isSegment {
                                 handleSegmentTap(match: match, globalRect: globalRect)
@@ -762,7 +797,8 @@ struct FeedbackView: View {
                     ClickableHighlightedTextView(
                         text: session.standardDescription,
                         clickableMatches: clickableMatches,
-                        segments: session.standardDescriptionSegments
+                        segments: session.standardDescriptionSegments,
+                        activeMatch: activeMatch
                     ) { match, globalRect in
                         if match.isSegment {
                             handleSegmentTap(match: match, globalRect: globalRect)
@@ -1233,6 +1269,10 @@ struct FeedbackView: View {
     }
 
     private func handleTextTap(match: ClickableTextMatch, feedback: FeedbackResponse, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+        if selectedDetent != .fraction(0.95) {
+            selectedDetent = .fraction(0.95)
+        }
+
         // Verify that the corresponding card actually exists
         let cardExists: Bool
         if let cardType = match.cardType {
@@ -1261,6 +1301,10 @@ struct FeedbackView: View {
     }
 
     private func handleTextTap(match: ClickableTextMatch, session: SessionItem, scrollProxy: @escaping (UUID, UnitPoint?) -> Void) {
+        if selectedDetent != .fraction(0.95) {
+            selectedDetent = .fraction(0.95)
+        }
+
         // Verify that the corresponding card actually exists
         let cardExists: Bool
         if let cardType = match.cardType {
@@ -1289,7 +1333,13 @@ struct FeedbackView: View {
     }
 
     private func handleSegmentTap(match: ClickableTextMatch, globalRect: CGRect) {
+        activeMatch = match
         teachingOverlayRect = globalRect
+
+        // Calculate offset relative to sheet top
+        let sheetTop = sheetContentFrame.minY
+        let relativeMaxY = globalRect.maxY - sheetTop
+        overlayTopOffset = relativeMaxY
 
         // Determine the correct ID to use
         let guidanceId: UUID?
@@ -1303,6 +1353,15 @@ struct FeedbackView: View {
         viewModel.teachSingleTerm(term: match.text, descriptionGuidanceId: guidanceId)
 
         isOverlayCardExpanded = false
+
+        if selectedDetent != .fraction(0.95) {
+            isProgrammaticallyExpandingSheet = true
+            selectedDetent = .fraction(0.95)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                isProgrammaticallyExpandingSheet = false
+            }
+        }
+
         withAnimation {
             showTeachingOverlay = true
         }
@@ -1425,6 +1484,7 @@ struct FeedbackView: View {
         let text: String
         let clickableMatches: [ClickableTextMatch]
         let segments: [String]?
+        let activeMatch: ClickableTextMatch?
         let onTap: (ClickableTextMatch, CGRect) -> Void
 
         func makeUIView(context: Context) -> UITextView {
@@ -1546,18 +1606,25 @@ struct FeedbackView: View {
 
                 if match.isSegment {
                     // Dotted underline for segments matching Figma specs
+                    let isActive = (match == activeMatch)
+
                     // Style: Dotted
                     attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.patternDot.rawValue | NSUnderlineStyle.single.rawValue, range: range)
 
-                    // Color: #8C8C8C
-                    attributedString.addAttribute(.underlineColor, value: UIColor(red: 0.549, green: 0.549, blue: 0.549, alpha: 1.0), range: range)
+                    // Color: #8C8C8C normally, #FF9A5A if active
+                    let color = isActive ? UIColor(red: 1.0, green: 0.604, blue: 0.353, alpha: 1.0) : UIColor(red: 0.549, green: 0.549, blue: 0.549, alpha: 1.0)
+                    attributedString.addAttribute(.underlineColor, value: color, range: range)
+
+                    if isActive {
+                        attributedString.addAttribute(.foregroundColor, value: color, range: range)
+                    }
 
                     // Use a tiny unique baseline offset to force NSLayoutManager to treat each segment as a separate run.
                     // This ensures drawUnderline is called separately for each segment, allowing us to add gaps.
                     let uniqueOffset = 0.0 + (Double(index) * 0.0001)
                     attributedString.addAttribute(.baselineOffset, value: NSNumber(value: uniqueOffset), range: range)
 
-                    // Keep original text color (black) and font (regular)
+                    // Keep original text color (black) and font (regular) unless active
                 } else {
                     // Similar dot lines for keyTerms/suggestions as requested
                     // Style: Dotted

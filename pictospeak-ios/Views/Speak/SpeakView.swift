@@ -49,6 +49,7 @@ struct SpeakView: View {
         _currentVideo = State(initialValue: selectedVideo)
         let player = AVPlayer(url: selectedVideo)
         player.actionAtItemEnd = .none
+        player.isMuted = false
         _videoPlayer = State(initialValue: player)
     }
 
@@ -68,7 +69,8 @@ struct SpeakView: View {
                 if let materialsModel = materialsModel {
                     SwipeableMaterialsView(
                         viewModel: materialsModel,
-                        size: geometry.size
+                        size: geometry.size,
+                        isRecording: isRecording
                     )
                 } else {
                     // Single Item Mode
@@ -180,6 +182,7 @@ struct SpeakView: View {
             }
         }
         .onChange(of: isRecording) { _, newValue in
+            videoPlayer?.isMuted = newValue
             if !newValue {
                 handleRecordingFinished()
             }
@@ -208,7 +211,7 @@ struct SpeakView: View {
         let audioSession = AVAudioSession.sharedInstance()
 
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .default)
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: .defaultToSpeaker)
             try audioSession.setActive(true)
 
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -325,6 +328,7 @@ struct SpeakView: View {
 struct SwipeableMaterialsView: View {
     @ObservedObject var viewModel: InternalUploadedMaterialsViewModel
     let size: CGSize
+    let isRecording: Bool
 
     @State private var dragOffset: CGFloat = 0
     @State private var isDragging: Bool = false
@@ -346,7 +350,8 @@ struct SwipeableMaterialsView: View {
                         material: material,
                         viewModel: viewModel,
                         isActive: index == viewModel.currentIndex,
-                        shouldPlay: index == viewModel.currentIndex || (index == viewModel.currentIndex && isDragging)
+                        shouldPlay: index == viewModel.currentIndex || (index == viewModel.currentIndex && isDragging),
+                        isRecording: isRecording
                     )
                     .frame(width: size.width, height: size.height)
                     .offset(y: calculateOffset(relativePos: relativePos) + (relativePos == 0 ? dragOffset : 0))
@@ -362,11 +367,20 @@ struct SwipeableMaterialsView: View {
             DragGesture()
                 .onChanged { value in
                     isDragging = true
-                    dragOffset = value.translation.height
+                    let translation = value.translation.height
+
+                    if translation > 0, getPreviousIndex() == nil {
+                        dragOffset = 0
+                    } else if translation < 0, getNextIndex() == nil {
+                        dragOffset = 0
+                    } else {
+                        dragOffset = translation
+                    }
                 }
                 .onEnded { value in
                     let threshold = size.height / 2
-                    let translation = value.translation.height
+                    // Use predictedEndTranslation to add inertia
+                    let translation = value.predictedEndTranslation.height
 
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         if translation < -threshold {
@@ -457,6 +471,7 @@ struct SingleMaterialView: View {
     @ObservedObject var viewModel: InternalUploadedMaterialsViewModel
     let isActive: Bool
     let shouldPlay: Bool
+    let isRecording: Bool
 
     @State private var isLoading = false
     @State private var playerObserver: NSObjectProtocol?
@@ -487,7 +502,7 @@ struct SingleMaterialView: View {
                     .onAppear {
                         if isActive {
                             stopOtherVideos(currentId: material.id)
-                            player.isMuted = true // Always mute in SpeakView
+                            player.isMuted = isRecording
 
                             // Only seek to zero if we are not resuming from a paused state during drag
                             // If we just became active, and we weren't dragging, or we are at end...
@@ -513,7 +528,7 @@ struct SingleMaterialView: View {
                     .onChange(of: isActive) { _, active in
                         if active {
                             stopOtherVideos(currentId: material.id)
-                            player.isMuted = true
+                            player.isMuted = isRecording
 
                             // Ensure we start from beginning if becoming active
                             player.seek(to: .zero)
@@ -527,6 +542,11 @@ struct SingleMaterialView: View {
                         if isActive {
                             if play { player.play() }
                             else { player.pause() }
+                        }
+                    }
+                    .onChange(of: isRecording) { _, recording in
+                        if isActive {
+                            player.isMuted = recording
                         }
                     }
                 } else {
