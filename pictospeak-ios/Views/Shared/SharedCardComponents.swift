@@ -186,7 +186,7 @@ struct KeyTermCard: View {
             // Header - always visible
             VStack(spacing: 8) { // Reduced vertical spacing
                 // Top row: Term + Speaker + Bookmark
-                HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
                     // Term
                     if keyTerm.term.isEmpty {
                         SkeletonPlaceholder(width: 100, height: 20)
@@ -208,7 +208,6 @@ struct KeyTermCard: View {
                                 .foregroundColor(AppTheme.primaryBlue)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 24, height: 24)
                     }
 
                     Spacer()
@@ -373,7 +372,7 @@ struct KeyTermCard: View {
                                     .font(.system(size: 15, weight: .regular))
                                     .kerning(-0.23)
                                     .lineSpacing(9.38) // 24.38 - 15 = 9.38
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.black)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeInOut, value: showReasonTranslation)
                             }
@@ -393,14 +392,14 @@ struct KeyTermCard: View {
                                         .font(.system(size: 15, weight: .regular))
                                         .kerning(-0.23)
                                         .lineSpacing(9.38) // 24.38 - 15 = 9.38
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(.black)
                                         .fixedSize(horizontal: false, vertical: true)
 
                                     if !keyTerm.example.sentenceTranslation.isEmpty {
                                         Text(keyTerm.example.sentenceTranslation)
-                                            .font(.system(size: 13, weight: .regular))
+                                            .font(.system(size: 15, weight: .regular))
                                             .kerning(-0.08)
-                                            .lineSpacing(6.5) // 19.5 - 13 = 6.5
+                                            .lineSpacing(4.5) // 19.5 - 15 = 4.5
                                             .foregroundColor(AppTheme.gray8c8c8c)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
@@ -515,7 +514,7 @@ struct SuggestionCard: View {
                 }
 
                 // Top row: Refinement + Speaker + Bookmark (if collapsed)
-                HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
                     // Refinement (Main Term)
                     if suggestion.refinement.isEmpty {
                         SkeletonPlaceholder(width: 100, height: 20)
@@ -537,7 +536,6 @@ struct SuggestionCard: View {
                                 .foregroundColor(AppTheme.primaryBlue)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .frame(width: 24, height: 24)
                     }
 
                     Spacer()
@@ -703,7 +701,7 @@ struct SuggestionCard: View {
                                     .font(.system(size: 15, weight: .regular))
                                     .kerning(-0.23)
                                     .lineSpacing(9.38) // 24.38 - 15 = 9.38
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.black)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeInOut, value: showReasonTranslation)
                             }
@@ -723,14 +721,14 @@ struct SuggestionCard: View {
                                         .font(.system(size: 15, weight: .regular))
                                         .kerning(-0.23)
                                         .lineSpacing(9.38) // 24.38 - 15 = 9.38
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(.black)
                                         .fixedSize(horizontal: false, vertical: true)
 
                                     if !suggestion.example.sentenceTranslation.isEmpty {
                                         Text(suggestion.example.sentenceTranslation)
-                                            .font(.system(size: 13, weight: .regular))
+                                            .font(.system(size: 15, weight: .regular))
                                             .kerning(-0.08)
-                                            .lineSpacing(6.5) // 19.5 - 13 = 6.5
+                                            .lineSpacing(4.5) // 19.5 - 15 = 4.5
                                             .foregroundColor(AppTheme.gray8c8c8c)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }

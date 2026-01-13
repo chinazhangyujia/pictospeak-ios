@@ -443,8 +443,10 @@ struct FeedbackView: View {
                     // Content sits inside with padding
                     HStack(spacing: 0) {
                         Text("feedback.tab.mine")
-                            .font(.body)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14))
+                            .fontWeight(selectedTab == .mine ? .semibold : .medium)
+                            .kerning(-0.08)
+                            .multilineTextAlignment(.center)
                             .foregroundColor(.primary)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
@@ -453,8 +455,10 @@ struct FeedbackView: View {
                             .onTapGesture { selectedTab = .mine }
 
                         Text("feedback.tab.aiRefined")
-                            .font(.body)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14))
+                            .fontWeight(selectedTab == .aiRefined ? .semibold : .medium)
+                            .kerning(-0.08)
+                            .multilineTextAlignment(.center)
                             .foregroundColor(.primary)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
@@ -745,8 +749,10 @@ struct FeedbackView: View {
                     // Content sits inside with padding
                     HStack(spacing: 0) {
                         Text("feedback.tab.mine")
-                            .font(.body)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14))
+                            .fontWeight(selectedTab == .mine ? .semibold : .medium)
+                            .kerning(-0.08)
+                            .multilineTextAlignment(.center)
                             .foregroundColor(.primary)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
@@ -755,8 +761,10 @@ struct FeedbackView: View {
                             .onTapGesture { selectedTab = .mine }
 
                         Text("feedback.tab.aiRefined")
-                            .font(.body)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14))
+                            .fontWeight(selectedTab == .aiRefined ? .semibold : .medium)
+                            .kerning(-0.08)
+                            .multilineTextAlignment(.center)
                             .foregroundColor(.primary)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
